@@ -54,8 +54,14 @@ impl Settings {
 			show_hidden_channels: ui.show_hidden_channels,
 			hide_nitro_emojis: ui.hide_nitro_emojis,
 			convert_emoticons: ui.convert_emoticons,
+<<<<<<< HEAD
 			hide_blocked_messages: ui.hide_blocked_messages,
 			hide_ignored_messages: ui.hide_ignored_messages,
+=======
+			hide_own_typing: ui.hide_own_typing,
+			reply_without_mention: ui.reply_without_mention,
+			hide_link_previews: ui.hide_link_previews,
+>>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 			preload_on_hover: ui.preload_on_hover,
 			auto_idle: ui.auto_idle,
 			hide_title_bar: ui.hide_title_bar,
@@ -113,8 +119,14 @@ impl Settings {
 		ui.show_hidden_channels = value.show_hidden_channels;
 		ui.hide_nitro_emojis = value.hide_nitro_emojis;
 		ui.convert_emoticons = value.convert_emoticons;
+<<<<<<< HEAD
 		ui.hide_blocked_messages = value.hide_blocked_messages;
 		ui.hide_ignored_messages = value.hide_ignored_messages;
+=======
+		ui.hide_own_typing = value.hide_own_typing;
+		ui.reply_without_mention = value.reply_without_mention;
+		ui.hide_link_previews = value.hide_link_previews;
+>>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 		ui.preload_on_hover = value.preload_on_hover;
 		ui.auto_idle = value.auto_idle;
 		ui.hide_title_bar = value.hide_title_bar;

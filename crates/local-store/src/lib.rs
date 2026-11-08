@@ -48,12 +48,22 @@ pub struct AppPreferences {
 	pub hide_nitro_emojis: bool,
 	/// Device-local opt-in; older saved preferences deserialize with conversion off.
 	pub convert_emoticons: bool,
+<<<<<<< HEAD
 	/// Hide visible rows authored by blocked users without changing account relationships.
 	pub hide_blocked_messages: bool,
 	/// When the blocked-message filter is on, also hide rows authored by ignored users.
 	pub hide_ignored_messages: bool,
 	/// Request a conversation's page while the pointer rests on it. Off unless the owner turns
 	/// it on: the official client makes no such requests. A saved value is kept as it is.
+=======
+	/// Send no typing indicator while writing; others' indicators still show.
+	pub hide_own_typing: bool,
+	/// Start new replies with the author ping off; the reply bar still toggles it.
+	pub reply_without_mention: bool,
+	/// Draw only image and GIF embeds under messages, not link, video or bot cards.
+	pub hide_link_previews: bool,
+	/// Request a conversation's page while the pointer rests on it; older preferences enable it.
+>>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 	pub preload_on_hover: bool,
 	/// Show as Idle after 10 minutes of system inactivity; older preferences enable it.
 	pub auto_idle: bool,
@@ -125,9 +135,16 @@ impl Default for AppPreferences {
 			show_hidden_channels: false,
 			hide_nitro_emojis: false,
 			convert_emoticons: false,
+<<<<<<< HEAD
 			hide_blocked_messages: false,
 			hide_ignored_messages: false,
 			preload_on_hover: false,
+=======
+			hide_own_typing: false,
+			reply_without_mention: false,
+			hide_link_previews: false,
+			preload_on_hover: true,
+>>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 			auto_idle: true,
 			hide_title_bar: false,
 			message_requests_collapsed: false,

@@ -92,6 +92,7 @@ your-account = Sua conta
 reconnecting = Reconectando…
 hide-chat = Ocultar bate-papo
 show-chat = Mostrar bate-papo
+voice-open-chat = Abrir bate-papo
 search-conversation = Pesquisar esta conversa
 show-member-list = Mostrar lista de membros
 pinned-messages = Mensagens fixadas
@@ -4152,6 +4153,18 @@ voice-call-bar-join-call = Participar da chamada
 voice-call-bar-reconnect-to-refresh-call = Reconecte para atualizar a chamada
 # Context: call_controls
 voice-call-controls-disconnect = Desconectar
+# Context: viewer_names
+voice-viewer-names-watching = Assistindo: { $names }
+# Context: viewer_names
+voice-viewer-names-watching-more = Assistindo: { $names } e mais { $count }
+# Context: viewer_names
+voice-viewer-names-count =
+    { $count ->
+        [one] { $count } espectador
+       *[other] { $count } espectadores
+    }
+# Context: viewer_names
+voice-viewer-names-unknown-viewer = Espectador desconhecido
 # Context: call_controls
 voice-call-controls-dismiss-call = Dispensar chamada
 # Context: call_controls

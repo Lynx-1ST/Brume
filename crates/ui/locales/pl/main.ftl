@@ -92,6 +92,7 @@ your-account = Twoje konto
 reconnecting = Ponowne łączenie…
 hide-chat = Ukryj czat
 show-chat = Pokaż czat
+voice-open-chat = Otwórz czat
 search-conversation = Przeszukaj tę rozmowę
 show-member-list = Pokaż listę członków
 pinned-messages = Przypięte wiadomości
@@ -4155,6 +4156,14 @@ voice-call-bar-join-call = Dołącz do rozmowy
 voice-call-bar-reconnect-to-refresh-call = Połącz ponownie, aby odświeżyć połączenie
 # Context: call_controls
 voice-call-controls-disconnect = Odłączyć
+# Context: viewer_names
+voice-viewer-names-watching = Oglądają: { $names }
+# Context: viewer_names
+voice-viewer-names-watching-more = Oglądają: { $names } i jeszcze { $count }
+# Context: viewer_names
+voice-viewer-names-count = Liczba widzów: { $count }
+# Context: viewer_names
+voice-viewer-names-unknown-viewer = Nieznany widz
 # Context: call_controls
 voice-call-controls-dismiss-call = Odrzuć połączenie
 # Context: call_controls

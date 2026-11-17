@@ -926,7 +926,7 @@ impl MessagingUi {
 								&& state.can_manage_channel(channel.id);
 							let active = state.selected == Some(channel.id);
 							if channel.kind == 2 {
-								let response = ui
+								let (response, open_chat) = ui
 									.push_id(slot, |ui| {
 										self.voice_channel_button(
 											ui, state, channel, active, draggable,
@@ -984,10 +984,14 @@ impl MessagingUi {
 									),
 								);
 								self.preload.conversation(&response, || Some(channel.id));
-								if response.clicked() {
+								if response.clicked() || open_chat {
 									selected = Some(channel.id);
 								}
-								if response.double_clicked() {
+								if open_chat {
+									self.voice_chat_open = true;
+									self.focus_switched_composer = true;
+								}
+								if response.double_clicked() && !open_chat {
 									self.voice_join = Some(channel.id);
 								}
 								paint_shelf_rule(
@@ -2862,6 +2866,91 @@ mod tests {
 		output.drop_without_applying_deltas();
 		assert!(elided, "long voice channel names should end in an ellipsis");
 		assert_eq!(rows, 1, "voice channel rows hold a single line");
+	}
+
+	#[test]
+	fn voice_chat_action_opens_messages_without_joining_or_switching_calls() {
+		fn collect(
+			shape: &egui::Shape,
+			name: &mut Option<egui::Pos2>,
+			rects: &mut Vec<egui::Rect>,
+		) {
+			match shape {
+				egui::Shape::Text(text) if text.galley.job.text == "Quiet room" => {
+					*name = Some(text.pos + egui::vec2(4.0, 4.0));
+				}
+				egui::Shape::Rect(rect) => rects.push(rect.rect),
+				egui::Shape::Vec(children) => {
+					for child in children {
+						collect(child, name, rects);
+					}
+				}
+				_ => {}
+			}
+		}
+		let mut state = test_support::voice_demo_state();
+		state.demo = false;
+		state.gateway_connected = true;
+		state.selected = Some(Id(26));
+		let call = state.voice.active.as_ref().map(|call| call.channel);
+		let mut view = MessagingUi {
+			guild: Some(Id(10)),
+			voice_available: true,
+			..Default::default()
+		};
+		let ctx = egui::Context::default();
+		let mut picked = None;
+		let mut frame = |view: &mut MessagingUi, state: &mut State, events| {
+			let output = ctx.run_ui(
+				egui::RawInput {
+					screen_rect: Some(egui::Rect::from_min_size(
+						egui::Pos2::ZERO,
+						egui::vec2(280.0, 1600.0),
+					)),
+					events,
+					..Default::default()
+				},
+				|ui| picked = view.channel_list(ui, state).or(picked),
+			);
+			let mut name = None;
+			let mut rects = Vec::new();
+			for shape in &output.shapes {
+				collect(&shape.shape, &mut name, &mut rects);
+			}
+			let name = name.expect("voice channel name");
+			let row = rects
+				.into_iter()
+				.filter(|rect| rect.contains(name))
+				.min_by(|a, b| a.area().total_cmp(&b.area()))
+				.expect("selected voice row");
+			output.drop_without_applying_deltas();
+			row
+		};
+		let row = frame(&mut view, &mut state, vec![]);
+		let pos = row.right_center() - egui::vec2(15.0, 0.0);
+		state.selected = Some(Id(20));
+		frame(&mut view, &mut state, vec![egui::Event::PointerMoved(pos)]);
+		// Even a double click on the chat action must never become a voice join.
+		for _ in 0..2 {
+			for pressed in [true, false] {
+				frame(
+					&mut view,
+					&mut state,
+					vec![egui::Event::PointerButton {
+						pos,
+						button: egui::PointerButton::Primary,
+						pressed,
+						modifiers: egui::Modifiers::NONE,
+					}],
+				);
+			}
+		}
+		assert_eq!(picked, Some(Id(26)));
+		assert!(view.voice_chat_open && view.focus_switched_composer);
+		let mut commands = Vec::new();
+		view.apply_voice_join(&mut state, &mut commands);
+		assert!(commands.is_empty() && view.voice_switch.is_none());
+		assert_eq!(state.voice.active.as_ref().map(|call| call.channel), call);
 	}
 
 	#[test]

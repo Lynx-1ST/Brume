@@ -16,6 +16,7 @@ static PORTUGUESE_BRAZIL: LazyLock<LanguageIdentifier> = LazyLock::new(|| "pt-BR
 static TURKISH: LazyLock<LanguageIdentifier> = LazyLock::new(|| "tr".parse().unwrap());
 static JAPANESE: LazyLock<LanguageIdentifier> = LazyLock::new(|| "ja".parse().unwrap());
 static KOREAN: LazyLock<LanguageIdentifier> = LazyLock::new(|| "ko".parse().unwrap());
+static VIETNAMESE: LazyLock<LanguageIdentifier> = LazyLock::new(|| "vi".parse().unwrap());
 static POLISH: LazyLock<LanguageIdentifier> = LazyLock::new(|| "pl".parse().unwrap());
 static ITALIAN: LazyLock<LanguageIdentifier> = LazyLock::new(|| "it".parse().unwrap());
 static CZECH: LazyLock<LanguageIdentifier> = LazyLock::new(|| "cs".parse().unwrap());
@@ -62,10 +63,11 @@ pub enum Language {
 	ChineseTraditional,
 	ChineseSimplified,
 	Korean,
+	Vietnamese,
 }
 
 impl Language {
-	pub const ALL: [Self; 15] = [
+	pub const ALL: [Self; 16] = [
 		Self::System,
 		Self::English,
 		Self::Spanish,
@@ -81,6 +83,7 @@ impl Language {
 		Self::ChineseTraditional,
 		Self::ChineseSimplified,
 		Self::Korean,
+		Self::Vietnamese,
 	];
 
 	pub fn from_preference(value: Option<&str>) -> Self {
@@ -94,6 +97,7 @@ impl Language {
 			Some("tr") => Self::Turkish,
 			Some("ja") => Self::Japanese,
 			Some("ko") => Self::Korean,
+			Some("vi") => Self::Vietnamese,
 			Some("pl") => Self::Polish,
 			Some("it") => Self::Italian,
 			Some("cs") => Self::Czech,
@@ -115,6 +119,7 @@ impl Language {
 			Self::Turkish => Some("tr"),
 			Self::Japanese => Some("ja"),
 			Self::Korean => Some("ko"),
+			Self::Vietnamese => Some("vi"),
 			Self::Polish => Some("pl"),
 			Self::Italian => Some("it"),
 			Self::Czech => Some("cs"),
@@ -166,6 +171,7 @@ impl Language {
 			Self::Turkish => "T\u{00fc}rk\u{00e7}e".into(),
 			Self::Japanese => "\u{65e5}\u{672c}\u{8a9e}".into(),
 			Self::Korean => "한국어".into(),
+			Self::Vietnamese => "Tiếng Việt".into(),
 			Self::Polish => "Polski".into(),
 			Self::Italian => "Italiano".into(),
 			Self::Czech => "Čeština".into(),
@@ -191,6 +197,7 @@ impl Language {
 			Self::Turkish => include_str!("../locales/tr/main.ftl"),
 			Self::Japanese => include_str!("../locales/ja/main.ftl"),
 			Self::Korean => include_str!("../locales/ko/main.ftl"),
+			Self::Vietnamese => include_str!("../locales/vi/main.ftl"),
 			Self::Polish => include_str!("../locales/pl/main.ftl"),
 			Self::Italian => include_str!("../locales/it/main.ftl"),
 			Self::Czech => include_str!("../locales/cs/main.ftl"),
@@ -268,6 +275,7 @@ impl Language {
 			Self::Turkish => &TURKISH,
 			Self::Japanese => &JAPANESE,
 			Self::Korean => &KOREAN,
+			Self::Vietnamese => &VIETNAMESE,
 			Self::Polish => &POLISH,
 			Self::Italian => &ITALIAN,
 			Self::Czech => &CZECH,
@@ -388,6 +396,7 @@ fn language_from_tag(tag: &str) -> Language {
 		"tr" => Language::Turkish,
 		"ja" => Language::Japanese,
 		"ko" => Language::Korean,
+		"vi" => Language::Vietnamese,
 		"pl" => Language::Polish,
 		"it" => Language::Italian,
 		"cs" => Language::Czech,
@@ -408,6 +417,9 @@ mod tests {
 		assert_eq!(language_from_tag("de-DE"), Language::German);
 		for tag in ["ko", "ko-KR", "ko_KR.UTF-8", "KO-kr"] {
 			assert_eq!(language_from_tag(tag), Language::Korean);
+		}
+		for tag in ["vi", "vi-VN", "vi_VN.UTF-8", "VI-vn"] {
+			assert_eq!(language_from_tag(tag), Language::Vietnamese);
 		}
 		assert_eq!(language_from_tag("unknown"), Language::English);
 		assert_eq!(language_from_tag("zh-TW"), Language::ChineseTraditional);
@@ -547,44 +559,46 @@ mod tests {
 	}
 
 	#[test]
-	fn korean_catalog_formats_every_english_message_without_fallback() {
+	fn complete_catalogs_format_every_english_message_without_fallback() {
 		let english = Language::English.source();
-		let korean = Language::Korean.load();
-		let mut args = FluentArgs::new();
-		for variable in english.split('$').skip(1) {
-			let name = variable
-				.split(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
-				.next()
-				.unwrap();
-			args.set(name, "test");
-		}
-		for count in [0, 1, 2, 100] {
-			args.set("count", count);
-			for key in english.lines().filter_map(|line| {
-				(!line.starts_with(['#', ' ', '\t']))
-					.then(|| line.split_once('=').map(|(key, _)| key.trim_end()))
-					.flatten()
-			}) {
-				assert!(
-					Language::lookup_in_bundle(&korean.bundle, key, Some(&args))
-						.is_some_and(|text| !text.trim().is_empty()),
-					"Korean catalog cannot format {key} with count {count}"
-				);
+		for language in [Language::Korean, Language::Vietnamese] {
+			let catalog = language.load();
+			let mut args = FluentArgs::new();
+			for variable in english.split('$').skip(1) {
+				let name = variable
+					.split(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
+					.next()
+					.unwrap();
+				args.set(name, "test");
 			}
-			// Count-driven UI must use the Korean catalog, not valid-but-untranslated
-			// English select expressions. Check behavior rather than pinning copy.
-			for key in [
-				"settings-image-cache-days",
-				"timeline-present-control-new-messages",
-				"timeline-unread-banner-new-since",
-				"timeline-unread-banner-new-since-more",
-				"settings-idle-after-minutes",
-			] {
-				assert_ne!(
-					Language::lookup_in_bundle(&korean.bundle, key, Some(&args)),
-					Language::English.lookup(key, Some(&args)),
-					"Korean count message remains English: {key}"
-				);
+			for count in [0, 1, 2, 100] {
+				args.set("count", count);
+				for key in english.lines().filter_map(|line| {
+					(!line.starts_with(['#', ' ', '\t']))
+						.then(|| line.split_once('=').map(|(key, _)| key.trim_end()))
+						.flatten()
+				}) {
+					assert!(
+						Language::lookup_in_bundle(&catalog.bundle, key, Some(&args))
+							.is_some_and(|text| !text.trim().is_empty()),
+						"{language:?} catalog cannot format {key} with count {count}"
+					);
+				}
+				// Count-driven UI must use the selected catalog, not valid-but-untranslated
+				// English select expressions. Check behavior rather than pinning copy.
+				for key in [
+					"settings-image-cache-days",
+					"timeline-present-control-new-messages",
+					"timeline-unread-banner-new-since",
+					"timeline-unread-banner-new-since-more",
+					"settings-idle-after-minutes",
+				] {
+					assert_ne!(
+						Language::lookup_in_bundle(&catalog.bundle, key, Some(&args)),
+						Language::English.lookup(key, Some(&args)),
+						"{language:?} count message remains English: {key}"
+					);
+				}
 			}
 		}
 	}

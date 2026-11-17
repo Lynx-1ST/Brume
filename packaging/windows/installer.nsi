@@ -15,7 +15,7 @@ SetCompressor /SOLID lzma
 
 !define PRODUCT_NAME "Serein"
 !define PRODUCT_PUBLISHER "Serein contributors"
-!define PRODUCT_WEB_SITE "https://github.com/ViceVerse-cz/Serein"
+!define PRODUCT_WEB_SITE "https://github.com/Lynx-1ST/Serein"
 !define APP_EXE "serein.exe"
 !define APP_ID "cz.viceverse.serein"
 

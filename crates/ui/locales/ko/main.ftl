@@ -95,6 +95,7 @@ your-account = 내 계정
 reconnecting = 다시 연결 중…
 hide-chat = 채팅 숨기기
 show-chat = 채팅 표시
+voice-open-chat = 채팅 열기
 search-conversation = 이 대화 검색
 show-member-list = 멤버 목록 표시
 pinned-messages = 고정된 메시지
@@ -4180,6 +4181,14 @@ voice-call-bar-join-call = 통화 참가
 voice-call-bar-reconnect-to-refresh-call = 통화를 새로고침하려면 다시 연결하세요
 # Context: call_controls
 voice-call-controls-disconnect = 연결 해제
+# Context: viewer_names
+voice-viewer-names-watching = 시청 중: { $names }
+# Context: viewer_names
+voice-viewer-names-watching-more = 시청 중: { $names } 외 { $count }명
+# Context: viewer_names
+voice-viewer-names-count = 시청자 { $count }명
+# Context: viewer_names
+voice-viewer-names-unknown-viewer = 알 수 없는 시청자
 # Context: call_controls
 voice-call-controls-dismiss-call = 통화 닫기
 # Context: call_controls

@@ -92,6 +92,7 @@ your-account = あなたのアカウント
 reconnecting = 再接続中…
 hide-chat = チャットを非表示にする
 show-chat = チャットを表示する
+voice-open-chat = チャットを開く
 search-conversation = この会話を検索
 show-member-list = メンバーリストを表示
 pinned-messages = 固定メッセージ
@@ -4146,6 +4147,14 @@ voice-call-bar-join-call = 通話に参加する
 voice-call-bar-reconnect-to-refresh-call = 再接続して通話を更新する
 # Context: call_controls
 voice-call-controls-disconnect = 切断する
+# Context: viewer_names
+voice-viewer-names-watching = 視聴中: { $names }
+# Context: viewer_names
+voice-viewer-names-watching-more = 視聴中: { $names } ほか { $count } 人
+# Context: viewer_names
+voice-viewer-names-count = 視聴者 { $count } 人
+# Context: viewer_names
+voice-viewer-names-unknown-viewer = 不明な視聴者
 # Context: call_controls
 voice-call-controls-dismiss-call = 通話を終了する
 # Context: call_controls

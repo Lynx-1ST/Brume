@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   native:
+    if: github.repository == 'ViceVerse-cz/Serein'
     strategy:
       fail-fast: false
       matrix:
@@ -108,6 +109,7 @@ jobs:
           retention-days: 14
 
   appimage:
+    if: github.repository == 'ViceVerse-cz/Serein'
     runs-on: ubuntu-latest
     container: ubuntu:24.04
     timeout-minutes: 90
@@ -157,6 +159,7 @@ jobs:
           retention-days: 14
 
   flatpak:
+    if: github.repository == 'ViceVerse-cz/Serein'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:

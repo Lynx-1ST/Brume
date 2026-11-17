@@ -1,0 +1,130 @@
+name: Windows Release
+run-name: Windows build by @${{ github.actor }}
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable version (for example 0.1.1); leave empty for a nightly build'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Choose package version
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          $manifest = Get-Content Cargo.toml -Raw
+          $base = [regex]::Match($manifest, '(?m)^version = "([^"]+)"').Groups[1].Value.Split('-')[0]
+          $version = "$env:REQUESTED_VERSION".Trim()
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          } elseif (!$version) {
+            $date = (Get-Date).ToUniversalTime().ToString('yyyyMMdd')
+            $version = "$base-nightly.$date.$env:GITHUB_RUN_NUMBER"
+          }
+          if ($version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-nightly\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))?$') {
+            throw 'Expected a stable or nightly semantic version.'
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=v$version" >> $env:GITHUB_OUTPUT
+          "VERSION=$version" >> $env:GITHUB_ENV
+          "TAG=v$version" >> $env:GITHUB_ENV
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2.9.2
+        with:
+          key: windows-release
+      - name: Install Windows packaging tools
+        run: choco install nsis --no-progress -y
+      - name: Check offline demo targets
+        run: cargo check --locked -p serein -p ui --all-targets --features serein/demo
+      - name: Validate workspace
+        run: cargo xtask check
+      - name: Apply package version
+        run: python .github/release/version.py $env:VERSION
+      - name: Build production package with voice
+        run: cargo xtask package
+      - name: Collect installer, executable and portable archive
+        run: |
+          $asset = "serein-$env:TAG-Windows-X64"
+          New-Item -ItemType Directory release-assets | Out-Null
+          if (!(Test-Path -LiteralPath 'dist/serein.exe')) { throw 'Missing production executable.' }
+          $installers = @(Get-ChildItem -Path 'dist-installer/*-setup.exe')
+          if ($installers.Count -ne 1) { throw 'Expected exactly one NSIS installer.' }
+          Copy-Item -LiteralPath $installers[0].FullName -Destination "release-assets/$asset-Setup.exe"
+          Copy-Item -LiteralPath 'dist/serein.exe' -Destination "release-assets/$asset.exe"
+          Compress-Archive -Path 'dist/*' -DestinationPath "release-assets/$asset.zip" -CompressionLevel Optimal
+          Get-ChildItem release-assets -File | Sort-Object Name | ForEach-Object {
+            $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          } | Set-Content -LiteralPath release-assets/SHA256SUMS.txt -Encoding utf8NoBOM
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: windows-release
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 14
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          name: windows-release
+          path: release-assets
+      - name: Publish Windows release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          $notes = @"
+          Windows x64 build of this fork at commit $env:GITHUB_SHA.
+
+          - Vietnamese: Settings > Language & Time > Display language > Tiếng Việt.
+          - Open Chat button beside voice channels; opening chat does not join voice.
+          - Stream viewer avatars/count and Open Stream fix, ported from upstream PR #1017.
+          - Download **-Setup.exe** to install, or extract **.zip** for the portable app.
+          - The standalone **.exe** is also provided. Packages include voice support and exclude demo fixtures.
+          - Windows binaries are unsigned. SHA-256 hashes are in SHA256SUMS.txt.
+          "@
+          $notes | Set-Content -LiteralPath release-notes.md -Encoding utf8NoBOM
+          $releaseArgs = @('release', 'create', $env:TAG, '--repo', $env:GH_REPO,
+            '--target', $env:GITHUB_SHA, '--title', "Serein $env:VERSION (Windows)",
+            '--notes-file', 'release-notes.md')
+          if ($env:VERSION.Contains('-nightly.')) { $releaseArgs += @('--prerelease', '--latest=false') }
+          $releaseArgs += @(Get-ChildItem release-assets -File | ForEach-Object { $_.FullName })
+          & gh @releaseArgs
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed.' }

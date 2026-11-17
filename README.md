@@ -1,5 +1,10 @@
 # Serein
 
+> **Windows fork:** Vietnamese UI, voice-channel **Open Chat**, and stream viewer indicators
+> from upstream [PR #1017](https://github.com/ViceVerse-cz/Serein/pull/1017).
+> Download Windows x64 builds from [this fork's Releases](https://github.com/Lynx-1ST/Serein/releases).
+> See [Vietnamese setup and Windows CI/CD](docs/windows-fork.md).
+
 <p align="center">
   <a href="https://github.com/ViceVerse-cz/Serein">
     <img src="docs/preview.png" alt="Serein Native Discord Client" width="900" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />

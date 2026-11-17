@@ -25,6 +25,8 @@ concurrency:
 
 jobs:
   prepare:
+    # Forks use windows-release.yml and do not require upstream Apple signing secrets.
+    if: github.repository == 'ViceVerse-cz/Serein'
     runs-on: ubuntu-latest
     permissions:
       contents: write

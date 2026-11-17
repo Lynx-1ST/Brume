@@ -90,7 +90,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2.9.2
         if: steps.source.outputs.eligible == 'true'
         with:
-          shared-key: native
+          # Keep optimized dependencies separate from CI's immutable debug cache.
+          # This also restores the existing release cache from earlier fork builds.
+          key: windows-release
           cache-on-failure: true
       - name: Install Windows packaging tools
         if: steps.source.outputs.eligible == 'true'

@@ -118,7 +118,8 @@ Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của ups
 - **Serein Fork CI** chạy kiểm tra một lần trên mỗi thay đổi vào `main`; không build gói release.
 - **Windows Release** tự chạy sau khi toàn bộ CI của `main` qua, dùng đúng SHA đã kiểm tra.
   CI đã cũ hơn `main` hiện tại sẽ không tạo release. Build thủ công/tag vẫn chạy kiểm tra.
-  CI và Release dùng cache Rust chung để tận dụng dependency đã biên dịch.
+  CI và Release giữ cache Rust riêng để lưu được cả dependency debug lẫn bản tối ưu;
+  Release dùng lại khóa cache của các bản Windows trước đó.
 - Để phát hành bản ổn định, chạy workflow từ `main` qua **Actions → Windows Release → Run workflow**,
   nhập phiên bản SemVer chưa dùng (ví dụ `0.1.1`), hoặc push tag `v0.1.1`.
 - Workflow kiểm tra demo, chạy `cargo xtask check`, đóng gói production có voice và không có demo,

@@ -14,6 +14,18 @@ pub(super) struct AccountMenu {
 	custom_open: bool,
 	/// Chosen while the editor is open; only Apply commits it to a deadline.
 	clear_after: ClearAfter,
+	profile_session: profiles::ProfileSession,
+}
+
+/// Only global metadata for the currently signed-in identity may enter this menu.
+fn account_profile(state: &State) -> Option<&model::UserProfile> {
+	let own = state.user.as_ref()?.id;
+	let global_own =
+		|profile: &&model::UserProfile| profile.user.id == own && profile.guild.is_none();
+	state
+		.known_profile(own)
+		.filter(global_own)
+		.or_else(|| state.own_profile.data.as_ref().filter(global_own))
 }
 
 /// Discord's own "Clear after" choices. The deadline is absolute once applied, so a status
@@ -163,9 +175,10 @@ impl MessagingUi {
 			if self.account_menu.open {
 				self.account_menu.draft = self.own_presence.custom_status.clone();
 				self.profile.hide();
-				if state.own_profile.data.is_none()
-					&& !state.own_profile.loading
-					&& let Some(command) = state.load_own_profile()
+				// Reuse the normal bounded profile read, including optional cosmetics and
+				// badge metadata. This is a read, never the profile-edit command.
+				if let Some(own) = state.user.as_ref().map(|user| user.id)
+					&& let Some(command) = state.request_profile(own, None)
 				{
 					commands.push(command);
 				}
@@ -199,7 +212,9 @@ impl MessagingUi {
 				egui::ScrollArea::vertical()
 					.min_scrolled_height(height)
 					.max_height(height)
-					.show(ui, |ui| self.account_menu_contents(ui, state, commands));
+					.show(ui, |ui| {
+						self.account_menu_contents(ui, state, commands, height)
+					});
 			});
 		self.account_menu.open = open && !std::mem::take(&mut self.account_menu.close);
 		if self.account_menu.custom_open {
@@ -227,17 +242,52 @@ impl MessagingUi {
 		ui: &mut egui::Ui,
 		state: &mut State,
 		commands: &mut Vec<Command>,
+		height: f32,
+	) {
+		// Keep account actions reachable on short windows while richer personal details
+		// scroll independently. The enclosing scroll area still handles very small screens.
+		egui::ScrollArea::vertical()
+			.id_salt("account-profile-details")
+			.max_height((height - 210.0).max(120.0))
+			.show(ui, |ui| self.account_profile_contents(ui, state, commands));
+		egui::Frame::new()
+			.inner_margin(egui::Margin::symmetric(12, 8))
+			.show(ui, |ui| {
+				ui.spacing_mut().item_spacing.y = 2.0;
+				self.account_status_row(ui);
+				self.account_custom_status_row(ui);
+				self.account_switcher(ui, state);
+			});
+	}
+
+	fn account_profile_contents(
+		&mut self,
+		ui: &mut egui::Ui,
+		state: &mut State,
+		commands: &mut Vec<Command>,
 	) {
 		let colors = design::palette(ui);
+		let theme = profiles::Theme::new(
+			&colors,
+			account_profile(state)
+				.and_then(|profile| profiles::shown_theme_colors(ui.ctx(), profile)),
+		);
+		ui.visuals_mut().override_text_color = Some(theme.text);
+		ui.visuals_mut().hyperlink_color = theme.link;
+		let top = ui.cursor().top();
+		let left = ui.cursor().left();
+		let width = ui.available_width();
+		let frame_back = ui.painter().add(egui::Shape::Noop);
+		let background = ui.painter().add(egui::Shape::Noop);
 		let (banner, _) =
-			ui.allocate_exact_size(vec2(ui.available_width(), 64.0), egui::Sense::hover());
+			ui.allocate_exact_size(vec2(ui.available_width(), 100.0), egui::Sense::hover());
 		let corner = egui::CornerRadius {
 			nw: 10,
 			ne: 10,
 			sw: 0,
 			se: 0,
 		};
-		if let Some(profile) = &state.own_profile.data {
+		if let Some(profile) = account_profile(state) {
 			self.avatars
 				.paint_banner(ui, profile, banner, corner, state.demo);
 		} else {
@@ -247,28 +297,35 @@ impl MessagingUi {
 				design::mix(colors.accent, colors.base, 0.55),
 			);
 		}
-		if let Some(user) = &state.user {
+		if let Some(user) = account_profile(state)
+			.map(|profile| &profile.user)
+			.or(state.user.as_ref())
+		{
 			let avatar = egui::Rect::from_min_size(
 				banner.left_bottom() + vec2(14.0, -38.0),
 				vec2(72.0, 72.0),
 			);
 			// Thick popover-coloured ring, as Discord punches the avatar out of the banner.
 			ui.painter()
-				.circle_filled(avatar.center(), 42.0, colors.raised);
+				.circle_filled(avatar.center(), 42.0, theme.card);
 			ui.scope_builder(egui::UiBuilder::new().max_rect(avatar), |ui| {
 				self.avatars.with_avatar_animation(true, |avatars| {
-					avatars.show(ui, user, 72.0, state.demo)
+					if let Some(profile) = account_profile(state) {
+						avatars.show_profile_avatar(ui, profile, 72.0, state.demo)
+					} else {
+						avatars.show(ui, user, 72.0, state.demo)
+					}
 				});
 			});
 			// Same 6 px ring as the avatar, so the dot is cut out of the banner alike.
 			let dot = avatar.right_bottom() - egui::Vec2::splat(12.0);
-			ui.painter().circle_filled(dot, 17.5, colors.raised);
+			ui.painter().circle_filled(dot, 17.5, theme.card);
 			presence_dot(
 				ui.painter(),
 				dot,
 				11.5,
 				self.shown_presence_status(),
-				colors.raised,
+				theme.card,
 			);
 			ui.add_space((avatar.bottom() + 12.0 - ui.cursor().top()).max(0.0));
 		} else {
@@ -283,7 +340,7 @@ impl MessagingUi {
 			})
 			.show(ui, |ui| {
 				ui.set_width(ui.available_width());
-				self.account_identity_card(ui, state, commands);
+				self.account_identity_card(ui, state, commands, &theme);
 				if let Some(user) = &state.user {
 					let guild = state
 						.selected
@@ -298,16 +355,28 @@ impl MessagingUi {
 							activities,
 							&mut self.avatars,
 							state.demo,
-							(colors.base, colors.muted),
+							(theme.panel, theme.muted),
 						);
 					}
 				}
-				ui.add_space(8.0);
-				ui.spacing_mut().item_spacing.y = 2.0;
-				self.account_status_row(ui);
-				self.account_custom_status_row(ui);
-				self.account_switcher(ui, state);
 			});
+		let rect = egui::Rect::from_min_max(
+			egui::pos2(left, top),
+			egui::pos2(left + width, ui.cursor().top()),
+		);
+		ui.painter().set(background, theme.background(rect));
+		if let Some(profile) = account_profile(state) {
+			let clip = ui.clip_rect().intersect(rect);
+			profiles::paint_collectibles(
+				ui,
+				&mut self.avatars,
+				profile,
+				rect,
+				frame_back,
+				(false, Some(clip)),
+				state.demo,
+			);
+		}
 	}
 
 	/// Other accounts remembered on this device, plus a row to remember one more.
@@ -493,29 +562,40 @@ impl MessagingUi {
 		ui: &mut egui::Ui,
 		state: &mut State,
 		commands: &mut Vec<Command>,
+		theme: &profiles::Theme,
 	) {
 		let colors = design::palette(ui);
 		egui::Frame::new()
-			.fill(colors.base)
+			.fill(theme.panel)
 			.corner_radius(8)
 			.inner_margin(12)
 			.show(ui, |ui| {
 				ui.set_width(ui.available_width());
 				ui.spacing_mut().item_spacing.y = 2.0;
-				let profile = state.own_profile.data.as_ref();
+				let profile = account_profile(state);
 				let name = profile
 					.and_then(|p| p.global_name.as_deref())
 					.or_else(|| state.user.as_ref().map(|u| u.name.as_str()))
 					.map(str::to_owned)
 					.unwrap_or_else(|| crate::i18n::translate("your-account"));
-				ui.add(
-					egui::Label::new(design::semibold(ui, &name, 20.0).color(colors.text_strong))
-						.wrap(),
+				crate::name_styles::label(
+					ui,
+					profile
+						.map(|profile| &profile.user)
+						.or(state.user.as_ref())
+						.and_then(crate::name_styles::style),
+					&name,
+					egui::FontId::new(20.0, design::semibold_family(ui.ctx())),
+					None,
+					theme.card,
+					theme.text,
+					egui::Sense::hover(),
+					true,
 				);
 				if let Some(profile) = profile {
 					ui.add(
 						egui::Label::new(
-							design::medium(ui, &profile.username, 14.0).color(colors.muted),
+							design::medium(ui, &profile.username, 14.0).color(theme.muted),
 						)
 						.wrap(),
 					);
@@ -524,12 +604,75 @@ impl MessagingUi {
 							egui::Label::new(
 								RichText::new(&profile.pronouns)
 									.size(12.0)
-									.color(colors.muted),
+									.color(theme.muted),
 							)
 							.wrap(),
 						);
 					}
-				} else if state.own_profile.loading {
+					if let Some(tag) = profile
+						.clan
+						.as_ref()
+						.or(profile.user.primary_guild.as_deref())
+						.filter(|_| !self.avatars.cosmetics.hide_clan_tags)
+					{
+						profiles::server_tag(ui, tag, &mut self.avatars, state.demo);
+					}
+					let catalog = profile.badge_catalog.as_deref();
+					let badges = model::badges::displayed_badges(&profile.badges, catalog);
+					if !badges.is_empty() {
+						ui.add_space(4.0);
+						ui.horizontal_wrapped(|ui| {
+							for badge in &badges {
+								if badge.icon_key().is_some() {
+									// The compact menu offers hover details; badge editing remains
+									// in the full profile's existing management surface.
+									crate::badges::badge_icon(
+										ui,
+										&mut self.avatars,
+										badge,
+										None,
+										22.0,
+										state.demo,
+									);
+								} else {
+									ui.label(
+										RichText::new(&badge.description)
+											.size(11.0)
+											.color(theme.muted),
+									);
+								}
+							}
+						});
+					}
+					if !profile.bio.trim().is_empty() {
+						ui.add_space(10.0);
+						ui.label(design::eyebrow(
+							ui,
+							crate::i18n::translate("profiles-show-about-me"),
+							theme.muted,
+						));
+						ui.scope(|ui| {
+							ui.visuals_mut().override_text_color = Some(theme.text);
+							ui.visuals_mut().hyperlink_color = theme.link;
+							if let Some(user) = profiles::biography(
+								ui,
+								profile.user.id,
+								&profile.bio,
+								state,
+								&mut self.avatars,
+								&mut self.timeline.opening,
+								&mut self.profile_formatted,
+								&mut self.account_menu.profile_session,
+							) {
+								self.profile.command_open(user);
+								self.account_menu.close = true;
+							}
+						});
+					}
+				} else if state.own_profile.loading
+					|| state.profile.as_ref().is_some_and(|view| {
+						view.loading && state.user.as_ref().is_some_and(|own| own.id == view.user)
+					}) {
 					// The username line every loaded profile adds under the name. Only a first
 					// load is sketched: a reload keeps the shown profile silently (owner decision).
 					let font = egui::FontId::new(14.0, design::medium_family(ui.ctx()));
@@ -560,12 +703,21 @@ impl MessagingUi {
 						egui::Label::new(
 							RichText::new(&self.own_presence.custom_status)
 								.size(14.0)
-								.color(colors.text),
+								.color(theme.text),
 						)
 						.wrap(),
 					);
 				}
-				if let Some(error) = state.own_profile.error {
+				if let Some(error) = state.own_profile.error.or_else(|| {
+					state
+						.profile
+						.as_ref()
+						.filter(|view| {
+							state.user.as_ref().is_some_and(|own| own.id == view.user)
+								&& view.guild.is_none() && account_profile(state).is_none()
+						})
+						.and_then(|view| view.error)
+				}) {
 					ui.add_space(6.0);
 					ui.add(
 						egui::Label::new(RichText::new(error).size(12.0).color(colors.danger))
@@ -575,7 +727,8 @@ impl MessagingUi {
 						.button(crate::i18n::translate(
 							"account-menu-account-identity-card-reload-profile",
 						))
-						.clicked() && let Some(command) = state.load_own_profile()
+						.clicked() && let Some(own) = state.user.as_ref().map(|user| user.id)
+						&& let Some(command) = state.request_profile(own, None)
 					{
 						commands.push(command);
 					}
@@ -1013,6 +1166,41 @@ fn presence_dot(
 mod tests {
 	use super::*;
 	use egui::{Event, Pos2, Rect};
+
+	#[test]
+	fn account_details_follow_the_signed_in_identity_and_ignore_foreign_views() {
+		let mut state = test_support::demo_state();
+		let own = state.user.as_ref().unwrap().clone();
+		let mut another = own.clone();
+		another.id = model::Id(424_242);
+		state.own_profile.data = Some(profiles::synthetic(&own, None));
+		state.profile = Some(client_core::profile::ProfileView {
+			user: another.id,
+			guild: None,
+			request: 1,
+			loading: false,
+			error: None,
+			data: Some(profiles::synthetic(&another, None)),
+		});
+		assert_eq!(account_profile(&state).unwrap().user.id, own.id);
+		// Even an inconsistent stale view cannot mask the valid global account metadata.
+		state.profile.as_mut().unwrap().user = own.id;
+		assert_eq!(account_profile(&state).unwrap().user.id, own.id);
+		state.profile.as_mut().unwrap().data = Some(profiles::synthetic(&own, Some(model::Id(10))));
+		assert!(account_profile(&state).unwrap().guild.is_none());
+		state.profile.as_mut().unwrap().user = another.id;
+		state.profile.as_mut().unwrap().data = Some(profiles::synthetic(&another, None));
+		// Switching identities must replace the whole summary, including banner and bio.
+		state.user = Some(another.clone());
+		assert_eq!(account_profile(&state).unwrap().user.id, another.id);
+		state.profile = None;
+		assert!(
+			account_profile(&state).is_none(),
+			"the previous account's edit data is hidden"
+		);
+		state.user = None;
+		assert!(account_profile(&state).is_none());
+	}
 
 	fn frame(
 		ctx: &egui::Context,

@@ -175,6 +175,7 @@ pub fn known_users(state: &State, channel: Id) -> Vec<User> {
 	};
 	if let Some(request) = &state.member_search[0].request
 		&& request.channel == channel
+		&& state.channel(channel).and_then(|channel| channel.guild) == Some(request.guild)
 		&& state.can_view(channel)
 	{
 		for member in &state.member_search[0].rows {
@@ -190,17 +191,8 @@ pub fn known_users(state: &State, channel: Id) -> Vec<User> {
 		}
 	}
 
-	if let Some(members) = state.members.as_ref().filter(|m| m.channel == channel) {
-		for member in members
-			.slots
-			.iter()
-			.flatten()
-			.filter_map(|slot| match slot {
-				model::MemberSlot::Person(m) => Some(m),
-				_ => None,
-			}) {
-			add(&member.user);
-		}
+	for member in state.known_members(channel) {
+		add(&member.user);
 	}
 	for message in state.timeline.iter().rev() {
 		if message.channel == channel {
@@ -250,20 +242,7 @@ pub struct MentionSource<'a> {
 }
 
 fn member(state: &State, channel: Id, id: Id) -> Option<&model::Member> {
-	state
-		.members
-		.as_ref()
-		.filter(|list| list.channel == channel)
-		.and_then(|list| {
-			list.slots
-				.iter()
-				.flatten()
-				.filter_map(|slot| match slot {
-					model::MemberSlot::Person(m) => Some(m),
-					_ => None,
-				})
-				.find(|member| member.user.id == id)
-		})
+	state.known_member(channel, id)
 }
 
 pub fn find_user<'a>(
@@ -288,16 +267,6 @@ pub fn find_user<'a>(
 		return Some(user);
 	}
 	if let Some(member) = member(state, source.channel, id) {
-		return Some(&member.user);
-	}
-	if let Some(request) = &state.member_search[0].request
-		&& request.channel == source.channel
-		&& state.can_view(source.channel)
-		&& let Some(member) = state.member_search[0]
-			.rows
-			.iter()
-			.find(|member| member.user.id == id)
-	{
 		return Some(&member.user);
 	}
 	state.timeline.iter().find_map(|message| {
@@ -1465,6 +1434,130 @@ mod tests {
 		let before = presentation_fingerprint(&state, &message);
 		state.invalidate_navigation();
 		assert_eq!(presentation_fingerprint(&state, &message), before);
+	}
+
+	#[test]
+	fn offscreen_member_nicknames_follow_the_channel_guild_and_clear_to_display_name() {
+		let mut state = test_support::demo_state();
+		state.demo = false;
+		state.auth = client_core::auth::AuthState::Authenticated;
+		state.gateway_connected = true;
+		let channel = state.selected.unwrap();
+		let guild = state.channel(channel).unwrap().guild.unwrap();
+		let target = user(987654321, "Global display");
+		let row = model::Member {
+			user: target.clone(),
+			nick: Some("OutsideNickname".into()),
+			roles: vec![],
+			status: None,
+			custom_status: None,
+			activities: vec![],
+			clients: Default::default(),
+		};
+		let mut list = model::MemberList {
+			guild: Some(guild),
+			channel,
+			request: 1,
+			start: 0,
+			total: 400,
+			lazy: true,
+			freshness: model::Freshness::Fresh,
+			groups: vec![],
+			ranges: vec![[0, 99]],
+			slots: vec![Some(model::MemberSlot::Person(row.clone()))],
+		};
+		state.members = Some(list.clone());
+		state.apply(client_core::Envelope {
+			generation: state.generation,
+			event: client_core::Event::Members(list.clone()),
+		});
+		// Scrolling replaces the visible slice but retains the bounded first chunk.
+		list.start = 300;
+		list.ranges = vec![[300, 399]];
+		list.slots = vec![None];
+		state.members.as_mut().unwrap().ranges = list.ranges.clone();
+		state.apply(client_core::Envelope {
+			generation: state.generation,
+			event: client_core::Event::Members(list),
+		});
+		assert!(
+			state
+				.members
+				.as_ref()
+				.unwrap()
+				.slots
+				.iter()
+				.all(Option::is_none)
+		);
+		let label = |state: &State, channel| {
+			mention_label(
+				target.id,
+				std::slice::from_ref(&target),
+				Some(&MentionSource { state, channel }),
+			)
+		};
+		assert_eq!(label(&state, channel), "@OutsideNickname");
+		let users = known_users(&state, channel);
+		let mut menu = Menu::default();
+		menu.refresh(&state, channel, "@Outside", Some(8), &users);
+		assert!(
+			matches!(&menu.candidates[0], Candidate::User { user, name } if user.id == target.id && name == "OutsideNickname")
+		);
+		let mut draft = "@Outside".to_owned();
+		insert(&mut draft, menu.pick(0).unwrap(), true, 4096).unwrap();
+		assert_eq!(draft, user_mention_token(target.id));
+		// A fresh search outside the window can clear an older cached nickname.
+		for slot in [0, 1] {
+			state.member_search[slot].request = Some(client_core::member_search::Request {
+				guild,
+				channel,
+				query: if slot == 0 {
+					"Global".into()
+				} else {
+					String::new()
+				},
+				users: if slot == 0 { vec![] } else { vec![target.id] },
+				nonce: 1,
+				slot,
+			});
+			let mut updated = row.clone();
+			updated.nick = Some(String::new());
+			state.member_search[slot].rows = vec![updated];
+			assert_eq!(label(&state, channel), "@Global display");
+			state.member_search[slot].rows[0].nick = Some("RemoteNickname".into());
+			assert_eq!(label(&state, channel), "@RemoteNickname");
+			menu.refresh(
+				&state,
+				channel,
+				"@Remote",
+				Some(7),
+				&known_users(&state, channel),
+			);
+			assert!(
+				matches!(&menu.candidates[0], Candidate::User { user, name } if user.id == target.id && name == "RemoteNickname")
+			);
+			state.member_search[slot] = Default::default();
+		}
+		let mut other = state.channel(channel).unwrap().clone();
+		other.id = Id(987654322);
+		state.channels.push(other.clone());
+		assert_eq!(label(&state, other.id), "@OutsideNickname");
+		other.id = Id(987654325);
+		other.guild = Some(Id(guild.0 + 1));
+		state.channels.push(other.clone());
+		assert_eq!(label(&state, other.id), "@Global display");
+		other.id = Id(987654323);
+		other.guild = None;
+		state.channels.push(other.clone());
+		assert_eq!(label(&state, other.id), "@Global display");
+		// A new request must never reuse chunks from the retired request.
+		state.members.as_mut().unwrap().request += 1;
+		assert_eq!(label(&state, channel), "@Global display");
+		let username_only = user(987654324, "username_only");
+		assert_eq!(
+			mention_label(username_only.id, &[username_only], None),
+			"@username_only"
+		);
 	}
 
 	#[test]

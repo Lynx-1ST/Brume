@@ -1650,6 +1650,13 @@ fn date(millis: Option<i128>) -> String {
 			|| crate::i18n::translate("server-admin-date-unknown"),
 			|date| {
 				let date = crate::local_time::local(date);
+				if crate::i18n::current().resolved() == crate::i18n::Language::Vietnamese {
+					return format!(
+						"{}\n{}",
+						crate::local_time::date(date.date()),
+						crate::local_time::clock(date)
+					);
+				}
 				format!(
 					"{} {}, {}\n{}:{:02} {}",
 					&date.month().to_string()[..3],

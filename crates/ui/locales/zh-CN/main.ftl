@@ -92,7 +92,6 @@ your-account = 你的账号
 reconnecting = 重新连接中…
 hide-chat = 隐藏聊天
 show-chat = 显示聊天
-voice-open-chat = 打开聊天
 search-conversation = 搜索这个对话
 show-member-list = 显示成员清单
 pinned-messages = 置顶的消息

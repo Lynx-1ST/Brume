@@ -97,6 +97,21 @@ threshold, or −70 dBFS when open; remote indicators remain display-only at −
 Older saved settings migrate to Custom with the prior suppression choice and AEC on,
 without AGC or a sensitivity gate.
 
+Custom also supports automatic sensitivity and advanced voice activity, both off for
+older preferences and existing presets. Automatic sensitivity uses a two-second minimum
+level window plus 12 dB headroom, bounded to −65..−20 dBFS; the saved manual threshold
+returns when automatic sensitivity is disabled. Continuous sound without pauses can
+be learned as background without a speech detector (suppression Off/WebRTC and
+advanced activity disabled). With RNNoise suppression, its existing speech probability
+protects speech from noise-floor learning even if advanced activity is disabled. Advanced activity uses the
+bundled RNNoise speech probability with hysteresis and the same release/ramp. It reuses
+RNNoise suppression, or adds one fixed detector state when another suppression mode is
+selected; detector-only processing leaves audio unchanged. Speech is excluded from
+noise-floor learning when advanced activity is enabled. This is local processing, not
+Discord's proprietary detector; real microphone quality and CPU cost are unmeasured.
+Push-to-talk still requires its key and follows the selected sensitivity/speech gate,
+as it previously followed manual sensitivity. Studio bypasses these gates.
+
 `Audio::set_processing` replaces one fixed-size watch value, without reopening devices.
 Processing and state reset run on the audio worker, never render/audio callbacks.
 

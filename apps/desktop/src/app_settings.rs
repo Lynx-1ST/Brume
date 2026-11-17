@@ -74,6 +74,8 @@ impl Settings {
 				!= model::voice_settings::NoiseSuppression::Off,
 			voice_processing: Some(ui.voice_processing),
 			voice_push_to_talk: ui.voice_push_to_talk,
+			voice_disable_no_input_warning: ui.voice_disable_no_input_warning,
+			voice_skip_switch_confirmation: ui.voice_skip_switch_confirmation,
 			voice_muted: ui.voice_muted,
 			voice_deafened: ui.voice_deafened,
 			voice_input: ui.voice_input.clone(),
@@ -132,6 +134,8 @@ impl Settings {
 			model::voice_settings::VoiceProcessing::from_legacy(value.voice_noise_suppression)
 		});
 		ui.voice_push_to_talk = value.voice_push_to_talk;
+		ui.voice_disable_no_input_warning = value.voice_disable_no_input_warning;
+		ui.voice_skip_switch_confirmation = value.voice_skip_switch_confirmation;
 		ui.voice_muted = value.voice_muted;
 		ui.voice_deafened = value.voice_deafened;
 		ui.voice_input.clone_from(&value.voice_input);
@@ -592,6 +596,23 @@ mod tests {
 			ui.voice_processing.effective().suppression,
 			model::voice_settings::NoiseSuppression::Off
 		);
+		assert!(!ui.voice_disable_no_input_warning && !ui.voice_skip_switch_confirmation);
+		ui.voice_disable_no_input_warning = true;
+		ui.voice_skip_switch_confirmation = true;
+		let mut saved = Settings {
+			loaded: true,
+			..Default::default()
+		};
+		saved.observe(&ui);
+		let restored: AppPreferences =
+			serde_json::from_str(&serde_json::to_string(&saved.current).unwrap()).unwrap();
+		let mut fresh = ui::MessagingUi::default();
+		Settings {
+			current: restored,
+			..Default::default()
+		}
+		.apply(&mut fresh);
+		assert!(fresh.voice_disable_no_input_warning && fresh.voice_skip_switch_confirmation);
 	}
 
 	#[test]

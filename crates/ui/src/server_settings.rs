@@ -1185,10 +1185,9 @@ impl Editor {
 					let seconds = ((draft.guild.0 >> 22) + 1_420_070_400_000) / 1000;
 					if let Ok(date) = time::OffsetDateTime::from_unix_timestamp(seconds as i64) {
 						ui.weak(format!(
-							"{} {} {}",
+							"{} {}",
 							crate::i18n::translate("server-settings-preview-established"),
-							date.month(),
-							date.year()
+							crate::local_time::month_year(date.date(), false)
 						));
 					}
 					ui.horizontal_wrapped(|ui| {

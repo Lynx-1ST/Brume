@@ -92,7 +92,6 @@ your-account = Hesabınız
 reconnecting = Yeniden bağlanılıyor…
 hide-chat = Sohbeti gizle
 show-chat = Sohbeti göster
-voice-open-chat = Sohbeti aç
 search-conversation = Bu görüşmeyi arayın
 show-member-list = Üye listesini göster
 pinned-messages = Sabitlenmiş mesajlar

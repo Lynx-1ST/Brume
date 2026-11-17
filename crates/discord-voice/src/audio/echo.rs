@@ -11,6 +11,9 @@ pub struct Echo {
 	processor: AudioProcessing,
 	gain: Option<AudioProcessing>,
 	noise: Option<Box<DenoiseState<'static>>>,
+	/// Detector-only state when RNNoise is not the selected denoiser.
+	detector: Option<Box<DenoiseState<'static>>>,
+	speech_probability: f32,
 	settings: Processing,
 }
 
@@ -35,6 +38,8 @@ impl Echo {
 			}),
 			gain: None,
 			noise: None,
+			detector: None,
+			speech_probability: 0.0,
 			settings: VoiceProcessing::from_legacy(false).effective(),
 		}
 	}
@@ -50,6 +55,13 @@ impl Echo {
 			self.noise = Some(noise_state());
 		} else if settings.suppression != NoiseSuppression::RnNoise {
 			self.noise = None;
+		}
+		let detector =
+			settings.advanced_voice_activity && settings.suppression != NoiseSuppression::RnNoise;
+		if detector && self.detector.is_none() {
+			self.detector = Some(noise_state());
+		} else if !detector {
+			self.detector = None;
 		}
 		if settings.echo_cancellation != self.settings.echo_cancellation
 			|| (settings.suppression == NoiseSuppression::WebRtc)
@@ -101,6 +113,14 @@ impl Echo {
 		if self.noise.is_some() {
 			self.noise = Some(noise_state());
 		}
+		if self.detector.is_some() {
+			self.detector = Some(noise_state());
+		}
+		self.speech_probability = 0.0;
+	}
+
+	pub fn speech_probability(&self) -> f32 {
+		self.speech_probability
 	}
 
 	pub fn render(&mut self, frame: &[f32; 960]) -> Result<(), &'static str> {
@@ -129,6 +149,7 @@ impl Echo {
 			};
 		}
 		let mut noise_time = Duration::ZERO;
+		self.speech_probability = 0.0;
 		for chunk in frame.as_chunks_mut::<480>().0 {
 			let mut output = *chunk;
 			if self.settings.echo_cancellation
@@ -144,13 +165,19 @@ impl Echo {
 			if let Some(noise) = &mut self.noise {
 				let start = time_noise.then(Instant::now);
 				let input = output.map(|s| (s * 32768.0).clamp(-32768.0, 32767.0));
-				noise.process_frame(&mut output, &input);
+				let probability = noise.process_frame(&mut output, &input);
+				self.speech_probability = self.speech_probability.max(probability);
 				for sample in &mut output {
 					*sample = (*sample / 32768.0).clamp(-1.0, 1.0);
 				}
 				if let Some(start) = start {
 					noise_time += start.elapsed();
 				}
+			}
+			if let Some(detector) = &mut self.detector {
+				let input = output.map(|s| (s * 32768.0).clamp(-32768.0, 32767.0));
+				let probability = detector.process_frame(&mut [0.0; 480], &input);
+				self.speech_probability = self.speech_probability.max(probability);
 			}
 			chunk.copy_from_slice(&output);
 		}
@@ -170,5 +197,33 @@ impl Echo {
 			};
 		}
 		Ok(noise_time)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn detector_only_preserves_audio_and_discards_history_on_reset() {
+		let mut echo = Echo::new();
+		echo.configure(Processing {
+			advanced_voice_activity: true,
+			..Processing::studio()
+		})
+		.unwrap();
+		let original = std::array::from_fn(|i| (i as f32 * 0.04).sin() * 0.2);
+		let mut frame = original;
+		echo.capture(&mut frame, false).unwrap();
+		assert_eq!(frame, original);
+		let probability = echo.speech_probability();
+		assert!(probability.is_finite() && (0.0..=1.0).contains(&probability));
+		echo.reset();
+		echo.capture(&mut frame, false).unwrap();
+		assert_eq!(echo.speech_probability(), probability);
+		echo.configure(Processing::studio()).unwrap();
+		echo.capture(&mut frame, false).unwrap();
+		assert_eq!(frame, original);
+		assert_eq!(echo.speech_probability(), 0.0);
 	}
 }

@@ -1,6 +1,6 @@
 # Serein
 
-> **Windows fork:** Vietnamese UI, voice-channel **Open Chat**, and stream viewer indicators
+> **Windows fork:** Vietnamese UI and stream viewer indicators
 > from upstream [PR #1017](https://github.com/ViceVerse-cz/Serein/pull/1017).
 > Download Windows x64 builds from [this fork's Releases](https://github.com/Lynx-1ST/Serein/releases).
 > See [Vietnamese setup and Windows CI/CD](docs/windows-fork.md).

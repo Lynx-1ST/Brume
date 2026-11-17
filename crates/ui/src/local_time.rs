@@ -460,7 +460,7 @@ mod tests {
 		let date = plain(super::date(at.date()));
 		assert!(date.contains("2027"));
 		assert!(!date.contains("December") && !date.contains("January"));
-		for style in [b'D', b'f', b'F'] {
+		for style in *b"DfF" {
 			let value = plain(super::format_discord_timestamp(
 				at,
 				style,

@@ -28,6 +28,16 @@ fn account_profile(state: &State) -> Option<&model::UserProfile> {
 		.or_else(|| state.own_profile.data.as_ref().filter(global_own))
 }
 
+/// The menu loads the ordinary global profile; editor failures belong to the editor.
+fn account_profile_progress(state: &State) -> (bool, Option<&'static str>) {
+	let view = state.profile.as_ref().filter(|view| {
+		view.guild.is_none() && state.user.as_ref().is_some_and(|own| own.id == view.user)
+	});
+	view.map_or((false, None), |view| {
+		(view.loading, view.error.filter(|_| !view.loading))
+	})
+}
+
 /// Discord's own "Clear after" choices. The deadline is absolute once applied, so a status
 /// set for an hour still clears an hour later even if the editor is reopened meanwhile.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -669,10 +679,7 @@ impl MessagingUi {
 							}
 						});
 					}
-				} else if state.own_profile.loading
-					|| state.profile.as_ref().is_some_and(|view| {
-						view.loading && state.user.as_ref().is_some_and(|own| own.id == view.user)
-					}) {
+				} else if account_profile_progress(state).0 {
 					// The username line every loaded profile adds under the name. Only a first
 					// load is sketched: a reload keeps the shown profile silently (owner decision).
 					let font = egui::FontId::new(14.0, design::medium_family(ui.ctx()));
@@ -708,16 +715,7 @@ impl MessagingUi {
 						.wrap(),
 					);
 				}
-				if let Some(error) = state.own_profile.error.or_else(|| {
-					state
-						.profile
-						.as_ref()
-						.filter(|view| {
-							state.user.as_ref().is_some_and(|own| own.id == view.user)
-								&& view.guild.is_none() && account_profile(state).is_none()
-						})
-						.and_then(|view| view.error)
-				}) {
+				if let Some(error) = account_profile_progress(state).1 {
 					ui.add_space(6.0);
 					ui.add(
 						egui::Label::new(RichText::new(error).size(12.0).color(colors.danger))
@@ -1183,9 +1181,23 @@ mod tests {
 			data: Some(profiles::synthetic(&another, None)),
 		});
 		assert_eq!(account_profile(&state).unwrap().user.id, own.id);
+		state.own_profile.error = Some("old editor failure");
+		state.profile.as_mut().unwrap().error = Some("another account failure");
+		assert_eq!(account_profile_progress(&state), (false, None));
 		// Even an inconsistent stale view cannot mask the valid global account metadata.
 		state.profile.as_mut().unwrap().user = own.id;
+		state.profile.as_mut().unwrap().loading = true;
+		assert_eq!(account_profile_progress(&state), (true, None));
+		state.profile.as_mut().unwrap().loading = false;
+		state.profile.as_mut().unwrap().error = Some("current global read failure");
+		assert_eq!(
+			account_profile_progress(&state),
+			(false, Some("current global read failure"))
+		);
 		assert_eq!(account_profile(&state).unwrap().user.id, own.id);
+		state.profile.as_mut().unwrap().guild = Some(model::Id(10));
+		assert_eq!(account_profile_progress(&state), (false, None));
+		state.profile.as_mut().unwrap().guild = None;
 		state.profile.as_mut().unwrap().data = Some(profiles::synthetic(&own, Some(model::Id(10))));
 		assert!(account_profile(&state).unwrap().guild.is_none());
 		state.profile.as_mut().unwrap().user = another.id;

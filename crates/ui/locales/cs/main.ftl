@@ -95,6 +95,7 @@ your-account = Váš účet
 reconnecting = Obnovování připojení…
 hide-chat = Skrýt chat
 show-chat = Zobrazit chat
+voice-open-chat = Otevřít chat
 search-conversation = Hledat v této konverzaci
 show-member-list = Zobrazit seznam členů
 pinned-messages = Připnuté zprávy

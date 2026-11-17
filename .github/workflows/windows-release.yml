@@ -37,7 +37,7 @@ jobs:
         run: |
           $manifest = Get-Content Cargo.toml -Raw
           $base = [regex]::Match($manifest, '(?m)^version = "([^"]+)"').Groups[1].Value.Split('-')[0]
-          $version = $env:REQUESTED_VERSION.Trim()
+          $version = "$env:REQUESTED_VERSION".Trim()
           if ($env:GITHUB_REF_TYPE -eq 'tag') {
             $version = $env:GITHUB_REF_NAME.TrimStart('v')
           } elseif (!$version) {

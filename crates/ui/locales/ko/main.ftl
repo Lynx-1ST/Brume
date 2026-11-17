@@ -95,6 +95,7 @@ your-account = 내 계정
 reconnecting = 다시 연결 중…
 hide-chat = 채팅 숨기기
 show-chat = 채팅 표시
+voice-open-chat = 채팅 열기
 search-conversation = 이 대화 검색
 show-member-list = 멤버 목록 표시
 pinned-messages = 고정된 메시지

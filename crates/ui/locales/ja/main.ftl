@@ -92,6 +92,7 @@ your-account = あなたのアカウント
 reconnecting = 再接続中…
 hide-chat = チャットを非表示にする
 show-chat = チャットを表示する
+voice-open-chat = チャットを開く
 search-conversation = この会話を検索
 show-member-list = メンバーリストを表示
 pinned-messages = 固定メッセージ

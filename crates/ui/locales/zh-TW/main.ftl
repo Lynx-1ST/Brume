@@ -92,6 +92,7 @@ your-account = 你的帳號
 reconnecting = 重新連線中…
 hide-chat = 隱藏聊天
 show-chat = 顯示聊天
+voice-open-chat = 開啟聊天
 search-conversation = 搜尋這個對話
 show-member-list = 顯示成員清單
 pinned-messages = 釘選的訊息

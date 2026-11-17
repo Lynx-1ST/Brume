@@ -92,6 +92,7 @@ your-account = Ваш аккаунт
 reconnecting = Повторное подключение…
 hide-chat = Скрыть чат
 show-chat = Показать чат
+voice-open-chat = Открыть чат
 search-conversation = Искать этот разговор
 show-member-list = Показать список участников
 pinned-messages = Закрепленные сообщения

@@ -92,6 +92,7 @@ your-account = Votre compte
 reconnecting = Reconnexion…
 hide-chat = Masquer la discussion
 show-chat = Afficher le chat
+voice-open-chat = Ouvrir le chat
 search-conversation = Rechercher cette conversation
 show-member-list = Afficher la liste des membres
 pinned-messages = Messages épinglés

@@ -65,7 +65,7 @@ impl State {
 		let searches = self
 			.member_search
 			.iter()
-			.filter(|view| {
+			.filter(move |view| {
 				view.request.as_ref().is_some_and(|request| {
 					Some(request.guild) == guild
 						&& self

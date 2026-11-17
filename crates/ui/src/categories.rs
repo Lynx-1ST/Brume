@@ -2889,6 +2889,8 @@ mod tests {
 			}
 		}
 		let mut state = test_support::voice_demo_state();
+		state.demo = false;
+		state.gateway_connected = true;
 		state.selected = Some(Id(26));
 		let call = state.voice.active.as_ref().map(|call| call.channel);
 		let mut view = MessagingUi {
@@ -2926,6 +2928,7 @@ mod tests {
 		};
 		let row = frame(&mut view, &mut state, vec![]);
 		let pos = row.right_center() - egui::vec2(15.0, 0.0);
+		state.selected = Some(Id(20));
 		frame(&mut view, &mut state, vec![egui::Event::PointerMoved(pos)]);
 		// Even a double click on the chat action must never become a voice join.
 		for _ in 0..2 {

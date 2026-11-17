@@ -6,7 +6,7 @@ Tải bản Windows x64 từ [GitHub Releases của fork](https://github.com/Lyn
 Dùng `-Setup.exe` để cài đặt, hoặc giải nén `.zip` để chạy bản portable.
 Bản `.exe` độc lập cũng được đính kèm; gói ZIP có thêm giấy phép và công cụ đăng ký thông báo.
 
-Vào **Settings → General → Display language → Tiếng Việt**. Lựa chọn được lưu trên thiết bị;
+Vào **Settings → Language & Time → Display language → Tiếng Việt**. Lựa chọn được lưu trên thiết bị;
 chế độ **Hệ thống** cũng nhận diện `vi-VN`. Nội dung tin nhắn và ngôn ngữ giao thức Discord
 không thay đổi. Bản dịch ban đầu có hỗ trợ dịch máy và đã rà các nhãn điều hướng chính;
 các chuỗi ít dùng vẫn cần người dùng kiểm tra trong ngữ cảnh thực tế.

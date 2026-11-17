@@ -27,6 +27,7 @@ permissions:
 
 jobs:
   build:
+    if: github.repository == 'ViceVerse-cz/Serein'
     strategy:
       fail-fast: false
       matrix:

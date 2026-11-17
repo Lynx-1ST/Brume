@@ -113,7 +113,7 @@ jobs:
           $notes = @"
           Windows x64 build of this fork at commit $env:GITHUB_SHA.
 
-          - Vietnamese: Settings > General > Display language > Tiếng Việt.
+          - Vietnamese: Settings > Language & Time > Display language > Tiếng Việt.
           - Open Chat button beside voice channels; opening chat does not join voice.
           - Stream viewer avatars/count and Open Stream fix, ported from upstream PR #1017.
           - Download **-Setup.exe** to install, or extract **.zip** for the portable app.

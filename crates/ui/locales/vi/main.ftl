@@ -1910,7 +1910,7 @@ pending-show-check-the-conversation-before-sending-again = Kiểm tra cuộc tr�
 # Context: show
 pending-show-dismiss = Loại bỏ
 # Context: show
-pending-show-restore-to-composer = Khôi phục về nhà soạn nhạc
+pending-show-restore-to-composer = Khôi phục vào khung soạn tin
 # Context: show
 pending-show-you = Bạn
 # Context: upload_strip
@@ -2574,7 +2574,7 @@ server-admin-dialog-emoji-name = Tên biểu tượng cảm xúc
 # Context: dialog
 server-admin-dialog-inactive-for = Không hoạt động vì
 # Context: dialog
-server-admin-dialog-kick-member = Đá thành viên
+server-admin-dialog-kick-member = Đuổi thành viên
 # Context: dialog
 server-admin-dialog-leave-blank-to-use-their-username = Để trống để sử dụng tên người dùng của họ.
 # Context: dialog
@@ -3453,7 +3453,7 @@ server-stickers-show-your-stickers = Nhãn dán của bạn
 
 ## crates/ui/src/settings.rs
 # Context: account_page
-settings-account-page-closes-the-offline-fixture-nothing-is-stored-for-the-preview = Đóng lịch thi đấu ngoại tuyến. Không có gì được lưu trữ để xem trước.
+settings-account-page-closes-the-offline-fixture-nothing-is-stored-for-the-preview = Đóng dữ liệu mẫu ngoại tuyến. Không lưu thông tin của bản xem trước.
 # Context: account_page
 settings-account-page-display-name = Tên hiển thị
 # Context: account_page
@@ -3465,7 +3465,7 @@ settings-account-page-offline-preview-synthetic-account = Xem trước ngoại t
 # Context: account_page
 settings-account-page-removes-the-saved-login-and-clears-this-account-s-local = Xóa thông tin đăng nhập đã lưu cũng như xóa bộ nhớ đệm cục bộ và bản nháp của tài khoản này.
 # Context: account_page
-settings-account-page-session = Phiên họp
+settings-account-page-session = Phiên đăng nhập
 # Context: account_page
 settings-account-page-signed-in-with-your-discord-account = Đã đăng nhập bằng tài khoản Discord của bạn
 # Context: activity_settings
@@ -3688,7 +3688,7 @@ slash-commands-argument-unavailable = Không có sẵn
 # Context: composer
 slash-commands-composer-choose-a-different-command = Chọn một lệnh khác
 # Context: composer
-slash-commands-composer-command-unavailable-your-arguments-are-kept = Lệnh không có sẵn. Lập luận của bạn được lưu giữ.
+slash-commands-composer-command-unavailable-your-arguments-are-kept = Lệnh chưa khả dụng. Các tham số bạn đã nhập được giữ lại.
 # Context: footer
 slash-commands-footer-refresh-application-commands = Làm mới các lệnh ứng dụng
 # Context: list
@@ -4515,8 +4515,8 @@ server-roles-permissions-manage-server = Quản lý máy chủ
 server-roles-permissions-create-expressions = Tạo biểu thức
 server-roles-permissions-manage-expressions = Quản lý biểu thức
 server-roles-permissions-manage-nicknames = Quản lý biệt hiệu
-server-roles-permissions-kick-members = Đá thành viên
-server-roles-permissions-timeout-members = Thành viên hết thời gian
+server-roles-permissions-kick-members = Đuổi thành viên
+server-roles-permissions-timeout-members = Tạm hạn chế thành viên
 server-roles-permissions-administrator = Quản trị viên
 server-roles-permissions-administrator-detail = Cấp mọi quyền và bỏ qua việc ghi đè quyền của kênh. Chỉ cấp điều này cho những người bạn tin tưởng.
 pending-status-sending = Đang gửi…
@@ -4949,9 +4949,9 @@ system-message-stream-hd = { $actor } đã nâng cấp luồng lên HD.
 # Context: system_message
 system-message-report-deleted = { $actor } đã xóa tin nhắn được báo cáo.
 # Context: system_message
-system-message-timed-out = { $actor } đã hết thời gian { $target }.
+system-message-timed-out = { $actor } đã tạm hạn chế { $target }.
 # Context: system_message
-system-message-kicked = { $actor } đã đá { $target }.
+system-message-kicked = { $actor } đã đuổi { $target }.
 # Context: system_message
 system-message-banned = { $actor } đã cấm { $target }.
 # Context: system_message

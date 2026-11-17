@@ -95,7 +95,6 @@ your-account = Your account
 reconnecting = Reconnecting…
 hide-chat = Hide chat
 show-chat = Show chat
-voice-open-chat = Open Chat
 search-conversation = Search this conversation
 show-member-list = Show member list
 pinned-messages = Pinned messages
@@ -5190,3 +5189,18 @@ moderation-delete-week = Previous 7 days
 moderation-confirm-timeout = Timeout
 # Context: moderation
 moderation-confirm-ban = Ban
+
+voice-auto-sensitivity = Automatically determine input sensitivity
+voice-auto-sensitivity-detail = Adjust the input threshold to the background noise around you. Turn this off to set the threshold yourself.
+voice-advanced-activity = Advanced voice activity detection
+voice-advanced-activity-detail = Use speech detection to help keep background sounds out of your microphone transmission. Turn this off if parts of your voice are cut off.
+voice-no-input-warning = No input detected warning
+voice-no-input-warning-detail = Show a warning when your unmuted microphone has received no sound for 15 seconds.
+voice-switch-warning = Voice channel switch confirmation
+voice-switch-warning-detail = Ask for confirmation before leaving your current call to join another voice channel.
+voice-no-input-detected = No sound detected from your microphone. Check your input device, hardware mute and microphone permissions.
+voice-switch-selected-channel = the selected channel
+voice-switch-title = Switch voice channels?
+voice-switch-detail = You are already in a call. Leave it and join { $channel }?
+voice-switch-confirm = Switch channel
+voice-switch-cancel = Stay in call

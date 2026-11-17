@@ -3,8 +3,11 @@ run-name: Windows build by @${{ github.actor }}
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
+  workflow_run:
+    workflows: ['Serein Fork CI']
+    branches: [main]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -21,6 +24,13 @@ concurrency:
 
 jobs:
   build:
+    # Never publish PR code through the privileged workflow_run event.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
     runs-on: windows-latest
     timeout-minutes: 120
     defaults:
@@ -29,8 +39,30 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
+      - name: Pin and validate the release commit
+        id: source
+        env:
+          CI_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $source = if ($env:CI_SOURCE_SHA) { $env:CI_SOURCE_SHA } else { $env:GITHUB_SHA }
+          if ($source -notmatch '^[a-f0-9]{40}$') { throw 'Invalid source commit.' }
+          $current = (& git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0 -or $current -ne $source) { throw 'Checkout does not match the verified source.' }
+          $eligible = 'true'
+          if ($env:CI_SOURCE_SHA) {
+            $tip = & gh api "repos/$env:GH_REPO/git/ref/heads/main" --jq '.object.sha'
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot verify current main.' }
+            if ($tip.Trim() -ne $source) { $eligible = 'false' }
+          }
+          "eligible=$eligible" >> $env:GITHUB_OUTPUT
+          "sha=$source" >> $env:GITHUB_OUTPUT
+          "SOURCE_SHA=$source" >> $env:GITHUB_ENV
       - name: Choose package version
+        if: steps.source.outputs.eligible == 'true'
         id: version
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
@@ -52,22 +84,31 @@ jobs:
           "VERSION=$version" >> $env:GITHUB_ENV
           "TAG=v$version" >> $env:GITHUB_ENV
       - uses: dtolnay/rust-toolchain@1.99.1
+        if: steps.source.outputs.eligible == 'true'
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2.9.2
+        if: steps.source.outputs.eligible == 'true'
         with:
-          key: windows-release
+          shared-key: native
+          cache-on-failure: true
       - name: Install Windows packaging tools
+        if: steps.source.outputs.eligible == 'true'
         run: choco install nsis --no-progress -y
       - name: Check offline demo targets
+        if: steps.source.outputs.eligible == 'true' && github.event_name != 'workflow_run'
         run: cargo check --locked -p serein -p ui --all-targets --features serein/demo
       - name: Validate workspace
+        if: steps.source.outputs.eligible == 'true' && github.event_name != 'workflow_run'
         run: cargo xtask check
       - name: Apply package version
+        if: steps.source.outputs.eligible == 'true'
         run: python .github/release/version.py $env:VERSION
       - name: Build production package with voice
+        if: steps.source.outputs.eligible == 'true'
         run: cargo xtask package
       - name: Collect installer, executable and portable archive
+        if: steps.source.outputs.eligible == 'true'
         run: |
           $asset = "serein-$env:TAG-Windows-X64"
           New-Item -ItemType Directory release-assets | Out-Null
@@ -82,6 +123,7 @@ jobs:
             "$hash  $($_.Name)"
           } | Set-Content -LiteralPath release-assets/SHA256SUMS.txt -Encoding utf8NoBOM
       - uses: actions/upload-artifact@v7.0.1
+        if: steps.source.outputs.eligible == 'true'
         with:
           name: windows-release
           path: release-assets/*
@@ -90,10 +132,12 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      sha: ${{ steps.source.outputs.sha }}
+      eligible: ${{ steps.source.outputs.eligible }}
 
   publish:
     needs: build
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    if: needs.build.outputs.eligible == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: windows-latest
     permissions:
       contents: write
@@ -109,20 +153,28 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: ${{ needs.build.outputs.tag }}
           VERSION: ${{ needs.build.outputs.version }}
+          SOURCE_SHA: ${{ needs.build.outputs.sha }}
         run: |
           $notes = @"
-          Windows x64 build of this fork at commit $env:GITHUB_SHA.
+          Windows x64 build of this fork at commit $env:SOURCE_SHA.
 
           - Vietnamese: Settings > Language & Time > Display language > Tiếng Việt.
-          - Open Chat button beside voice channels; opening chat does not join voice.
+          - Revised Vietnamese terminology and localized dates and times.
+          - Voice channel rows use the original layout, without an added chat icon.
           - Stream viewer avatars/count and Open Stream fix, ported from upstream PR #1017.
+          - Sharper emoji at high DPI, ported from upstream PR #1040.
+          - Server nickname suggestions include retained offscreen members (issue #1044).
+          - Voice participant guild tags and resizable member sidebar.
+          - Richer own-account popout with available profile information and supported cosmetics.
+          - Optional automatic mic sensitivity, RNNoise speech detection, silent-input warning and channel-switch confirmation.
+          - Local cache schema upgrades to 30; older schema-29 clients cannot reopen the upgraded cache.
           - Download **-Setup.exe** to install, or extract **.zip** for the portable app.
           - The standalone **.exe** is also provided. Packages include voice support and exclude demo fixtures.
           - Windows binaries are unsigned. SHA-256 hashes are in SHA256SUMS.txt.
           "@
           $notes | Set-Content -LiteralPath release-notes.md -Encoding utf8NoBOM
           $releaseArgs = @('release', 'create', $env:TAG, '--repo', $env:GH_REPO,
-            '--target', $env:GITHUB_SHA, '--title', "Serein $env:VERSION (Windows)",
+            '--target', $env:SOURCE_SHA, '--title', "Serein $env:VERSION (Windows)",
             '--notes-file', 'release-notes.md')
           if ($env:VERSION.Contains('-nightly.')) { $releaseArgs += @('--prerelease', '--latest=false') }
           $releaseArgs += @(Get-ChildItem release-assets -File | ForEach-Object { $_.FullName })

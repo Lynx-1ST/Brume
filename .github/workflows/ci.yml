@@ -1,4 +1,4 @@
-name: native-client
+name: Serein Fork CI
 on:
   push:
     branches: [main]
@@ -37,6 +37,7 @@ jobs:
           bun-version: 1.4.2
       - uses: Swatinem/rust-cache@v2.9.2
         with:
+          shared-key: native
           cache-on-failure: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Check production build without development fixtures
@@ -55,19 +56,14 @@ jobs:
           - name: Linux package regression
             if: runner.os == 'Linux'
             run: PYTHONDONTWRITEBYTECODE=1 python3 packaging/linux/test_package.py
-      # Release builds run on main and on manual dispatch; pull requests stop at the checks above.
-      - if: github.event_name != 'pull_request'
-        run: cargo replay
-      - if: github.event_name != 'pull_request'
-        run: cargo replay --soak 5
-      - name: Package app without demo or developer features
-        if: github.event_name != 'pull_request'
-        run: cargo xtask package
-      - if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v7.0.1
+      # Windows Release packages this exact commit after every CI job succeeds.
+  fork-automation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
         with:
-          name: serein-${{ runner.os }}-${{ runner.arch }}-unsigned
-          path: dist/
+          persist-credentials: false
+      - run: node --test tests/upstream-sync.test.mjs
   extension-sdk:
     runs-on: ubuntu-latest
     steps:

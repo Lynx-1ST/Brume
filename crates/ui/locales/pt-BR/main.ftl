@@ -92,7 +92,6 @@ your-account = Sua conta
 reconnecting = Reconectando…
 hide-chat = Ocultar bate-papo
 show-chat = Mostrar bate-papo
-voice-open-chat = Abrir bate-papo
 search-conversation = Pesquisar esta conversa
 show-member-list = Mostrar lista de membros
 pinned-messages = Mensagens fixadas

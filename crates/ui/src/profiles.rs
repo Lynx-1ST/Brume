@@ -2351,7 +2351,14 @@ fn creation_date(id: Id) -> Option<String> {
 fn local_date(seconds: i64) -> Option<String> {
 	time::OffsetDateTime::from_unix_timestamp(seconds)
 		.ok()
-		.map(|date| crate::local_time::local(date).date().to_string())
+		.map(|date| {
+			let date = crate::local_time::local(date).date();
+			if crate::i18n::current().resolved() == crate::i18n::Language::Vietnamese {
+				crate::local_time::numeric_date(date)
+			} else {
+				date.to_string()
+			}
+		})
 }
 
 /// The role name a plugin receives, held to the host's role-target rules: control
@@ -3436,7 +3443,7 @@ fn message_input(
 
 /// Render the whole biography; spoiler reveals reset when the card shows another bio.
 #[allow(clippy::too_many_arguments)]
-fn biography(
+pub(crate) fn biography(
 	ui: &mut egui::Ui,
 	user: Id,
 	bio: &str,
@@ -4984,7 +4991,7 @@ fn effect_clock(
 }
 
 /// The equipped profile frame and effect around and over a finished card.
-fn paint_collectibles(
+pub(crate) fn paint_collectibles(
 	ui: &mut egui::Ui,
 	avatars: &mut Avatars,
 	data: &model::UserProfile,

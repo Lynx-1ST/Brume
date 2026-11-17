@@ -353,6 +353,8 @@ pub struct MessagingUi {
 	edit_widget_id: Option<egui::Id>,
 	edit_closed_channel: Option<Id>,
 	avatars: avatars::Avatars,
+	/// When the emoji raster cache next has an idle raster to release.
+	emoji_release: Option<std::time::Instant>,
 	profile: profiles::ProfileSession,
 	profile_image: Option<ProfileImage>,
 	user_action: Option<user_menu::Action>,
@@ -437,6 +439,8 @@ pub struct MessagingUi {
 	pub running_processes: Option<Vec<String>>,
 	reading_sidebar_applied: Option<u16>,
 	reading_sidebar_constrained: bool,
+	reading_members_applied: Option<u16>,
+	reading_members_constrained: bool,
 	reading_zoom_pending: bool,
 	/// Slider value while the pointer is still down; zoom is applied on release so the
 	/// slider does not rescale under the cursor mid-drag.
@@ -556,6 +560,10 @@ pub struct MessagingUi {
 	pub voice_refresh_devices: bool,
 	pub voice_device_status: &'static str,
 	pub voice_microphone_unavailable: bool,
+	pub voice_no_input_detected: bool,
+	/// Device-local opt-outs; false keeps warnings and switch confirmation enabled.
+	pub voice_disable_no_input_warning: bool,
+	pub voice_skip_switch_confirmation: bool,
 	pub voice_push_to_talk: bool,
 	/// Device-local voice intent, retained between calls and restarts.
 	pub voice_muted: bool,
@@ -1276,9 +1284,15 @@ impl MessagingUi {
 	pub fn take_avatar_requests(&mut self) -> Vec<String> {
 		self.avatars.take_requests()
 	}
-	/// Next idle animation/inline texture release; see `take_avatar_requests`.
+	/// Next idle animation/inline texture or emoji raster release; see `take_avatar_requests`.
 	pub fn avatar_release_at(&self) -> Option<std::time::Instant> {
-		self.avatars.next_release()
+		// A deadline left by a frame that no longer shows messages must not wake the host.
+		let now = std::time::Instant::now();
+		self.avatars
+			.next_release()
+			.into_iter()
+			.chain(self.emoji_release.filter(|release| *release > now))
+			.min()
 	}
 	pub fn accept_gif_animation(&mut self, key: String, frames: GifFrames) {
 		self.avatars.accept_animation(key, frames);
@@ -4911,6 +4925,7 @@ impl MessagingUi {
 	/// service layer.
 	pub fn show(&mut self, ui: &mut egui::Ui, state: &mut State) -> Vec<Command> {
 		interface_tweaks::publish(ui.ctx(), &self.interface_tweaks);
+		self.emoji_release = emoji::maintain(ui.ctx());
 		rtl::scope(
 			ui.ctx(),
 			state.generation,
@@ -5479,10 +5494,14 @@ impl MessagingUi {
 				commands.push(command);
 			}
 			if wide_members {
-				egui::Panel::right("people-pane")
-					.resizable(false)
+				let member_max = self.prepare_reading_members(ui);
+				let people = egui::Panel::right("people-pane")
+					.resizable(true)
 					.show_separator_line(!design::has_window_background(ui))
-					.exact_size(240.0)
+					.default_size(
+						f32::from(self.reading_preferences.member_sidebar_width).min(member_max),
+					)
+					.size_range(190.0..=member_max)
 					.frame(
 						egui::Frame::new()
 							.fill(design::section_surface(
@@ -5500,6 +5519,7 @@ impl MessagingUi {
 					.show(ui, |ui| {
 						self.member_rows(ui, state, &mut commands);
 					});
+				self.record_reading_members(people.response.rect.width(), member_max);
 			} else {
 				let response = dialog::Dialog::new("members-narrow", language.text("members"))
 					.subtitle(language.text("members-description"))

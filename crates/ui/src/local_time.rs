@@ -164,6 +164,82 @@ pub fn now() -> time::OffsetDateTime {
 	local(time::OffsetDateTime::now_utc())
 }
 
+/// A localized date shared by message dividers and timestamp references.
+pub(crate) fn date(date: time::Date) -> String {
+	localized(
+		"datetime-date",
+		&[
+			("day", date.day().to_string()),
+			("month", u8::from(date.month()).to_string()),
+			("year", date.year().to_string()),
+		],
+	)
+	.unwrap_or_else(|| format!("{} {}, {}", date.month(), date.day(), date.year()))
+}
+
+/// A locale-ordered numeric date for compact profile metadata.
+pub(crate) fn numeric_date(date: time::Date) -> String {
+	DateOrder::current().date(date)
+}
+
+/// A date without its year, as shown by the unread banner.
+pub(crate) fn month_day(date: time::Date) -> String {
+	localized(
+		"datetime-month-day",
+		&[
+			("day", date.day().to_string()),
+			("month", u8::from(date.month()).to_string()),
+		],
+	)
+	.unwrap_or_else(|| format!("{} {}", date.month(), date.day()))
+}
+
+/// A server's creation month, optionally abbreviated in compact invitations.
+pub(crate) fn month_year(date: time::Date, abbreviated: bool) -> String {
+	localized(
+		"datetime-month-year",
+		&[
+			("month", u8::from(date.month()).to_string()),
+			("year", date.year().to_string()),
+		],
+	)
+	.unwrap_or_else(|| {
+		let month = date.month().to_string();
+		format!(
+			"{} {}",
+			if abbreviated { &month[..3] } else { &month },
+			date.year()
+		)
+	})
+}
+
+fn localized(key: &str, values: &[(&'static str, String)]) -> Option<String> {
+	crate::i18n::try_translate_args(key, values)
+}
+
+fn date_time(date: String, clock: &str) -> String {
+	localized(
+		"datetime-date-time",
+		&[("date", date.clone()), ("time", clock.to_owned())],
+	)
+	.unwrap_or_else(|| format!("{date} {clock}"))
+}
+
+fn localized_full(date: time::Date, clock: &str) -> Option<String> {
+	let weekday = localized(
+		&format!("datetime-weekday-{}", date.weekday().number_from_monday()),
+		&[],
+	)?;
+	localized(
+		"datetime-full",
+		&[
+			("weekday", weekday),
+			("date", self::date(date)),
+			("time", clock.to_owned()),
+		],
+	)
+}
+
 /// Renders a Discord `<t:seconds:style>` reference the way the official client does: absolute
 /// styles in the viewer's zone, `R` as a coarse relative phrase that refreshes on every frame.
 pub fn discord_timestamp(seconds: i64, style: u8) -> Option<String> {
@@ -200,15 +276,17 @@ fn format_discord_timestamp(
 				clock
 			}
 		),
-		b'D' => format!("{} {}, {}", date.month(), date.day(), date.year()),
-		b'F' => format!(
-			"{}, {} {}, {} {clock}",
-			date.weekday(),
-			date.month(),
-			date.day(),
-			date.year()
-		),
-		_ => format!("{} {}, {} {clock}", date.month(), date.day(), date.year()),
+		b'D' => self::date(date),
+		b'F' => localized_full(date, &clock).unwrap_or_else(|| {
+			format!(
+				"{}, {} {}, {} {clock}",
+				date.weekday(),
+				date.month(),
+				date.day(),
+				date.year()
+			)
+		}),
+		_ => date_time(self::date(date), &clock),
 	}
 }
 /// A message header's time as Discord writes it: just the time today, "Yesterday at 11:22", and
@@ -253,6 +331,9 @@ pub fn full(utc: time::OffsetDateTime) -> String {
 fn format_full(at: time::OffsetDateTime, twelve: bool, order: DateOrder) -> String {
 	let date = at.date();
 	let clock = format_clock(at, false, twelve);
+	if let Some(full) = localized_full(date, &clock) {
+		return full;
+	}
 	match order {
 		DateOrder::MonthDayYear => format!(
 			"{}, {} {}, {} at {clock}",
@@ -290,6 +371,9 @@ pub fn calendar(utc: time::OffsetDateTime) -> String {
 	} else {
 		// Discord writes older times as "10/12/26, 5:37 PM".
 		let date = at.date();
+		if crate::i18n::current().resolved() == crate::i18n::Language::Vietnamese {
+			return format!("{}, {clock}", numeric_date(date));
+		}
 		format!(
 			"{}/{}/{:02}, {clock}",
 			u8::from(date.month()),
@@ -313,28 +397,50 @@ fn relative(delta: time::Duration) -> String {
 	let days = (hours + 12) / 24;
 	let months = (days + 15) / 30;
 	let years = (days + 182) / 365;
-	let amount = if seconds < 45 {
-		"a few seconds".to_owned()
+	let (unit, count) = if seconds < 45 {
+		("seconds", 0)
 	} else if seconds < 90 {
-		"a minute".to_owned()
+		("minutes", 1)
 	} else if minutes < 45 {
-		format!("{minutes} minutes")
+		("minutes", minutes)
 	} else if minutes < 90 {
-		"an hour".to_owned()
+		("hours", 1)
 	} else if hours < 22 {
-		format!("{hours} hours")
+		("hours", hours)
 	} else if hours < 36 {
-		"a day".to_owned()
+		("days", 1)
 	} else if days < 26 {
-		format!("{days} days")
+		("days", days)
 	} else if days < 46 {
-		"a month".to_owned()
+		("months", 1)
 	} else if days < 320 {
-		format!("{months} months")
+		("months", months)
 	} else if days < 548 {
-		"a year".to_owned()
+		("years", 1)
 	} else {
-		format!("{years} years")
+		("years", years)
+	};
+	if let Some(amount) = localized(
+		&format!("datetime-relative-{unit}"),
+		&[("count", count.to_string())],
+	) {
+		let direction = if ahead {
+			"datetime-relative-future"
+		} else {
+			"datetime-relative-past"
+		};
+		if let Some(value) = localized(direction, &[("amount", amount)]) {
+			return value;
+		}
+	}
+	let amount = match (unit, count) {
+		("seconds", _) => "a few seconds".to_owned(),
+		("minutes", 1) => "a minute".to_owned(),
+		("hours", 1) => "an hour".to_owned(),
+		("days", 1) => "a day".to_owned(),
+		("months", 1) => "a month".to_owned(),
+		("years", 1) => "a year".to_owned(),
+		_ => format!("{count} {unit}"),
 	};
 	if ahead {
 		format!("in {amount}")
@@ -345,6 +451,117 @@ fn relative(delta: time::Duration) -> String {
 
 #[cfg(test)]
 mod tests {
+	#[test]
+	fn vietnamese_timestamps_follow_the_local_day_and_switch_language_immediately() {
+		use crate::i18n::{Language, set_current};
+		let at =
+			local_at("2026-12-31T23:30:00Z").to_offset(time::UtcOffset::from_hms(7, 0, 0).unwrap());
+		set_current(Language::Vietnamese);
+		let date = plain(super::date(at.date()));
+		assert!(date.contains("2027"));
+		assert!(!date.contains("December") && !date.contains("January"));
+		for style in *b"DfF" {
+			let value = plain(super::format_discord_timestamp(
+				at,
+				style,
+				super::DateOrder::DayMonthYear,
+				false,
+			));
+			assert!(value.contains(&date), "{value}");
+			assert!(!value.contains("Friday"));
+			if style != b'D' {
+				assert!(value.contains("06:30"));
+			}
+		}
+		for (style, expected) in [
+			(b't', "06:30"),
+			(b'T', "06:30:00"),
+			(b'd', "01/01/2027"),
+			(b's', "01/01/2027, 06:30"),
+			(b'S', "01/01/2027, 06:30:00"),
+		] {
+			assert_eq!(
+				super::format_discord_timestamp(
+					at,
+					style,
+					super::DateOrder::of_locale("vi-VN"),
+					false
+				),
+				expected
+			);
+		}
+		let full = plain(super::format_full(
+			at,
+			false,
+			super::DateOrder::DayMonthYear,
+		));
+		assert!(full.contains(&date) && full.contains("06:30") && !full.contains(" at "));
+		let today = at.date();
+		let previous = at - time::Duration::days(1);
+		let yesterday = plain(super::format_header(
+			previous,
+			today,
+			false,
+			super::DateOrder::DayMonthYear,
+		));
+		assert!(!yesterday.contains("Yesterday") && yesterday.contains("06:30"));
+		set_current(Language::English);
+		assert_eq!(super::date(at.date()), "January 1, 2027");
+		assert_ne!(
+			plain(super::format_full(
+				at,
+				false,
+				super::DateOrder::DayMonthYear
+			)),
+			full
+		);
+		set_current(Language::Vietnamese);
+		assert_eq!(plain(super::date(at.date())), date);
+		set_current(Language::English);
+	}
+
+	#[test]
+	fn vietnamese_relative_times_keep_thresholds_counts_and_direction() {
+		use crate::i18n::{Language, set_current};
+		set_current(Language::Vietnamese);
+		for (seconds, unit, count) in [
+			(44, "seconds", 0),
+			(45, "minutes", 1),
+			(90, "minutes", 2),
+			(44 * 60, "minutes", 44),
+			(45 * 60, "hours", 1),
+			(47 * 3600, "days", 2),
+			(30 * 86400, "months", 1),
+			(60 * 86400, "months", 2),
+			(365 * 86400, "years", 1),
+			(730 * 86400, "years", 2),
+		] {
+			let amount = plain(
+				super::localized(
+					&format!("datetime-relative-{unit}"),
+					&[("count", count.to_string())],
+				)
+				.unwrap(),
+			);
+			let past = plain(super::relative(time::Duration::seconds(-seconds)));
+			let future = plain(super::relative(time::Duration::seconds(seconds)));
+			assert!(
+				past.contains(&amount) && future.contains(&amount),
+				"{seconds}: {past} / {future}"
+			);
+			assert_ne!(past, future);
+			assert!(!past.contains(" ago") && !future.starts_with("in "));
+		}
+		let zero = plain(super::relative(time::Duration::ZERO));
+		assert_eq!(zero, plain(super::relative(time::Duration::seconds(-1))));
+		set_current(Language::English);
+		assert_eq!(super::relative(time::Duration::hours(47)), "in 2 days");
+		assert_eq!(
+			super::relative(time::Duration::seconds(-45)),
+			"a minute ago"
+		);
+	}
+
 	#[test]
 	fn clocks_follow_the_twelve_or_twenty_four_hour_style() {
 		let at = |hour, minute| {

@@ -44,6 +44,49 @@ pub struct View {
 	pub error: Option<&'static str>,
 }
 impl State {
+	/// Already-retained member identities for this channel's guild. No lookup or cache growth.
+	/// Prefer the current window and searches over older off-screen chunks, including nick clears.
+	pub fn known_members(&self, channel: Id) -> impl Iterator<Item = &Member> {
+		let guild = self.channel(channel).and_then(|channel| channel.guild);
+		let list = self
+			.members
+			.as_ref()
+			.filter(|list| list.guild == guild && (guild.is_some() || list.channel == channel));
+		fn people(slot: &model::MemberSlot) -> Option<&Member> {
+			match slot {
+				model::MemberSlot::Person(member) => Some(member),
+				model::MemberSlot::Group(_) => None,
+			}
+		}
+		let current = list
+			.into_iter()
+			.flat_map(|list| list.slots.iter().flatten())
+			.filter_map(people);
+		let searches = self
+			.member_search
+			.iter()
+			.filter(move |view| {
+				view.request.as_ref().is_some_and(|request| {
+					Some(request.guild) == guild
+						&& self
+							.channel(request.channel)
+							.and_then(|channel| channel.guild)
+							== guild && self.can_view(request.channel)
+				})
+			})
+			.flat_map(|view| view.rows.iter());
+		let cached = list
+			.filter(|list| list.lazy && list.request == self.member_chunks.request)
+			.into_iter()
+			.flat_map(|_| self.member_chunks.chunks.values())
+			.flat_map(|chunk| chunk.iter().flatten())
+			.filter_map(people);
+		current.chain(searches).chain(cached)
+	}
+	pub fn known_member(&self, channel: Id, user: Id) -> Option<&Member> {
+		self.known_members(channel)
+			.find(|member| member.user.id == user)
+	}
 	pub fn search_members(&mut self, channel: Id, query: &str, slot: usize) -> Option<Command> {
 		let guild = self.channel(channel)?.guild?;
 		if slot != 0

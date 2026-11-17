@@ -95,7 +95,6 @@ your-account = 내 계정
 reconnecting = 다시 연결 중…
 hide-chat = 채팅 숨기기
 show-chat = 채팅 표시
-voice-open-chat = 채팅 열기
 search-conversation = 이 대화 검색
 show-member-list = 멤버 목록 표시
 pinned-messages = 고정된 메시지
@@ -5122,6 +5121,21 @@ moderation-delete-week = 지난 7일
 moderation-confirm-timeout = 타임아웃
 # Context: moderation
 moderation-confirm-ban = 차단
+
+voice-auto-sensitivity = 자동 입력 감도 조절
+voice-auto-sensitivity-detail = 주변 소음에 맞춰 마이크 입력 기준을 자동으로 조절합니다. 직접 설정하려면 이 옵션을 끄세요.
+voice-advanced-activity = 향상된 음성 감지
+voice-advanced-activity-detail = 음성을 감지하여 배경 소음 전송을 줄입니다. 목소리가 끊기거나 들리지 않으면 이 옵션을 끄세요.
+voice-no-input-warning = 입력 신호 없음 경고
+voice-no-input-warning-detail = 마이크가 켜져 있지만 15초 동안 소리가 감지되지 않으면 경고를 표시합니다.
+voice-switch-warning = 음성 채널 전환 확인
+voice-switch-warning-detail = 현재 통화를 종료하고 다른 음성 채널에 참여하기 전에 확인합니다.
+voice-no-input-detected = 마이크에서 소리가 감지되지 않습니다. 입력 장치, 음소거 및 마이크 접근 권한을 확인하세요.
+voice-switch-selected-channel = 선택한 채널
+voice-switch-title = 음성 채널을 전환할까요?
+voice-switch-detail = 현재 통화 중입니다. 이 통화를 종료하고 { $channel } 채널에 참여할까요?
+voice-switch-confirm = 채널 전환
+voice-switch-cancel = 통화 유지
 # Context: extensions_ui
 extensions-ui-card-body-details = 세부 정보
 # Context: extensions_ui

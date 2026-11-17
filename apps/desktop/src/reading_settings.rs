@@ -150,6 +150,7 @@ mod tests {
 				.restore(Ok(ReadingPreferences {
 					zoom_percent: 150,
 					sidebar_width: 360,
+					member_sidebar_width: 240,
 					show_members: false,
 					show_members_dms: false,
 					compact_messages: false,

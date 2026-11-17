@@ -451,7 +451,7 @@ impl MessagingUi {
 		channel: &model::Channel,
 		selected: bool,
 		draggable: bool,
-	) -> (egui::Response, bool) {
+	) -> egui::Response {
 		let colors = design::palette(ui);
 		let call = state
 			.voice
@@ -479,7 +479,7 @@ impl MessagingUi {
 			})
 			.inner;
 		let row = rect.shrink2(egui::vec2(0.0, 1.0));
-		let hovered = viewable && (ui.rect_contains_pointer(row) || response.has_focus());
+		let hovered = viewable && (response.hovered() || response.has_focus());
 		if selected {
 			ui.painter().rect_filled(row, 8, colors.selected);
 		} else if hovered {
@@ -524,28 +524,6 @@ impl MessagingUi {
 		);
 		channel_marks::paint(ui.painter(), access, row, glyph, text_color);
 		let marks = channel_marks::trailing(access);
-		// Reserve space even while idle so the name and badges do not jump on hover.
-		let chat_width = if viewable { 30.0 } else { 0.0 };
-		let mut open_chat = false;
-		if viewable {
-			let chat_rect = egui::Rect::from_center_size(
-				row.right_center() - egui::vec2(15.0 + marks, 0.0),
-				egui::Vec2::splat(28.0),
-			);
-			let mut chat_ui = ui.new_child(
-				egui::UiBuilder::new()
-					.id_salt(("voice-open-chat", channel.id))
-					.max_rect(chat_rect),
-			);
-			let action = crate::icons::button(
-				&mut chat_ui,
-				crate::icons::Icon::Forum,
-				28.0,
-				"voice-open-chat",
-			);
-			open_chat = action.clicked();
-		}
-		let marks = marks + chat_width;
 		let occupancy = channel.user_limit.map(|limit| {
 			let people = state
 				.voice
@@ -639,7 +617,7 @@ impl MessagingUi {
 				),
 			)
 		});
-		let response = response.on_hover_text_with(|| {
+		response.on_hover_text_with(|| {
 			format!(
 				"{} · View voice channel{}{}{}",
 				channel.name,
@@ -649,8 +627,7 @@ impl MessagingUi {
 				channel_marks::label(access),
 				if connected { " · Connected" } else { "" }
 			)
-		});
-		(response, open_chat)
+		})
 	}
 
 	pub(super) fn voice_participant(
@@ -766,13 +743,44 @@ impl MessagingUi {
 						egui::vec2(ui.available_width(), 28.0),
 						egui::Layout::left_to_right(egui::Align::Center),
 						|ui| {
-							ui.add(
-								egui::Label::new(RichText::new(name).color(name_color))
-									.truncate()
-									.show_tooltip_when_elided(false)
-									.selectable(false),
-							)
-							.on_hover_text(name);
+							let tag = user
+								.and_then(|user| user.primary_guild.as_deref())
+								.filter(|_| !self.avatars.cosmetics.hide_clan_tags)
+								.filter(|tag| {
+									ui.available_width()
+										>= crate::profiles::server_tag_width(ui, Some(tag)) + 38.0
+								});
+							let trailing = crate::profiles::server_tag_width(ui, tag)
+								+ if tag.is_some() {
+									ui.spacing().item_spacing.x
+								} else {
+									0.0
+								};
+							if let Some(user) = user {
+								crate::name_styles::in_row(hovered, || {
+									crate::account_badge::name(
+										ui,
+										user,
+										name,
+										14.0,
+										(name_color, None, colors.sidebar),
+										egui::Sense::hover(),
+										trailing,
+									)
+								})
+								.on_hover_text(name);
+							} else {
+								ui.add(
+									egui::Label::new(RichText::new(name).color(name_color))
+										.truncate()
+										.show_tooltip_when_elided(false)
+										.selectable(false),
+								)
+								.on_hover_text(name);
+							}
+							if let Some(tag) = tag {
+								crate::profiles::server_tag(ui, tag, &mut self.avatars, state.demo);
+							}
 						},
 					);
 				});
@@ -2321,7 +2329,9 @@ impl MessagingUi {
 				audio,
 				open: None,
 			});
-			if failed && let Some(command) = state.leave_call() {
+			if (failed || self.voice_skip_switch_confirmation)
+				&& let Some(command) = state.leave_call()
+			{
 				self.voice_switch
 					.as_mut()
 					.expect("pending switch")
@@ -2442,16 +2452,17 @@ impl MessagingUi {
 			self.voice_switch = None;
 			return;
 		}
-		let name = state
-			.channel(switch.channel)
-			.map_or("the selected channel", |channel| channel.name.as_str());
+		let name = state.channel(switch.channel).map_or_else(
+			|| crate::i18n::translate("voice-switch-selected-channel"),
+			|channel| channel.name.clone(),
+		);
 		match crate::dialog::Confirm::new(
 			"switch-call",
-			"Switch calls?",
-			format!("You are already in another call. Leave it and join {name}?"),
+			crate::i18n::translate("voice-switch-title"),
+			crate::i18n::translate_args("voice-switch-detail", &[("channel", name.as_str())]),
 		)
-		.confirm_label("Switch call")
-		.cancel_label("Stay in call")
+		.confirm_label(crate::i18n::translate("voice-switch-confirm"))
+		.cancel_label(crate::i18n::translate("voice-switch-cancel"))
 		.show(ctx)
 		{
 			Some(crate::dialog::Choice::Confirmed) => {
@@ -3138,6 +3149,13 @@ impl MessagingUi {
 				),
 			);
 		}
+		if self.voice_no_input_detected {
+			design::notice(
+				ui,
+				design::Level::Warning,
+				&crate::i18n::translate("voice-no-input-detected"),
+			);
+		}
 	}
 
 	fn voice_processing_controls(&mut self, ui: &mut egui::Ui) {
@@ -3177,27 +3195,61 @@ impl MessagingUi {
 				self.voice_processing.profile = profile;
 			}
 		}
+		ui.add_enabled_ui(
+			self.voice_processing.profile != InputProfile::Studio,
+			|ui| {
+				let processing = self.voice_processing.effective();
+				let mut automatic = processing.automatic_sensitivity;
+				if design::switch(
+					ui,
+					"voice-auto-sensitivity",
+					Some("voice-auto-sensitivity-detail"),
+					&mut automatic,
+				)
+				.changed()
+				{
+					self.voice_processing.edit().automatic_sensitivity = automatic;
+				}
+				let mut advanced = processing.advanced_voice_activity;
+				if design::switch(
+					ui,
+					"voice-advanced-activity",
+					Some("voice-advanced-activity-detail"),
+					&mut advanced,
+				)
+				.changed()
+				{
+					self.voice_processing.edit().advanced_voice_activity = advanced;
+				}
+			},
+		);
 		if self.voice_processing.profile == InputProfile::Custom {
 			design::card_divider(ui);
 			let processing = &mut self.voice_processing.custom;
 			let mut sensitivity = processing.sensitivity_db.is_some();
-			if design::switch(
-				ui,
-				"voice-voice-processing-controls-input-threshold",
-				Some(if sensitivity {
-					"voice-voice-processing-controls-only-transmit-sound-above-this-level-lower-values-pick-up"
-				} else {
-					"voice-voice-processing-controls-open-microphone-mute-and-push-to-talk-still-apply"
-				}),
-				&mut sensitivity,
-			)
-			.changed()
+			if ui
+				.add_enabled_ui(!processing.automatic_sensitivity, |ui| {
+					design::switch(
+						ui,
+						"voice-voice-processing-controls-input-threshold",
+						Some(if sensitivity {
+							"voice-voice-processing-controls-only-transmit-sound-above-this-level-lower-values-pick-up"
+						} else {
+							"voice-voice-processing-controls-open-microphone-mute-and-push-to-talk-still-apply"
+						}),
+						&mut sensitivity,
+					)
+				})
+				.inner
+				.changed()
 			{
 				processing.sensitivity_db = sensitivity.then_some(-55);
 			}
 			if let Some(db) = &mut processing.sensitivity_db {
 				ui.add_space(4.0);
-				design::slider(ui, db, -80..=0, " dBFS");
+				ui.add_enabled_ui(!processing.automatic_sensitivity, |ui| {
+					design::slider(ui, db, -80..=0, " dBFS");
+				});
 			}
 			if let Some(level) = self.voice_preview_level {
 				ui.add(
@@ -3308,6 +3360,22 @@ impl MessagingUi {
 		.on_hover_text(crate::i18n::translate(
 			"voice-voice-processing-controls-mute-and-deafen-always-take-priority",
 		));
+		let mut warn = !self.voice_disable_no_input_warning;
+		design::switch(
+			ui,
+			"voice-no-input-warning",
+			Some("voice-no-input-warning-detail"),
+			&mut warn,
+		);
+		self.voice_disable_no_input_warning = !warn;
+		let mut confirm = !self.voice_skip_switch_confirmation;
+		design::switch(
+			ui,
+			"voice-switch-warning",
+			Some("voice-switch-warning-detail"),
+			&mut confirm,
+		);
+		self.voice_skip_switch_confirmation = !confirm;
 	}
 
 	/// Whether the local mute/deafen controls may emit commands for the active call.
@@ -4265,6 +4333,9 @@ impl MessagingUi {
 			.show(ui, |ui| {
 				ui.set_width(ui.available_width());
 				ui.spacing_mut().item_spacing.y = 8.0;
+				if self.voice_no_input_detected {
+					ui.label(RichText::new(crate::i18n::translate("voice-no-input-detected")).size(12.0).color(colors.warning));
+				}
 				if self.voice_microphone_unavailable {
 					ui.label(
 						RichText::new(crate::i18n::translate(
@@ -5096,22 +5167,9 @@ pub(crate) fn resolve_member<'a>(
 	state: &'a State,
 	entry: &'a RosterEntry,
 ) -> (Option<&'a model::User>, &'a str) {
-	let member = entry.member.as_ref().or_else(|| {
-		state
-			.members
-			.as_ref()
-			.filter(|list| list.guild == Some(entry.guild))
-			.and_then(|list| {
-				list.slots
-					.iter()
-					.flatten()
-					.filter_map(|slot| match slot {
-						model::MemberSlot::Person(m) => Some(m),
-						_ => None,
-					})
-					.find(|m| m.user.id == entry.participant.user)
-			})
-	});
+	let member = state
+		.known_member(entry.channel, entry.participant.user)
+		.or(entry.member.as_ref());
 	let user = member
 		.map(|m| &m.user)
 		.or_else(|| participant_user(state, entry.channel, entry.participant.user));
@@ -5505,6 +5563,44 @@ mod tests {
 			}))
 		));
 		assert_eq!((view.guild, state.selected), (Some(Id(10)), Some(Id(25))));
+	}
+
+	#[test]
+	fn skipping_switch_confirmation_still_waits_for_departure_and_audio_teardown() {
+		let mut state = test_support::call_demo_state();
+		state.demo = false;
+		state.gateway_connected = true;
+		let mut view = MessagingUi {
+			voice_available: true,
+			voice_skip_switch_confirmation: true,
+			..Default::default()
+		};
+		let mut commands = Vec::new();
+		view.request_call_audio(&mut state, Id(25), false, None, &mut commands)
+			.unwrap();
+		let switch = view.voice_switch.as_ref().expect("switch tracks teardown");
+		let origin = switch.from;
+		assert!(switch.confirmed_at.is_some());
+		assert_eq!(commands.len(), 1, "only leave is queued immediately");
+		commands.clear();
+		let ctx = egui::Context::default();
+		view.show_call_switch(&ctx, &mut state, &mut commands);
+		assert!(commands.is_empty());
+		state.apply_voice(client_core::voice::Event::Departed {
+			channel: origin.0,
+			request: origin.1,
+		});
+		view.show_call_switch(&ctx, &mut state, &mut commands);
+		assert!(commands.is_empty(), "audio teardown is still required");
+		view.voice_switch_ready = true;
+		view.show_call_switch(&ctx, &mut state, &mut commands);
+		assert!(matches!(
+			commands.as_slice(),
+			[Command::Voice(client_core::voice::Command::Join {
+				channel: Id(25),
+				..
+			})]
+		));
 	}
 
 	#[test]

@@ -509,8 +509,14 @@ fn summary(entry: &Entry, page: &Page, state: &State) -> String {
 fn timestamp(id: Id) -> String {
 	let seconds = ((id.0 >> 22) + 1_420_070_400_000) / 1000;
 	let Ok(utc) = time::OffsetDateTime::from_unix_timestamp(seconds as i64) else {
+		if crate::i18n::current().resolved() == crate::i18n::Language::Vietnamese {
+			return crate::i18n::translate("server-admin-date-unknown");
+		}
 		return "Unknown time".into();
 	};
+	if crate::i18n::current().resolved() == crate::i18n::Language::Vietnamese {
+		return crate::local_time::calendar(utc);
+	}
 	let local = crate::local_time::local(utc);
 	let now = crate::local_time::now();
 	let date = if local.date() == now.date() {

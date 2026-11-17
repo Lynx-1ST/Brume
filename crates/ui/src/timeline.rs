@@ -2444,7 +2444,7 @@ impl TimelineView {
 		let time = if at.date() == crate::local_time::now().date() {
 			clock
 		} else {
-			format!("{} {}, {clock}", at.month(), at.day())
+			format!("{}, {clock}", crate::local_time::month_day(at.date()))
 		};
 		Some(crate::i18n::translate_count(
 			if more {
@@ -3312,7 +3312,7 @@ impl TimelineView {
 						let date = timestamp(id);
 						divider(
 							ui,
-							format!("{} {}, {}", date.month(), date.day(), date.year()),
+							crate::local_time::date(date.date()),
 							false,
 							self.compact_messages,
 						);

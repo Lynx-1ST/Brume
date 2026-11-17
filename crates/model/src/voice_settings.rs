@@ -45,6 +45,10 @@ pub struct Processing {
 	pub automatic_gain: bool,
 	/// None is an open microphone; otherwise a dBFS threshold with a short release hold.
 	pub sensitivity_db: Option<i16>,
+	/// Adapt the input gate to the local noise floor, retaining the manual threshold.
+	pub automatic_sensitivity: bool,
+	/// Require RNNoise speech probability as well as input level before opening the gate.
+	pub advanced_voice_activity: bool,
 }
 impl Default for Processing {
 	fn default() -> Self {
@@ -54,6 +58,8 @@ impl Default for Processing {
 			echo_cancellation: true,
 			automatic_gain: true,
 			sensitivity_db: Some(-55),
+			automatic_sensitivity: false,
+			advanced_voice_activity: false,
 		}
 	}
 }
@@ -68,6 +74,8 @@ impl Processing {
 			echo_cancellation: false,
 			automatic_gain: false,
 			sensitivity_db: None,
+			automatic_sensitivity: false,
+			advanced_voice_activity: false,
 		}
 	}
 }

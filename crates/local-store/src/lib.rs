@@ -11,8 +11,8 @@ use std::{
 
 const MAX_MEDIA_JSON: usize = 256 * 1024;
 const MAX_WINDOW_BYTES: usize = 4 * 1024 * 1024;
-const NATIVE_SCHEMA: u32 = 29;
-const READABLE_SCHEMA: u32 = 29;
+const NATIVE_SCHEMA: u32 = 30;
+const READABLE_SCHEMA: u32 = 30;
 #[derive(serde::Deserialize)]
 struct CachedMentions(#[serde(deserialize_with = "model::deserialize_mentions")] Vec<User>);
 fn parse_author_roles(raw: &str) -> std::result::Result<Vec<Id>, StoreError> {
@@ -75,6 +75,8 @@ pub struct AppPreferences {
 	#[serde(default)]
 	pub voice_processing: Option<model::voice_settings::VoiceProcessing>,
 	pub voice_push_to_talk: bool,
+	pub voice_disable_no_input_warning: bool,
+	pub voice_skip_switch_confirmation: bool,
 	pub voice_muted: bool,
 	pub voice_deafened: bool,
 	pub voice_input: Option<String>,
@@ -138,6 +140,8 @@ impl Default for AppPreferences {
 			voice_noise_suppression: true,
 			voice_processing: Some(model::voice_settings::VoiceProcessing::default()),
 			voice_push_to_talk: false,
+			voice_disable_no_input_warning: false,
+			voice_skip_switch_confirmation: false,
 			voice_muted: false,
 			voice_deafened: false,
 			voice_input: None,
@@ -620,6 +624,12 @@ impl LocalStore {
 		if !has_double_click_enabled {
 			transaction.execute_batch("ALTER TABLE reading_preferences ADD COLUMN double_click_reaction_enabled INTEGER NOT NULL DEFAULT 0 CHECK(typeof(double_click_reaction_enabled)='integer' AND double_click_reaction_enabled IN (0,1));")?;
 		}
+		let has_member_sidebar_width: bool = transaction.query_row(
+			"SELECT EXISTS(SELECT 1 FROM pragma_table_info('reading_preferences') WHERE name='member_sidebar_width')", [], |row| row.get(0),
+		)?;
+		if !has_member_sidebar_width {
+			transaction.execute_batch("ALTER TABLE reading_preferences ADD COLUMN member_sidebar_width INTEGER NOT NULL DEFAULT 240 CHECK(typeof(member_sidebar_width)='integer' AND member_sidebar_width BETWEEN 190 AND 360);")?;
+		}
 		let has_author_roles: bool = transaction.query_row(
 			"SELECT EXISTS(SELECT 1 FROM pragma_table_info('messages') WHERE name='author_roles')",
 			[],
@@ -769,7 +779,7 @@ impl LocalStore {
 		let stored = self
 			.0
 			.query_row(
-				"SELECT zoom_percent,sidebar_width,show_members,animate_gifs,hide_media_links,confirm_external_links,smooth_scrolling,scroll_speed_percent,show_members_dms,compact_messages,double_click_reaction,double_click_reaction_enabled FROM reading_preferences WHERE singleton=1",
+				"SELECT zoom_percent,sidebar_width,show_members,animate_gifs,hide_media_links,confirm_external_links,smooth_scrolling,scroll_speed_percent,show_members_dms,compact_messages,double_click_reaction,double_click_reaction_enabled,member_sidebar_width FROM reading_preferences WHERE singleton=1",
 				[],
 				|row| {
 					Ok(match (
@@ -785,6 +795,7 @@ impl LocalStore {
 						row.get_ref(9)?,
 						row.get_ref(10)?,
 						row.get_ref(11)?,
+						row.get_ref(12)?,
 					) {
 						(
 							ValueRef::Integer(zoom @ 50..=150),
@@ -799,9 +810,11 @@ impl LocalStore {
 							ValueRef::Integer(compact_messages @ 0..=1),
 							ValueRef::Integer(double_click_reaction @ 0..=5),
 							ValueRef::Integer(double_click_enabled @ 0..=1),
+							ValueRef::Integer(member_width @ 190..=360),
 						) => Some(ReadingPreferences {
 							zoom_percent: zoom as u16,
 							sidebar_width: width as u16,
+							member_sidebar_width: member_width as u16,
 							show_members: members == 1,
 							show_members_dms: members_dms == 1,
 							compact_messages: compact_messages == 1,
@@ -833,10 +846,10 @@ impl LocalStore {
 			self.0
 				.execute("DELETE FROM reading_preferences WHERE singleton=1", [])?;
 		} else {
-			self.0.execute("INSERT INTO reading_preferences(singleton,zoom_percent,sidebar_width,show_members,animate_gifs,hide_media_links,confirm_external_links,smooth_scrolling,scroll_speed_percent,show_members_dms,compact_messages,double_click_reaction,double_click_reaction_enabled)
-				VALUES(1,?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12) ON CONFLICT(singleton) DO UPDATE SET
-				zoom_percent=excluded.zoom_percent,sidebar_width=excluded.sidebar_width,show_members=excluded.show_members,animate_gifs=excluded.animate_gifs,hide_media_links=excluded.hide_media_links,confirm_external_links=excluded.confirm_external_links,smooth_scrolling=excluded.smooth_scrolling,scroll_speed_percent=excluded.scroll_speed_percent,show_members_dms=excluded.show_members_dms,compact_messages=excluded.compact_messages,double_click_reaction=excluded.double_click_reaction,double_click_reaction_enabled=excluded.double_click_reaction_enabled",
-				params![preferences.zoom_percent, preferences.sidebar_width, preferences.show_members, preferences.animate_gifs, preferences.hide_media_links, preferences.confirm_external_links, preferences.smooth_scrolling, preferences.scroll_speed_percent, preferences.show_members_dms, preferences.compact_messages, preferences.double_click_reaction, preferences.double_click_reaction_enabled])?;
+			self.0.execute("INSERT INTO reading_preferences(singleton,zoom_percent,sidebar_width,show_members,animate_gifs,hide_media_links,confirm_external_links,smooth_scrolling,scroll_speed_percent,show_members_dms,compact_messages,double_click_reaction,double_click_reaction_enabled,member_sidebar_width)
+				VALUES(1,?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13) ON CONFLICT(singleton) DO UPDATE SET
+				zoom_percent=excluded.zoom_percent,sidebar_width=excluded.sidebar_width,show_members=excluded.show_members,animate_gifs=excluded.animate_gifs,hide_media_links=excluded.hide_media_links,confirm_external_links=excluded.confirm_external_links,smooth_scrolling=excluded.smooth_scrolling,scroll_speed_percent=excluded.scroll_speed_percent,show_members_dms=excluded.show_members_dms,compact_messages=excluded.compact_messages,double_click_reaction=excluded.double_click_reaction,double_click_reaction_enabled=excluded.double_click_reaction_enabled,member_sidebar_width=excluded.member_sidebar_width",
+				params![preferences.zoom_percent, preferences.sidebar_width, preferences.show_members, preferences.animate_gifs, preferences.hide_media_links, preferences.confirm_external_links, preferences.smooth_scrolling, preferences.scroll_speed_percent, preferences.show_members_dms, preferences.compact_messages, preferences.double_click_reaction, preferences.double_click_reaction_enabled, preferences.member_sidebar_width])?;
 		}
 		Ok(())
 	}
@@ -2475,6 +2488,7 @@ mod tests {
 		let preferences = ReadingPreferences {
 			zoom_percent: 125,
 			sidebar_width: 300,
+			member_sidebar_width: 240,
 			show_members: false,
 			show_members_dms: false,
 			compact_messages: false,
@@ -2803,6 +2817,7 @@ mod tests {
 		let preferences = ReadingPreferences {
 			zoom_percent: 125,
 			sidebar_width: 300,
+			member_sidebar_width: 320,
 			show_members: false,
 			show_members_dms: false,
 			compact_messages: false,
@@ -2815,16 +2830,33 @@ mod tests {
 			confirm_external_links: true,
 		};
 		store.save_reading_preferences(preferences).unwrap();
+		// Upgrade an existing schema-29 row without changing its other choices.
+		store
+			.0
+			.execute_batch(
+				"ALTER TABLE reading_preferences DROP COLUMN member_sidebar_width; PRAGMA user_version=29;",
+			)
+			.unwrap();
 		drop(store);
 
 		let store = LocalStore::open(&path).unwrap();
+		let preferences = ReadingPreferences {
+			member_sidebar_width: 240,
+			..preferences
+		};
 		assert_eq!(store.reading_preferences().unwrap(), preferences);
+		let preferences = ReadingPreferences {
+			member_sidebar_width: 320,
+			..preferences
+		};
+		store.save_reading_preferences(preferences).unwrap();
 		store.0.execute_batch("PRAGMA query_only=ON;").unwrap();
 		for replacement in [
 			ReadingPreferences::default(),
 			ReadingPreferences {
 				zoom_percent: 150,
 				sidebar_width: 360,
+				member_sidebar_width: 240,
 				show_members: true,
 				show_members_dms: true,
 				compact_messages: false,
@@ -2993,6 +3025,7 @@ mod tests {
 		let preferences = ReadingPreferences {
 			zoom_percent: 80,
 			sidebar_width: 310,
+			member_sidebar_width: 240,
 			show_members: false,
 			show_members_dms: false,
 			animate_gifs: true,
@@ -3067,6 +3100,7 @@ mod tests {
 				let preferences = ReadingPreferences {
 					zoom_percent,
 					sidebar_width,
+					member_sidebar_width: 240,
 					show_members,
 					show_members_dms: show_members,
 					compact_messages: false,
@@ -3083,6 +3117,16 @@ mod tests {
 			}
 		}
 		let previous = store.reading_preferences().unwrap();
+		for member_sidebar_width in [189, 361, u16::MAX] {
+			assert_eq!(
+				store.save_reading_preferences(ReadingPreferences {
+					member_sidebar_width,
+					..previous
+				}),
+				Err(StoreError::Capacity)
+			);
+			assert_eq!(store.reading_preferences().unwrap(), previous);
+		}
 		for (zoom_percent, sidebar_width) in [
 			(0, 236),
 			(49, 236),
@@ -3096,6 +3140,7 @@ mod tests {
 				store.save_reading_preferences(ReadingPreferences {
 					zoom_percent,
 					sidebar_width,
+					member_sidebar_width: 240,
 					show_members: false,
 					show_members_dms: false,
 					compact_messages: false,
@@ -3116,6 +3161,7 @@ mod tests {
 			store.save_reading_preferences(ReadingPreferences {
 				zoom_percent: 90,
 				sidebar_width: 200,
+				member_sidebar_width: 240,
 				show_members: false,
 				show_members_dms: false,
 				compact_messages: false,
@@ -3160,6 +3206,9 @@ mod tests {
 			"sidebar_width=189",
 			"sidebar_width=361",
 			"sidebar_width=x'00'",
+			"member_sidebar_width=189",
+			"member_sidebar_width=361",
+			"member_sidebar_width=x'00'",
 			"show_members=2",
 			"show_members=-1",
 			"show_members='invalid'",

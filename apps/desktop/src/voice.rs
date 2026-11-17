@@ -31,6 +31,16 @@ fn permission_mutes_microphone(
 fn negotiated_media(confirmed: bool, media_ready: bool) -> bool {
 	confirmed && media_ready
 }
+
+fn activity_threshold(processing: model::voice_settings::Processing) -> i16 {
+	if processing.automatic_sensitivity || processing.advanced_voice_activity {
+		// Audio is already gated on the worker. A retained manual threshold must not hide
+		// the speaking indicator for speech accepted by the adaptive/detection gate.
+		-80
+	} else {
+		processing.sensitivity_db.unwrap_or(-70)
+	}
+}
 fn negotiated_phase(confirmed: bool, phase: Phase) -> Phase {
 	if !confirmed && matches!(phase, Phase::Waiting | Phase::Connected) {
 		Phase::Securing
@@ -48,6 +58,36 @@ fn end_negotiation(channel: Id, request: u64, established: bool) -> voice::Comma
 }
 
 const DEVICE_OPEN_TIMEOUT: Duration = Duration::from_secs(20);
+
+/// One timestamp per call, with no audio retained. Only near-digital silence counts: this
+/// warns about a silent input, rather than guessing whether the user intended to speak.
+#[derive(Default)]
+struct NoInputWarning(Option<Instant>);
+impl NoInputWarning {
+	fn poll(&mut self, now: Instant, eligible: bool, level_db: f32) -> bool {
+		if !eligible || !level_db.is_finite() || level_db > -90.0 {
+			self.0 = None;
+			return false;
+		}
+		now.saturating_duration_since(*self.0.get_or_insert(now)) >= Duration::from_secs(15)
+	}
+}
+
+#[cfg(test)]
+#[test]
+fn silent_input_warning_resets_for_sound_and_ineligible_capture() {
+	let mut warning = NoInputWarning::default();
+	let start = Instant::now();
+	assert!(!warning.poll(start, true, -100.0));
+	assert!(!warning.poll(start + Duration::from_secs(14), true, -100.0));
+	assert!(warning.poll(start + Duration::from_secs(15), true, -100.0));
+	assert!(!warning.poll(start + Duration::from_secs(16), true, -40.0));
+	assert!(!warning.poll(start + Duration::from_secs(17), true, -100.0));
+	assert!(!warning.poll(start + Duration::from_secs(40), false, -100.0));
+	assert!(!warning.poll(start + Duration::from_secs(41), true, -100.0));
+	assert!(warning.poll(start + Duration::from_secs(56), true, -100.0));
+	assert!(!warning.poll(start + Duration::from_secs(57), true, f32::NAN));
+}
 
 fn device_wait(
 	deadline: &mut Option<Instant>,
@@ -147,6 +187,7 @@ enum Notice {
 	RemoteAudio,
 }
 struct Live {
+	no_input: NoInputWarning,
 	generation: u64,
 	channel: Id,
 	request: u64,
@@ -1004,6 +1045,7 @@ impl Voice {
 		self.poll_camera_test(state, ui, ctx);
 		ui.voice_speaking.clear();
 		ui.voice_microphone_unavailable = false;
+		ui.voice_no_input_detected = false;
 		self.poll_camera_devices(state.demo, ui, ctx);
 		if ui.voice_refresh_devices {
 			ui.voice_refresh_devices = false;
@@ -1176,11 +1218,7 @@ impl Voice {
 				.set_gain(ui.voice_gain.input_percent, ui.voice_gain.output_percent);
 			let user_volumes = ui.voice_user_volumes();
 			let stream_volume = ui.voice_stream_volume();
-			let activity_threshold_db = ui
-				.voice_processing
-				.effective()
-				.sensitivity_db
-				.unwrap_or(-70);
+			let activity_threshold_db = activity_threshold(ui.voice_processing.effective());
 			live.controls.send_if_modified(|control| {
 				if control.muted == muted
 					&& control.deafened == deafened
@@ -1206,6 +1244,7 @@ impl Voice {
 				live.audio.set_devices(devices.clone());
 				live.devices = devices;
 				live.device_deadline = None;
+				live.no_input = NoInputWarning::default();
 			}
 			for _ in 0..8 {
 				let Ok(event) = live.events.try_recv() else {
@@ -1276,6 +1315,19 @@ impl Voice {
 			failure = live.failure.get().copied();
 			let devices_ready = live.audio.is_ready();
 			ui.voice_microphone_unavailable = live.audio.microphone_unavailable();
+			let monitor_input = !ui.voice_disable_no_input_warning
+				&& ui.voice_gain.input_percent > 0
+				&& !muted && devices_ready
+				&& live.media_ready
+				&& live.negotiation.is_none()
+				&& failure.is_none()
+				&& !ui.voice_microphone_unavailable;
+			ui.voice_no_input_detected =
+				live.no_input
+					.poll(Instant::now(), monitor_input, live.audio.preview_level_db());
+			if monitor_input {
+				ctx.request_repaint_after(Duration::from_secs(1));
+			}
 			if ui.voice_settings_open() {
 				ui.voice_preview_level = Some(live.audio.preview_level_db());
 				ctx.request_repaint_after(Duration::from_millis(50));
@@ -1916,11 +1968,7 @@ impl Voice {
 			},
 		)?;
 		let (controls, control_receive) = watch::channel(Controls {
-			activity_threshold_db: ui
-				.voice_processing
-				.effective()
-				.sensitivity_db
-				.unwrap_or(-70),
+			activity_threshold_db: activity_threshold(ui.voice_processing.effective()),
 			muted: listen_only || ui.voice_push_to_talk,
 			camera: 0,
 			camera_rate: ui.voice_camera_rate,
@@ -2032,6 +2080,7 @@ impl Voice {
 			wake.request_repaint();
 		});
 		self.live = Some(Live {
+			no_input: NoInputWarning::default(),
 			generation: pending.generation,
 			channel: pending.channel,
 			request: pending.request,
@@ -3082,6 +3131,7 @@ mod tests {
 		let (camera_frames, _camera_frames) = mpsc::sync_channel(1);
 		let (stream_audio, _stream_audio) = mpsc::sync_channel(8);
 		manager.live = Some(Live {
+			no_input: NoInputWarning::default(),
 			generation: pending.generation,
 			channel: pending.channel,
 			request,

@@ -671,13 +671,9 @@ fn voice_card(
 fn established(guild: model::Id) -> Option<String> {
 	let seconds = ((guild.0 >> 22) + 1_420_070_400_000) / 1000;
 	let date = time::OffsetDateTime::from_unix_timestamp(i64::try_from(seconds).ok()?).ok()?;
-	let month = date.month().to_string();
 	Some(crate::i18n::translate_args(
 		"invites-show-established",
-		&[(
-			"date",
-			&format!("{} {}", month.get(..3).unwrap_or(&month), date.year()),
-		)],
+		&[("date", &crate::local_time::month_year(date.date(), true))],
 	))
 }
 

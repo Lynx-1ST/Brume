@@ -10,6 +10,7 @@ impl MessagingUi {
 		self.reading_preferences = value;
 		self.avatars.set_animation(value.animate_gifs);
 		self.reading_sidebar_applied = None;
+		self.reading_members_applied = None;
 		let zoom = f32::from(value.zoom_percent) / 100.0;
 		if (ctx.zoom_factor() - zoom).abs() > 0.001 {
 			// egui applies zoom after this pass, not synchronously inside the settings menu.
@@ -108,6 +109,7 @@ impl MessagingUi {
 			let defaults = ReadingPreferences::default();
 			value.zoom_percent = defaults.zoom_percent;
 			value.sidebar_width = defaults.sidebar_width;
+			value.member_sidebar_width = defaults.member_sidebar_width;
 			value.show_members = defaults.show_members;
 			value.show_members_dms = defaults.show_members_dms;
 			self.reading_save_requested = true;
@@ -289,6 +291,36 @@ impl MessagingUi {
 		maximum
 	}
 
+	pub(super) fn prepare_reading_members(&mut self, ui: &egui::Ui) -> f32 {
+		// Leave room for messages; a temporary viewport limit must not erase the
+		// user's preferred member width when they return to a wider window.
+		let maximum = (ui.available_width() - 420.0).clamp(190.0, 360.0);
+		let preferred = self.reading_preferences.member_sidebar_width;
+		let constrained = f32::from(preferred) > maximum;
+		if self.reading_members_applied != Some(preferred)
+			|| self.reading_members_constrained != constrained
+		{
+			ui.ctx()
+				.data_mut(|data| data.remove::<PanelState>(ui.scope_id().with("people-pane")));
+			self.reading_members_applied = Some(preferred);
+		}
+		self.reading_members_constrained = constrained;
+		maximum
+	}
+
+	pub(super) fn record_reading_members(&mut self, width: f32, maximum: f32) {
+		// Even in a constrained window, dragging inward is a deliberate smaller
+		// preference. Merely landing on the viewport cap is temporary geometry.
+		if (!self.reading_members_constrained || width < maximum - 0.5)
+			&& self.reading_members_applied == Some(self.reading_preferences.member_sidebar_width)
+			&& width.is_finite()
+			&& (190.0..=360.0).contains(&width.round())
+		{
+			self.reading_preferences.member_sidebar_width = width.round() as u16;
+			self.reading_members_applied = Some(self.reading_preferences.member_sidebar_width);
+		}
+	}
+
 	pub(super) fn record_reading_sidebar(&mut self, width: f32) {
 		// Applying settings from within this panel invalidates its old geometry;
 		// wait for the following frame before observing a user resize.
@@ -306,6 +338,35 @@ impl MessagingUi {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn member_resize_preserves_preference_while_viewport_is_constrained() {
+		let ctx = egui::Context::default();
+		let mut view = MessagingUi::default();
+		view.reading_preferences.member_sidebar_width = 340;
+		let mut frame = |width, observed| {
+			ctx.run_ui(
+				egui::RawInput {
+					screen_rect: Some(egui::Rect::from_min_size(
+						egui::Pos2::ZERO,
+						egui::vec2(width, 600.0),
+					)),
+					..Default::default()
+				},
+				|ui| {
+					let maximum = view.prepare_reading_members(ui);
+					view.record_reading_members(observed, maximum);
+				},
+			)
+			.drop_without_applying_deltas();
+			view.reading_preferences.member_sidebar_width
+		};
+		assert_eq!(frame(900.0, 320.0), 320);
+		assert_eq!(frame(720.0, 300.0), 320);
+		assert_eq!(frame(900.0, 320.0), 320);
+		assert_eq!(frame(720.0, 270.0), 270);
+		assert_eq!(frame(900.0, 270.0), 270);
+	}
 
 	#[test]
 	fn reading_controls_reset_retry_and_preserve_session_notification_opt_in() {
@@ -356,6 +417,7 @@ mod tests {
 		let custom = ReadingPreferences {
 			zoom_percent: 125,
 			sidebar_width: 300,
+			member_sidebar_width: 240,
 			show_members: false,
 			show_members_dms: false,
 			compact_messages: true,

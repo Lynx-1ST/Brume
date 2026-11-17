@@ -426,9 +426,11 @@ impl Audio {
 									(crate::activity::level_db(&frame) + 100.0) as u16,
 									Ordering::Relaxed,
 								);
-								let audible = active
-									.input_gate
-									.apply(&mut frame, processing.sensitivity_db);
+								let audible = active.input_gate.apply_settings(
+									&mut frame,
+									processing,
+									echo.speech_probability(),
+								);
 								if preview {
 									drops += u64::from(active.output.push(frame.into()).is_err());
 								} else if audible {
@@ -1249,6 +1251,23 @@ mod tests {
 			thread: std::thread::current(),
 			done: None,
 		}
+	}
+
+	#[test]
+	fn older_processing_preferences_keep_manual_gating_and_new_flags_round_trip() {
+		let old: Processing = serde_json::from_str(
+			r#"{"suppression":"Off","suppression_level":1,"echo_cancellation":false,"automatic_gain":false,"sensitivity_db":-63}"#,
+		).unwrap();
+		assert!(!old.automatic_sensitivity && !old.advanced_voice_activity);
+		assert_eq!(old.sensitivity_db, Some(-63));
+		let changed = Processing {
+			automatic_sensitivity: true,
+			advanced_voice_activity: true,
+			..old
+		};
+		let restored: Processing =
+			serde_json::from_str(&serde_json::to_string(&changed).unwrap()).unwrap();
+		assert_eq!(restored, changed);
 	}
 
 	#[test]

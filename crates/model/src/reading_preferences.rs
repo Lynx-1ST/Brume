@@ -3,6 +3,7 @@
 pub struct ReadingPreferences {
 	pub zoom_percent: u16,
 	pub sidebar_width: u16,
+	pub member_sidebar_width: u16,
 	/// Member list in servers; direct and group messages keep their own choice.
 	pub show_members: bool,
 	pub show_members_dms: bool,
@@ -23,6 +24,7 @@ impl Default for ReadingPreferences {
 		Self {
 			zoom_percent: 100,
 			sidebar_width: 236,
+			member_sidebar_width: 240,
 			show_members: true,
 			show_members_dms: true,
 			compact_messages: false,
@@ -49,6 +51,7 @@ impl ReadingPreferences {
 	pub fn is_valid(self) -> bool {
 		(50..=150).contains(&self.zoom_percent)
 			&& (190..=360).contains(&self.sidebar_width)
+			&& (190..=360).contains(&self.member_sidebar_width)
 			&& (25..=300).contains(&self.scroll_speed_percent)
 			&& usize::from(self.double_click_reaction) < Self::DOUBLE_CLICK_REACTIONS.len()
 	}
@@ -70,6 +73,7 @@ mod tests {
 					let preferences = ReadingPreferences {
 						zoom_percent,
 						sidebar_width,
+						member_sidebar_width: 240,
 						show_members,
 						show_members_dms: show_members,
 						compact_messages: false,

@@ -281,7 +281,14 @@ fn rarity_pill(ui: &mut egui::Ui, rarity: BadgeRarity) {
 fn date(seconds: i64) -> Option<String> {
 	time::OffsetDateTime::from_unix_timestamp(seconds)
 		.ok()
-		.map(|date| crate::local_time::local(date).date().to_string())
+		.map(|date| {
+			let date = crate::local_time::local(date).date();
+			if crate::i18n::current().resolved() == crate::i18n::Language::Vietnamese {
+				crate::local_time::numeric_date(date)
+			} else {
+				date.to_string()
+			}
+		})
 }
 
 enum MenuAction {

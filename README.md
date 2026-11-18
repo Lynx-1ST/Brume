@@ -1,454 +1,121 @@
-# Serein
+# Serein · Windows fork
 
-> **Windows fork:** Vietnamese UI and stream viewer indicators
-> from upstream [PR #1017](https://github.com/ViceVerse-cz/Serein/pull/1017).
-> Download Windows x64 builds from [this fork's Releases](https://github.com/Lynx-1ST/Serein/releases).
-> See [Vietnamese setup and Windows CI/CD](docs/windows-fork.md).
+Ứng dụng Discord desktop viết bằng **Rust**, với giao diện native **egui/wgpu**. Đây là bản fork của [ViceVerse-cz/Serein](https://github.com/ViceVerse-cz/Serein), do **Lynx-1ST** duy trì, tập trung vào Windows và trải nghiệm tiếng Việt.
+
+Giao diện chính chạy native; đăng nhập sử dụng trang Discord chính thức trong WebView2 tạm thời.
+
+[**Tải bản Windows**](https://github.com/Lynx-1ST/Serein/releases) · [Hướng dẫn chi tiết](docs/windows-fork.md) · [Báo lỗi](https://github.com/Lynx-1ST/Serein/issues) · [Dự án gốc](https://github.com/ViceVerse-cz/Serein)
 
 <p align="center">
-  <a href="https://github.com/ViceVerse-cz/Serein">
-    <img src="docs/preview.png" alt="Serein Native Discord Client" width="900" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" />
-  </a>
+  <img src="docs/preview.png" alt="Giao diện Serein — ảnh minh họa từ dự án gốc" width="900" />
 </p>
 
 <p align="center">
-  <strong>A lightweight, native Discord desktop client written in Rust, powered by egui and wgpu.</strong>
+  <a href="https://github.com/Lynx-1ST/Serein/releases"><img src="https://img.shields.io/github/v/release/Lynx-1ST/Serein?include_prereleases&label=Windows%20release" alt="Bản phát hành của fork" /></a>
+  <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/platform-Windows%20x64-blue" alt="Windows x64" /></a>
+  <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.99.1-orange?logo=rust" alt="Rust 1.99.1" /></a>
+  <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green" alt="MIT hoặc Apache-2.0" /></a>
 </p>
-
-<h3 align="center">
-  <a href="https://discord.gg/UqTDGCENaN">💬 Join our Discord server for updates</a>
-</h3>
-
-<p align="center">
-  <a href="#downloads--installation"><strong>📦 Downloads</strong></a> &nbsp;•&nbsp;
-  <a href="#highlights"><strong>⚡ Highlights</strong></a> &nbsp;•&nbsp;
-  <a href="#feature-showcase"><strong>✨ Showcase</strong></a> &nbsp;•&nbsp;
-  <a href="#measured-performance-vs-official-discord"><strong>📊 Benchmarks</strong></a> &nbsp;•&nbsp;
-  <a href="#quick-start"><strong>🛠️ Quick Start</strong></a> &nbsp;•&nbsp;
-  <a href="#feature-matrix"><strong>📋 Features</strong></a> &nbsp;•&nbsp;
-  <a href="#architecture-overview"><strong>🏗️ Architecture</strong></a>
-</p>
-
-<p align="center">
-  <a href="https://discord.gg/UqTDGCENaN"><img src="https://img.shields.io/badge/Discord-Join%20our%20Discord%20server%20for%20updates-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
-  <a href="https://github.com/ViceVerse-cz/Serein/releases"><img src="https://img.shields.io/github/v/release/ViceVerse-cz/Serein?label=release&color=blue" alt="GitHub Release" /></a>
-  <a href="Cargo.toml"><img src="https://img.shields.io/badge/rust-1.99.1_pinned-blue.svg?logo=rust" alt="Rust 1.99.1 Pinned" /></a>
-  <a href="crates/ui"><img src="https://img.shields.io/badge/ui-egui%20%2F%20wgpu-orange.svg" alt="UI egui/wgpu" /></a>
-  <a href="docs/platform-support.md"><img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-informational.svg" alt="Platform Support" /></a>
-  <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green.svg" alt="License: MIT or Apache-2.0" /></a>
-</p>
-
----
 
 > [!WARNING]
-> **Unofficial and not endorsed by Discord.**
-> Serein communicates directly with Discord's public gateway and REST endpoints for your existing account. Automating normal accounts outside the official OAuth2/bot API violates Discord's Terms of Service and carries risk of account termination. Technical interoperability does not imply platform approval. Review the [compatibility matrix](docs/discord-compatibility.md) and [authentication guide](docs/authentication.md) before use.
+> Serein là ứng dụng không chính thức, không được Discord chứng thực. Việc dùng tài khoản cá nhân qua client bên thứ ba có rủi ro vi phạm điều khoản Discord và bị khóa tài khoản. Đọc [khả năng tương thích](docs/discord-compatibility.md) và [hướng dẫn đăng nhập](docs/authentication.md) trước khi sử dụng.
 
----
+## Tải và cài đặt
 
-## Downloads & Installation
+Fork này chỉ phát hành **Windows x64**. Mở [GitHub Releases của Lynx-1ST/Serein](https://github.com/Lynx-1ST/Serein/releases) và chọn gói phù hợp:
 
-Pre-compiled releases for macOS, Linux, and Windows are published on GitHub [Releases](https://github.com/ViceVerse-cz/Serein/releases).
+| Gói | Cách dùng |
+| --- | --- |
+| Bộ cài `-Setup.exe` | Cài cho tài khoản Windows hiện tại; phù hợp với phần lớn người dùng. |
+| Bản portable `.zip` | Giải nén vào thư mục có quyền ghi, rồi chạy `serein.exe`. Gói có kèm giấy phép và công cụ đăng ký thông báo. |
+| EXE độc lập | Chạy trực tiếp; dùng ZIP nếu cần đầy đủ tài liệu và công cụ đi kèm. |
+| `SHA256SUMS.txt` | Đối chiếu mã SHA-256 của các tệp tải về. |
 
-| Platform | Format | Architectures | Details |
-|---|---|---|---|
-| **Windows** | `-Setup.exe`, `.zip` | `x86_64`, `aarch64` | Per-user NSIS installer (recommended) or standalone portable archive |
-| **macOS** | Homebrew Cask, `.zip`, Nix flake | Apple Silicon (`aarch64`) | Signed and notarized `.app` bundle; the Nix build is unsigned |
-| **Linux** | Flatpak (recommended), Repositories (`apt`, `dnf`, `zypper`, `pacman`), Gentoo ebuild, Nix flake, `.AppImage` | `x86_64` | Flatpak with automatic updates; signed package repositories; portable AppImage |
+Đăng nhập cần **Microsoft Edge WebView2 Runtime**. Các gói phát hành của fork hiện chưa được ký mã.
 
----
+Để bật tiếng Việt, vào **Settings → Language & Time → Display language → Tiếng Việt**. Lựa chọn được lưu trên thiết bị; chế độ ngôn ngữ hệ thống cũng nhận diện `vi-VN`.
 
-<details open>
-<summary><h3>🐧 Linux (Flatpak, Repositories, Gentoo, Nix, AppImage)</h3></summary>
+### Cập nhật trong ứng dụng
 
-#### 1. Flatpak (Recommended)
+Updater của fork lấy bản phát hành từ **Lynx-1ST/Serein**. Vào phần **Cập nhật** trong cài đặt để kiểm tra; chọn kênh **nightly** nếu đang dùng các bản `-nightly`, hoặc kênh **production** cho bản ổn định.
 
-Flatpak is the recommended distribution format for Linux, featuring sandbox isolation, bundled GNOME/WebKit runtimes, and automatic background updates.
+Bản cài từ upstream hoặc bản fork cũ chưa đổi địa chỉ updater cần được thay bằng bản EXE của fork trước. Bản portable cần nằm trong thư mục có quyền ghi để cập nhật được.
 
-- **One-Click Repository Install (Automatic Updates)**:
-  ```sh
-  flatpak install --user https://viceverse-cz.github.io/Serein/flatpak/serein.flatpakref
-  ```
-  Once installed, your desktop software store (GNOME Software, KDE Discover) or `flatpak update` will automatically discover and install updates.
+## Những thay đổi của fork
 
-- **Standalone Offline Bundle**:
-  Download `Serein-linux.flatpak` from [Releases](https://github.com/ViceVerse-cz/Serein/releases):
-  ```sh
-  flatpak install --user ./Serein-linux.flatpak
-  flatpak run cz.viceverse.serein
-  ```
+| Phần | Thay đổi |
+| --- | --- |
+| Tiếng Việt | Bổ sung catalog tiếng Việt, rà thuật ngữ theo ngữ cảnh Discord và định dạng ngày giờ. Nếu còn chuỗi chưa dịch hoặc dịch chưa tự nhiên, hãy báo lỗi kèm ảnh và vị trí. |
+| Chat trong kênh thoại | Hover hàng kênh để hiện nút trò chuyện và mời khi có quyền; menu chuột phải có **Mở trò chuyện**, không cần tham gia cuộc gọi. |
+| Thành viên trong voice | Hiện tag máy chủ; ưu tiên người đang live, sau đó xếp theo tên hiển thị không phân biệt hoa/thường, dùng ID để phân xử tên trùng. |
+| Thanh thành viên bên phải | Kéo mép trái để chỉnh độ rộng; lưu lựa chọn trên thiết bị. |
+| Xem stream | Chọn tối đa bốn stream trong cùng cuộc gọi, cải thiện lịch trình chiếu khung hình và hiển thị người xem. |
+| PiP trong Serein | Xem stream của người khác hoặc bản xem trước của mình khi chuyển sang màn hình khác; hỗ trợ kéo, đổi kích thước, dãy avatar, biểu tượng mắt và hover tên người xem. |
+| Nút X trên PiP | Dừng xem stream được chọn; với stream của mình thì dừng chia sẻ. Nút trở lại đưa về kênh thoại. |
+| Điều khiển stream | Nút ba chấm khi đang chia sẻ mở chỉnh độ phân giải/FPS. Áp dụng sẽ khởi động lại stream với cấu hình mới và giữ kết nối thoại. |
+| Giao diện xem stream | Bỏ bảng ghi chú hover ở góc dưới trái của hình stream; giữ các nút điều khiển ở giữa. |
+| Liên kết | Menu sao chép liên kết; sửa thao tác mở URL bằng trình duyệt mặc định trên Windows. |
+| Mic và cuộc gọi | Thêm điều chỉnh độ nhạy tự động, nhận diện giọng nói nâng cao, cảnh báo không phát hiện âm thanh và xác nhận chuyển kênh thoại. |
+| Gợi ý nhắc tên | Dùng biệt danh đúng máy chủ khi dữ liệu có sẵn, kể cả thành viên ngoài vùng danh sách đang hiển thị. |
+| Emoji | Cải thiện độ nét theo DPI với Twemoji và cache có giới hạn. |
+| DAVE | Tích hợp bản port đã sửa từ PR #862, gồm xử lý chuyển khóa và khôi phục stream. |
 
-See [Flatpak guide](packaging/flatpak/README.md) for sandbox permissions and source build details.
+Nhận diện giọng nói nâng cao dùng xác suất giọng nói từ **RNNoise**; không phải thuật toán độc quyền của Discord. Danh sách người xem phụ thuộc dữ liệu Discord gửi, ứng dụng không tự suy đoán khi thiếu dữ liệu.
 
-#### 2. Native Package Repositories (apt, dnf, zypper, pacman)
+Phần làm lại khung trang trí ngoài của popout tài khoản đang được hoãn. Animation khởi động mới chưa được tích hợp.
 
-Configure the signed package repository for your distribution with one command:
-```sh
-curl -fsSL https://viceverse-cz.github.io/Serein/setup.sh | sh
-```
-The script detects your distribution (Ubuntu/Debian, Fedora, openSUSE, Arch Linux), cryptographically verifies the GPG signing key, and configures the repository with an option to install immediately.
+Chi tiết cấu hình và giới hạn: [Windows fork](docs/windows-fork.md).
 
-After setup, manage Serein with your native package manager:
-```sh
-# Ubuntu / Debian: sudo apt install serein
-# Fedora:          sudo dnf install serein
-# openSUSE:        sudo zypper install serein
-# Arch Linux:      sudo pacman -S serein
-```
-Your normal system updates (`apt upgrade`, `dnf upgrade`, `zypper update`, `pacman -Syu`) will keep Serein updated. See [Signed package repositories](packaging/repositories/README.md) for manual GPG verification steps.
+## Các chức năng nền tảng
 
-#### 3. Gentoo (source or binary)
+Kế thừa từ Serein gốc: nhắn tin và DM, Markdown, biểu cảm/GIF, tệp đính kèm, luồng và diễn đàn, hồ sơ người dùng, quản lý máy chủ, theme/extension và Rich Presence. Voice có Opus, DAVE, khử tiếng vọng, lọc ồn, nhấn để nói, camera và chia sẻ màn hình native.
 
-Gentoo users can install Serein from the [vitaly-zdanevich-overlay](https://github.com/vitaly-zdanevich/gentoo-overlay) overlay. It provides a source ebuild ([net-im/serein](https://github.com/vitaly-zdanevich/gentoo-overlay/tree/main/net-im/serein)) and a prebuilt amd64 ebuild ([net-im/serein-bin](https://github.com/vitaly-zdanevich/gentoo-overlay/tree/main/net-im/serein-bin)).
+Mã nguồn và kiểm thử tổng hợp không chứng minh mọi chức năng hoạt động với Discord thực tế. Xem [tài liệu tương thích](docs/discord-compatibility.md) cho các giới hạn giao thức; ảnh minh họa phía trên không phải bằng chứng kiểm thử bản Windows hiện tại.
 
-```sh
-sudo eselect repository add vitaly-zdanevich-overlay git https://github.com/vitaly-zdanevich/gentoo-overlay.git
-sudo emaint sync -r vitaly-zdanevich-overlay
-echo 'net-im/serein ~amd64' | sudo tee /etc/portage/package.accept_keywords/serein
-sudo emerge --ask net-im/serein
-```
+## Đồng bộ upstream và CI/CD
 
-Use `net-im/serein-bin` in the keyword file and emerge command to install the prebuilt binary instead. The source ebuild requires Rust 1.99 or newer or newer. The binary ebuild targets amd64 systems with glibc 2.43 or newer. The two ebuilds install the same files, so choose one.
+- **Sync upstream** kiểm tra nhánh `main` của dự án gốc mỗi 6 giờ. Có thể chạy thủ công trong [GitHub Actions](https://github.com/Lynx-1ST/Serein/actions).
+- Có commit mới thì merge vào fork, giữ các thay đổi riêng; gặp xung đột thì dừng để xử lý, không force push.
+- Sau khi sync, **Serein Fork CI** được yêu cầu chạy. Khi CI của `main` thành công, **Windows Release** build và phát hành nightly của đúng commit đã kiểm tra.
+- Khi merge PR, CI có thể dùng lại kết quả thành công trong 24 giờ nếu cây Git trùng hoàn toàn và đủ mọi job bắt buộc. Nếu không xác minh được, CI chạy đầy đủ.
+- Build native và đóng gói chỉ dành cho Windows x64. Một số kiểm tra phụ trợ không cần Windows vẫn dùng runner Ubuntu.
+- Không có commit mới thì không tạo thêm release chỉ vì đến lịch sync. Lịch GitHub Actions có thể chạy trễ.
 
-#### 4. Nix (flake)
+## Build từ mã nguồn trên Windows
 
-Nix installs are updated through Nix, not the in-app updater. On macOS the build produces an unsigned, non-notarized `Serein.app`. See the [Nix package guide](packaging/nix/README.md) for the development shell and details.
+Cần Git, Rust theo [toolchain đã ghim](rust-toolchain.toml), Visual Studio C++ Build Tools với Windows SDK, CMake và libclang. Đăng nhập cần WebView2. Xem thêm [yêu cầu nền tảng](docs/platform-support.md).
 
-The repository flake builds Serein from source for `x86_64-linux` and `aarch64-darwin`:
-
-```sh
-nix run github:ViceVerse-cz/Serein#serein
-nix profile install github:ViceVerse-cz/Serein#serein
-```
-
-Or declaring it in the flake
-
-Both modules below take `inputs` as an argument, so your flake must pass it through `specialArgs` (NixOS) and `extraSpecialArgs` (Home Manager). Without this, importing the modules fails with a missing `inputs` argument.
-
-`flake.nix`
-```nix
-{
-    inputs = {
-        nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-        home-manager = {
-            url = "github:nix-community/home-manager";
-            inputs.nixpkgs.follows = "nixpkgs";
-        };
-        serein = {
-            url = "github:ViceVerse-cz/Serein";
-            inputs.nixpkgs.follows = "nixpkgs";
-        };
-    };
-
-    outputs = { nixpkgs, home-manager, ... }@inputs: {
-        # NixOS
-        nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            specialArgs = { inherit inputs; };
-            modules = [ ./configuration.nix ];
-        };
-
-        # Standalone Home Manager
-        homeConfigurations.username = home-manager.lib.homeManagerConfiguration {
-            pkgs = nixpkgs.legacyPackages.x86_64-linux;
-            extraSpecialArgs = { inherit inputs; };
-            modules = [ ./home-manager.nix ];
-        };
-    };
-}
-```
-
-If you use Home Manager as a NixOS module instead, pass `inputs` through its own option:
-
-```nix
-{
-    nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
-        modules = [
-            ./configuration.nix
-            home-manager.nixosModules.home-manager
-            {
-                home-manager.extraSpecialArgs = { inherit inputs; };
-                home-manager.users.username = import ./home-manager.nix;
-            }
-        ];
-    };
-}
-```
-
-`configuration.nix`
-```nix
-{
-    inputs,
-    pkgs,
-    ...
-}: {
-    environment.systemPackages = [
-        inputs.serein.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ];
-}
-```
-
-`home-manager.nix`
-```nix
-{
-    inputs,
-    pkgs,
-    ...
-}: {
-    home.packages = [
-        inputs.serein.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ];
-}
-```
-
-#### 5. Standalone AppImage (Portable)
-
-Download `serein-<version>-Linux-X64.AppImage` from [Releases](https://github.com/ViceVerse-cz/Serein/releases), make it executable, and run:
-```sh
-chmod +x ./serein-*-Linux-X64.AppImage
-./serein-*-Linux-X64.AppImage
-```
-Keep the AppImage in a writable directory to receive in-app updates via **Settings → Updates**. Note that the AppImage uses host GTK4 and WebKitGTK 6.0 libraries; see [AppImage setup and runtime dependencies](packaging/appimage/README.md) for host requirements.
-
-</details>
-
-<details>
-<summary><h3>🪟 Windows (Installer, PowerShell, Portable)</h3></summary>
-
-#### 1. Setup Installer (Recommended)
-Download the `Windows-X64-Setup.exe` or `Windows-ARM64-Setup.exe` asset for your system from [Releases](https://github.com/ViceVerse-cz/Serein/releases) and run it:
-- Installs per-user to `%LOCALAPPDATA%\Programs\Serein` without requiring administrator/UAC elevation.
-- Automatically registers Start Menu shortcuts and configures AppUserModelID (`cz.viceverse.serein`) for native Windows toast notifications.
-- Registers in Windows Settings (Installed Apps / Add or Remove Programs) with full uninstall support.
-- Fully compatible with in-app self-updates: updates automatically synchronize the registered version.
-
-#### 2. Standalone PowerShell Setup
-Extract the `Windows-X64.zip` or `Windows-ARM64.zip` asset for your system and run:
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1
-```
-To uninstall later:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Uninstall
-```
+git clone https://github.com/Lynx-1ST/Serein.git
+cd Serein
 
-#### 3. Portable Archive
-Extract the `Windows-X64.zip` or `Windows-ARM64.zip` asset for your system anywhere and launch `serein.exe`. To enable native desktop notifications:
-```powershell
-powershell -File .\install-notifications.ps1
-```
-Run the script from the extracted folder beside `serein.exe`. If PowerShell's `RemoteSigned` policy blocks the downloaded script, review it and run `Unblock-File -LiteralPath .\install-notifications.ps1` in that folder before retrying. The Windows installer registers the shortcut automatically, so installed builds do not need this script.
-
-</details>
-
-<details>
-<summary><h3>🍎 macOS (Homebrew Cask, Standalone .app)</h3></summary>
-
-#### Homebrew Cask
-```sh
-brew tap ViceVerse-cz/serein
-brew install --cask serein
-```
-The cask lives in the small [`homebrew-serein`](https://github.com/ViceVerse-cz/homebrew-serein) tap, so installing does not clone this repository. If you tapped the old URL, run `brew untap ViceVerse-cz/serein` first and tap again.
-
-#### Standalone Bundle
-Download `serein-<version>-macOS-ARM64.zip` from [Releases](https://github.com/ViceVerse-cz/Serein/releases), unzip, and drag `Serein.app` to your `/Applications` folder.
-
-</details>
-
----
-
-## Highlights
-
-- ⚡ **Pure Native Performance:** Built with pure Rust, `egui`, and `wgpu`. Immediate-mode rendering with minimal idle CPU, low memory footprint, and instantaneous launch times—zero Electron, Node.js, or web runtime overhead.
-- 🌐 **Direct Gateway & REST Transports:** Direct connection to Discord's official endpoints with active rate-limiting cooldowns, heartbeat handling, reconnect/resume loops, and partial payload patching.
-- 🔒 **Secure OS Credential Storage:** Session tokens use your operating system's secure vault by default (macOS Keychain, Windows Credential Manager, or Linux Secret Service). Settings › Storage offers an explicit, unencrypted plaintext fallback when the keyring does not work.
-- 🛡️ **Ephemeral Authentication Webview:** Sign-in uses Discord's official hosted login page inside a temporary native webview (WKWebView, WebView2, or WebKitGTK) supporting email/password, QR login, and MFA. An origin-checked handoff secures the session credential and immediately terminates the webview.
-- 💾 **Bounded Local Persistence:** Recent chat history, drafts, image previews, settings, and diagnostics are stored in an account-isolated, bounded local SQLite database. All local data is strictly cleared upon explicit logout.
-- 🎙️ **Voice Calls, Video & Screen Sharing:** Complete native voice engine with 1-to-1 and group DM calls, server voice channels, push-to-talk, Sonora AEC3 acoustic echo cancellation, RNNoise noise suppression, Opus codec, and DAVE v1 end-to-end encryption. Includes native screen capture (macOS ScreenCaptureKit, Windows Graphics Capture, Linux portal/PipeWire with VA-API/NVENC hardware encoding and software fallback; Linux native capture remains unverified) and incoming stream & camera video playback with hardware-accelerated decoding (VideoToolbox, VA-API, DirectX).
-- 🧵 **Forum Channels & Active Threads:** Browse forum channels, view posts sorted by recent activity, read message threads with unread indicators, and create new forum posts directly in-app.
-- ⚙️ **Server Administration Suite:** Full server management interface including Server Profiles (banners, icons, traits, descriptions), custom sticker management, role editor with fine-grained permission matrix, paginated audit logs with action filters, invite manager with revocation, integrations and webhooks, and member moderation.
-- ✨ **GIF & Twemoji Picker:** Instant KLIPY GIF search with favorites and one-click sending, full Twemoji picker with search and quick-reactions, plus custom guild emojis.
-- 📎 **Multi-Attachment Batch Uploads:** Composer staging tray supporting multiple files of any type (PDF, ZIP, 3D STL, videos, audio, images) with file-type badges, thumbnails, size indicators, individual removal, and progress tracking.
-- 👤 **Native Profile Customization:** In-app profile editor for global display names, bios / about me, pronouns, and custom accent colors with real-time live preview cards.
-- 🎨 **Extensions & Theme Shop:** Git-backed plugin engine and community theme shop with preview cards, color preset toggles, permission verification, and a built-in deleted-message retention protector.
-- 🎬 **Rich Media & Video Player:** Inline video playback for MOV, MP4, and WebM attachments where platform codecs are available, interactive seekable voice message waveforms, right-click media save/copy context menus, and full-resolution image viewer modals.
-- ⌨️ **Keybinds & Shortcuts:** Built-in keybind reference sheet styled with raised keycaps, quick edit (`Up`), quick delete (`Backspace`), and intuitive keyboard navigation.
-- 🎮 **Rich Presence & Game Detection:** Built-in Discord IPC and WebSocket RPC servers, plus executable-based detection of running games, showing live game activities in member rosters, DM lists, and user profiles, with opt-in system tray integration.
-
----
-
-## Feature Showcase
-
-| Voice Calls & Live Screen Sharing | User Settings & Profile Customizer |
-| :---: | :---: |
-| <img src="docs/screenshots/voice-calls-screenshare.png" alt="Voice Calls & Screen Sharing" width="450" /> | <img src="docs/screenshots/user-settings.png" alt="User Settings & Profile Customizer" width="450" /> |
-| **Server Administration & Profiles** | **Threads & Forum Channels** |
-| <img src="docs/screenshots/server-settings.png" alt="Server Administration & Profiles" width="450" /> | <img src="docs/screenshots/threads-forums.png" alt="Threads & Forum Channels" width="450" /> |
-| **Multi-File Attachment Uploads** | **GIFs & Twemoji Picker** |
-| <img src="docs/screenshots/file-uploads.png" alt="Multi-File Attachment Uploads" width="450" /> | <img src="docs/screenshots/gifs-and-emojis.png" alt="GIFs & Twemoji Picker" width="450" /> |
-
----
-
-## Measured Performance vs. Official Discord
-
-> **Testing Scenario:** Browsing channels while joined in a Voice Channel (VC) and streaming screen at 60 FPS on macOS.
-
-| Metric | Official Discord Client (Electron) | Serein (Native Rust + egui/wgpu) | Advantage |
-|---|:---:|:---:|:---:|
-| **Memory (RAM)** | **1,178.4 MB** *(across 7 helper processes)* | **129.7 MB** *(single unified process)* | **~9× less memory (-89%)** |
-| **CPU Usage** | **22.8%** *(Renderer + Helper processes)* | **8.1%** | **~2.8× lower CPU (-64%)** |
-
-| Official Discord (Electron) | Serein (Native Rust) |
-| :---: | :---: |
-| **RAM: ~1,178.4 MB across 7 processes** | **RAM: 129.7 MB single process** |
-| <img src="docs/screenshots/perf-discord-ram.png" alt="Discord RAM Usage" width="450" /> | <img src="docs/screenshots/perf-serein-ram.png" alt="Serein RAM Usage" width="450" /> |
-| **CPU: 22.8% total** | **CPU: 8.1% total** |
-| <img src="docs/screenshots/perf-discord-cpu.png" alt="Discord CPU Usage" width="450" /> | <img src="docs/screenshots/perf-serein-cpu.png" alt="Serein CPU Usage" width="450" /> |
-
----
-
-## Quick Start
-
-### Prerequisites
-Rust **1.99.1** is pinned. Ensure you have the standard C/C++ toolchain, CMake, Git and libclang installed for your platform (the bundled BoringSSL TLS library is built from source):
-- **macOS:** Xcode command-line tools (`xcode-select --install`)
-- **Linux:** GCC/Clang, ALSA development headers, `pkg-config`, GTK 4, WebKitGTK 6.0, fontconfig, and Vulkan drivers (see [Platform Support](docs/platform-support.md))
-- **Windows:** Visual Studio C++ build tools and WebView2 Runtime
-
-### Running Locally
-
-```sh
-# 1. Run synthetic conversations; extension browsing uses public GitHub downloads
+# Xem giao diện bằng dữ liệu tổng hợp
 cargo run --locked --features demo -- --demo
 
-# 2. Launch standard client with voice (uses saved login or official webview)
+# Chạy client thông thường khi bạn sẵn sàng đăng nhập
 cargo run --locked
-```
 
-Default source builds keep SQLite, image caches, extensions and game metadata in the OS-local
-`serein-development` directory, isolated from installed Serein data and safe from `cargo clean`.
-Set `SEREIN_DATA_DIR` to another absolute path when development copies need separate data roots;
-packaged builds use the normal `serein` directory when the variable is absent. Login tokens remain
-in the operating-system credential store under separate development and packaged-build entries.
-
-### Workspace Commands
-
-```sh
-# Run full workspace validation (formatting, Clippy, tests, policy checks)
+# Kiểm tra workspace
 cargo xtask check
 
-# Run release reducer benchmark
-cargo replay
-
-# Run authentication bridge JS test harness
-node tests/login-handoff.cjs
-
-# Package release including voice (macOS .app bundle, Linux .deb by default)
+# Đóng gói production có voice, không kèm demo
 cargo xtask package
 ```
 
----
+Build từ source dùng thư mục dữ liệu `serein-development`, tách khỏi bản cài đặt. Có thể đặt `SEREIN_DATA_DIR` thành đường dẫn tuyệt đối để tách các môi trường phát triển.
 
-## Feature Matrix
+## Tài liệu và báo lỗi
 
-| Capability | Status | Notes |
-|---|---|---|
-| **Navigation & Guilds** | Implemented | Collapsible categories, cached icons, guild channels, forum channels, active threads, DM lists, People pane, and server channel context menus |
-| **Message Timeline** | Implemented | Virtualized variable-height rows, inline link confirmations, spoiler text/media reveal, unread message banners, deleted message protector, and local timezone timestamps |
-| **Markdown & System Messages** | Implemented | Bold, italics, code blocks, blockquotes, clickable links, and styled system events with tinted Phosphor icons and clickable member names |
-| **Reactions & Emojis** | Implemented | Twemoji rendering, native reaction counts, eight-emoji quick picker, full emoji picker integration, custom guild emojis, and add/remove reaction controls |
-| **GIFs & Media Search** | Implemented | KLIPY GIF picker with search, favorites category, and one-click direct sending |
-| **User Mentions & Autocomplete** | Implemented | Clickable user mentions with interactive composer autocompletion and visual highlight styling |
-| **Media Previews & Video Player** | Implemented | Inline MOV, MP4, and WebM playback where platform codecs are available; media copy/save context menus, inline image cards, embed cards, related embed image galleries, and full-resolution image viewer modals |
-| **File & Attachment Uploads** | Implemented | Multi-attachment batch staging with file-type badges (PDF, ZIP, STL, images), thumbnail previews, individual file removal, upload progress bar, and drag-and-drop |
-| **Voice Engine & Calls** | Implemented | 1-to-1/group DM calls & server channels, Opus codec, DAVE v1 E2EE, Sonora AEC3 acoustic echo cancellation, RNNoise suppression, push-to-talk (`V`), audio device selector |
-| **Voice Messages** | Implemented | Inline voice message playback with interactive waveforms and bounded streaming audio buffering |
-| **Screen Sharing & Video** | Implemented | Native screen capture (macOS ScreenCaptureKit, Windows Graphics Capture, Linux portal/PipeWire with VA-API/NVENC hardware encoding and software fallback; Linux native capture remains unverified), quality presets (480p/720p/1080p/1440p/2160p, up to 60fps), and local camera/screen previews |
-| **Camera Video & Stream Viewing** | Implemented | Hardware-accelerated decoding (macOS VideoToolbox, Linux VA-API, Windows DXVA/D3D11) for incoming screen streams and camera video feeds |
-| **Threads & Forum Channels** | Implemented | Forum post listing, recent activity sorting, active thread browsing, and new forum post / thread creation |
-| **Server Administration** | Implemented | Server profile editor (banners, icons, traits), custom sticker upload/edit/delete, role management with permissions matrix, audit log viewer, invite tracking and revocation, integrations/webhooks, and member moderation |
-| **Extensions & Theme Shop** | Implemented | Git-backed plugins, community theme catalog with preview cards and color presets, permission prompt modals, and deleted-message protector |
-| **Keybinds & Shortcuts** | Implemented | In-app keybind cheat sheet with raised keycaps, quick edit (`Up`), quick delete (`Backspace`), and keyboard navigation hotkeys |
-| **Rich Presence & Game IPC** | Implemented | Discord IPC and WebSocket RPC servers plus running-game detection; displays activities in member rosters, DMs, and user profiles; opt-in system tray |
-| **Profile Cards & Editing** | Implemented | On-demand profile popouts with banners, bios, badges, connections; native in-app editor for display name, bio, pronouns, and custom accent color with live preview |
-| **Server & Group Actions** | Implemented | Server dropdown with friend invites and leave server; group DM actions (edit name/icon preview, mute, leave) |
-| **Context Menus & Shortcuts** | Implemented | Right-click context menus for messages, media (save/copy), server channels, and members |
-| **Typing Indicators** | Implemented | Displays incoming typing with short expiry; Serein strictly avoids emitting outgoing typing signals |
-| **Persistence & Drafts** | Implemented | Bounded SQLite cache for history, drafts, settings, and diagnostics; OS credential store for auth tokens; sanitary logout |
-| **Internationalization** | Partial | Bundled Inter font, CJK and Arabic font fallbacks included; full IME and bidirectional editing unverified |
+- [Thiết lập tiếng Việt, voice và quy trình phát hành của fork](docs/windows-fork.md)
+- [Đăng nhập](docs/authentication.md) · [Tương thích Discord](docs/discord-compatibility.md)
+- [Kiến trúc](docs/architecture.md) · [Voice](docs/voice.md) · [Extension](docs/extensions.md)
+- [Lưu trữ dữ liệu](docs/storage-policy.md) · [Mô hình bảo mật](docs/threat-model.md)
+- [Báo lỗi cho fork](https://github.com/Lynx-1ST/Serein/issues): ghi phiên bản, phiên bản Windows, các bước tái hiện và ảnh nếu cần. Không gửi token hoặc thông tin đăng nhập.
 
----
+## Ghi công và giấy phép
 
-## Architecture Overview
+Serein gốc được phát triển bởi [ViceVerse-cz và các cộng tác viên](https://github.com/ViceVerse-cz/Serein). Fork giữ giấy phép **MIT hoặc Apache-2.0**, tùy lựa chọn: [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE).
 
-Serein is engineered as a clean multi-crate Cargo workspace, isolating UI rendering from networking, persistence, and service protocols:
+Các bản port tham khảo upstream: [#1017](https://github.com/ViceVerse-cz/Serein/pull/1017), [#1040](https://github.com/ViceVerse-cz/Serein/pull/1040), [#916](https://github.com/ViceVerse-cz/Serein/pull/916), [#886](https://github.com/ViceVerse-cz/Serein/pull/886) và [#862](https://github.com/ViceVerse-cz/Serein/pull/862). Thông tin ghi công chi tiết được giữ trong lịch sử commit và tài liệu liên quan.
 
-```
-serein/
-├── apps/
-│   └── desktop/          # Application entrypoint, CLI flags, window lifecycle
-├── crates/
-│   ├── client-core/      # Client state coordinator, generation tracking, events
-│   ├── session-cache/    # In-memory bounded cache and state reconciliation
-│   ├── ui/               # egui widgets, message virtualizer, themes, design tokens
-│   ├── model/            # Strongly-typed Discord domain entities
-│   ├── discord-protocol/ # Wire protocol serialization and partial payload patches
-│   ├── discord-api/      # HTTP/2 REST client with rate limiting and backoff
-│   ├── discord-gateway/  # WebSocket gateway client with heartbeat and resume
-│   ├── discord-voice/    # Opus codecs, RTP/UDP transport, DAVE v1, Sonora AEC, RNNoise, video decoding
-│   ├── local-store/      # Bounded SQLite database for history, drafts, settings
-│   ├── platform/         # OS credential store (Keychain/CredManager/SecretService)
-│   └── test-support/     # Deterministic synthetic fixtures and mocks
-└── tools/
-    ├── replay-bench/     # Benchmarking harness for state reducers
-    └── xtask/            # Workspace automation tasks (packaging, checks, linting)
-```
-
----
-
-## Security & Storage Policy
-
-- **Token Protection:** Tokens use the native OS credential store by default (macOS Keychain, Windows Credential Manager, Linux Secret Service). An explicit Storage setting allows private, bounded plaintext files when OS saving fails; disabling it deletes those secret files. Active tokens remain redacted in memory.
-- **Local Cache Bounds:** SQLite databases store recent channel history, drafts, settings, diagnostics, and image preview metadata within bounded byte and count limits. The local SQLite store is **not** encrypted by the application.
-- **Sanitary Logout:** Executing an explicit logout destroys active network sessions, purges active secrets from memory, deletes the token from the OS credential store, and erases that account's local cache and drafts.
-- **Zero Telemetry:** Serein contains no analytics, telemetry, background crash collectors, or tracking beacons.
-- **Platform Integrity:** No CAPTCHA/MFA bypasses, bot substitutions, token scrapers, or third-party relays. Every Discord connection presents one consistent browser identity matching the platform webview (unofficial; see [authentication](docs/authentication.md)); it is not randomized or rotated to evade detection.
-
-For full details, review the [Storage Policy](docs/storage-policy.md) and [Threat Model](docs/threat-model.md).
-
----
-
-## Documentation
-
-- [Architecture & Monorepo Design](docs/architecture.md)
-- [Discord Compatibility & Protocol Details](docs/discord-compatibility.md)
-- [Authentication & Login Handoff](docs/authentication.md)
-- [Storage Policy & Cache Retention](docs/storage-policy.md)
-- [Platform Support & Build Requirements](docs/platform-support.md)
-- [Nix Package & Development Shell](packaging/nix/README.md)
-- [Voice Architecture & Procedure](docs/voice.md)
-- [Design Tokens & UI Styling](docs/design.md)
-- [Extensions & Plugin Architecture](docs/extensions.md)
-- [Extension SDK Creator Wiki](https://github.com/ViceVerse-cz/Serein/wiki)
-- [SDK Examples and Offline Authoring Guide](examples/extensions/README.md)
-- [Theme API Specification](docs/theme-api.md)
-- [Threat Model & Security](docs/threat-model.md)
-- [Third-Party Licenses & Notices](THIRD_PARTY_NOTICES.md)
-
----
-
-## License
-
-Original Serein code is dual-licensed under either:
-- **MIT License** ([LICENSE-MIT](LICENSE-MIT))
-- **Apache License, Version 2.0** ([LICENSE-APACHE](LICENSE-APACHE))
-
-at your option. Third-party library notices, bundled font licenses (Inter, Noto Sans CJK/Arabic), and Twemoji graphics licenses are cataloged in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-Demo fixtures and simulated actions are excluded from normal app and CI packages.
-Build with `--features demo` and launch with `--demo` to enable them; `--demo-*`
-scenario flags additionally require `--demo`. `cargo xtask package` always builds
-without demo support, while offline tests can still use synthetic fixtures.
+Giấy phép thư viện, font và Twemoji: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

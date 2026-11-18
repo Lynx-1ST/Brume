@@ -37,7 +37,9 @@ của khung hình. Các công cụ lab Linux đi kèm chỉ dành cho thử nghi
 
 PiP nổi bên trong Serein khi rời màn hình cuộc gọi; có thể mở từ menu của ô stream, kéo,
 đổi kích thước và chọn stream qua menu chuột phải, gồm bản xem trước stream của mình.
-PiP tái sử dụng texture đang xem. Đóng PiP chỉ ẩn cửa sổ; nút trở lại đưa về đúng kênh thoại.
+PiP tái sử dụng texture đang xem, hiện dãy avatar và số người xem; di chuột lên để xem tên.
+Nút X dừng xem stream được chọn, hoặc dừng chia sẻ nếu là stream của mình; nút trở lại
+đưa về đúng kênh thoại. Mục đóng PiP trong menu chuột phải chỉ ẩn cửa sổ.
 Lựa chọn được xóa khi đổi tài khoản hoặc phiên gọi, tránh hiển thị ảnh của phiên cũ.
 
 ## Biệt danh khi gợi ý nhắc tên

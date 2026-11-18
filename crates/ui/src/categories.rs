@@ -926,13 +926,22 @@ impl MessagingUi {
 								&& state.can_manage_channel(channel.id);
 							let active = state.selected == Some(channel.id);
 							if channel.kind == 2 {
-								let response = ui
+								let (response, action) = ui
 									.push_id(slot, |ui| {
 										self.voice_channel_button(
 											ui, state, channel, active, draggable,
 										)
 									})
 									.inner;
+								match action {
+									Some(crate::voice::VoiceRowAction::Chat) => {
+										self.channel_menu.request_voice_chat(state, channel.id)
+									}
+									Some(crate::voice::VoiceRowAction::Invite) => {
+										self.channel_menu.request_channel_invite(state, channel.id)
+									}
+									None => {}
+								}
 								if draggable
 									&& response.drag_started_by(egui::PointerButton::Primary)
 								{
@@ -984,10 +993,11 @@ impl MessagingUi {
 									),
 								);
 								self.preload.conversation(&response, || Some(channel.id));
-								if response.clicked() {
+								if action.is_none() && response.clicked() {
+									self.voice_chat_open = false;
 									selected = Some(channel.id);
 								}
-								if response.double_clicked() {
+								if action.is_none() && response.double_clicked() {
 									self.voice_join = Some(channel.id);
 								}
 								paint_shelf_rule(
@@ -1427,7 +1437,14 @@ impl MessagingUi {
 								);
 							}
 							if let Some(glyph) = glyph {
-								channel_marks::paint(ui.painter(), access, row, glyph, name_color);
+								channel_marks::paint(
+									ui.painter(),
+									access,
+									row,
+									glyph,
+									name_color,
+									true,
+								);
 							}
 							let response = response.on_hover_text_with(|| {
 								format!(
@@ -2684,7 +2701,7 @@ mod tests {
 			deafened: false,
 			participants: vec![],
 			camera: false,
-			watching: None,
+			watching: Vec::new(),
 			error: None,
 			reconnecting: None,
 		});

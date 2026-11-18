@@ -26,25 +26,25 @@ impl Form {
 	}
 
 	pub fn show(&mut self, ui: &mut egui::Ui, endpoint: &str, manual: bool) {
-		ui.collapsing("Proxy authentication", |ui| {
-            ui.label("Credentials stay in Serein's OS credential store and are never shared with the plugin. Apply the proxy URL before saving credentials.");
+		ui.collapsing(crate::i18n::translate("ui-builtin-proxy-authentication"), |ui| {
+            ui.label(crate::i18n::translate("ui-builtin-credentials-stay-in-serein-s-os-credential-store-and-are-never-shared-with-the-plugin-apply-the-prox"));
             ui.add_enabled_ui(manual && !self.busy, |ui| {
                 if url::Url::parse(endpoint).is_ok_and(|url| url.scheme() == "http") {
-                    ui.label("HTTP proxy authentication is unencrypted: anyone observing the connection to the proxy can recover these credentials. Use an HTTPS proxy for encrypted authentication.");
+                    ui.label(crate::i18n::translate("ui-builtin-http-proxy-authentication-is-unencrypted-anyone-observing-the-connection-to-the-proxy-can-recover-th"));
                 }
-                credential_input(ui, "Username", &mut self.username, false, 256);
-                credential_input(ui, "Password", &mut self.password, true, 1024);
+                credential_input(ui, "proxy-username", &mut self.username, false, 256);
+                credential_input(ui, "proxy-password", &mut self.password, true, 1024);
                 ui.horizontal(|ui| {
-                    if ui.button("Save credentials").clicked() {
+                    if ui.button(crate::i18n::translate("ui-builtin-save-credentials")).clicked() {
                         self.queue_save(endpoint);
                     }
-                    if ui.button("Remove saved credentials").clicked() {
+                    if ui.button(crate::i18n::translate("ui-builtin-remove-saved-credentials")).clicked() {
                         self.clear_draft();
                         self.request = Some(Request { endpoint: endpoint.into(), credentials: None });
                     }
                 });
             });
-            if !manual { ui.label("Choose URL mode to configure proxy authentication."); }
+            if !manual { ui.label(crate::i18n::translate("ui-builtin-choose-url-mode-to-configure-proxy-authentication")); }
             if !self.status.is_empty() { ui.label(&self.status); }
         });
 	}
@@ -57,7 +57,7 @@ fn credential_input(
 	password: bool,
 	limit: usize,
 ) -> egui::Id {
-	let label = ui.label(label);
+	let label = ui.label(crate::i18n::translate_if_key(label));
 	let mut edit = egui::TextEdit::singleline(&mut **value)
 		.align(egui::Align2::LEFT_CENTER)
 		.id_salt(("host-proxy-credential", password))

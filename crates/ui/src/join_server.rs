@@ -364,7 +364,10 @@ impl JoinDialog {
 			ui.add_space(8.0);
 			ui.horizontal_wrapped(|ui| {
 				ui.label(crate::i18n::translate("join-server-audience-not-sure"));
-				if ui.link("Skip this question").clicked() {
+				if ui
+					.link(crate::i18n::translate("join-skip-question"))
+					.clicked()
+				{
 					self.begin_customize(state);
 				}
 				ui.label(crate::i18n::translate("join-server-audience-for-now"));
@@ -469,7 +472,7 @@ impl JoinDialog {
 			}
 			if let Some(error) = self.icon_error {
 				ui.add_space(10.0);
-				design::notice(ui, design::Level::Error, error);
+				design::notice(ui, design::Level::Error, &crate::i18n::builtin_text(error));
 			}
 			let result = self
 				.submitted
@@ -477,7 +480,11 @@ impl JoinDialog {
 				.flatten();
 			if let Some(Err(error)) = result {
 				ui.add_space(10.0);
-				design::notice(ui, design::Level::Error, error.label());
+				design::notice(
+					ui,
+					design::Level::Error,
+					&crate::i18n::builtin_text(error.label()),
+				);
 			} else if result.is_some_and(Result::is_ok) {
 				ui.add_space(10.0);
 				design::notice(
@@ -498,7 +505,11 @@ impl JoinDialog {
 				);
 			} else if !self.status.is_empty() {
 				ui.add_space(10.0);
-				design::notice(ui, design::Level::Error, self.status);
+				design::notice(
+					ui,
+					design::Level::Error,
+					&crate::i18n::builtin_text(self.status),
+				);
 			}
 		});
 		d.footer(|ui| {
@@ -735,7 +746,7 @@ impl JoinDialog {
 			((!self.status.is_empty()).then_some(self.status), false),
 		] {
 			let Some(text) = text else { continue };
-			let text = crate::i18n::translate_if_key(text);
+			let text = crate::i18n::builtin_text(text);
 			ui.add_space(12.0);
 			let (fill, color) = if danger {
 				(colors.danger.gamma_multiply(0.14), colors.danger)

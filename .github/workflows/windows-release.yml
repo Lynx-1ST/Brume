@@ -162,12 +162,16 @@ jobs:
 
           - Vietnamese: Settings > Language & Time > Display language > Tiếng Việt.
           - Revised Vietnamese terminology and localized dates and times.
-          - Voice channel rows use the original layout, without an added chat icon.
+          - Voice chat and invite buttons appear only on row hover; Open Chat is also in the voice-channel context menu.
           - Stream viewer avatars/count and Open Stream fix, ported from upstream PR #1017.
           - Sharper emoji at high DPI, ported from upstream PR #1040.
           - Server nickname suggestions include retained offscreen members (issue #1044).
           - Voice participant guild tags and resizable member sidebar.
           - Richer own-account popout with available profile information and supported cosmetics.
+          - Compact guild tags; outer profile-frame changes are deferred.
+          - In-app stream Picture-in-Picture and up to four watched streams (upstream PR #916).
+          - Deadline-based stream repaint scheduling and offline lab tools (upstream PR #886).
+          - Vietnamese labels and tooltips wired across voice controls and other application dialogs.
           - Optional automatic mic sensitivity, RNNoise speech detection, silent-input warning and channel-switch confirmation.
           - Local cache schema upgrades to 30; older schema-29 clients cannot reopen the upgraded cache.
           - Download **-Setup.exe** to install, or extract **.zip** for the portable app.

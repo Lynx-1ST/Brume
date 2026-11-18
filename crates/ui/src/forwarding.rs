@@ -240,7 +240,7 @@ impl ForwardDialog {
 					)
 				});
 				if let Some(error) = self.error {
-					design::notice(ui, design::Level::Error, error);
+					design::notice(ui, design::Level::Error, &crate::i18n::builtin_text(error));
 				}
 				if submitted {
 					for target in &self.targets {

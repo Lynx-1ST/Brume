@@ -96,11 +96,11 @@ impl ArchivesUi {
 								ui.add_enabled_ui(allowed && !view.loading, |ui| {
 									crate::design::Select::from_id_salt(("archive-kind", parent))
 										.width(112.0)
-										.selected_text(match kind {
+										.selected_text(crate::i18n::builtin_text(match kind {
 											Kind::Public => "Public",
 											Kind::JoinedPrivate => "Joined private",
 											Kind::Private => "Private",
-										})
+										}))
 										.show_ui(ui, |ui| {
 											for (option, label) in [
 												(Kind::Public, "Public"),
@@ -111,7 +111,9 @@ impl ArchivesUi {
 													state.can_archive(parent, option),
 													|ui| {
 														ui.selectable_value(
-															&mut kind, option, label,
+															&mut kind,
+															option,
+															crate::i18n::builtin_text(label),
 														);
 													},
 												);

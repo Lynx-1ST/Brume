@@ -632,6 +632,35 @@ stream. Repeat while starting/stopping apps, changing outputs, rekeying and stop
 
 The native demo (`cargo run --locked -p serein -- --demo --demo-voice`) exposes a synthetic picker without OS source discovery or capture. Live screen sharing requires the same owner-controlled login gate as voice testing. See [compatibility and limits](discord-compatibility.md#outgoing-screen-sharing--september-11-2026).
 
+## Simultaneous screen-share viewing
+
+The current source supports up to four explicitly selected remote screen shares in one
+connected call. Selecting another share retains the existing selections. Each share has an
+independent signaling attempt, media transport, decoder, status and display texture. The
+existing stage grid and participant strip display the selected shares.
+
+A tile's Stop watching action stops only that share. Call departure, logout and loss of
+access release all selected shares. A participant departure or stream failure releases
+only the affected selection.
+
+Stream audio uses the existing shared volume and mute controls. Each source retains at
+most eight 20-millisecond frames before mixing, and the shared input queue holds at most
+32 frames. The output callback reports playback timing to each mixed source.
+
+Queue identity follows the watched session when the active speaker changes. Mixed frames
+retain up to 64 contributing clocks across the four watched sessions. Audio frames without
+call speech expire when every contributing source retires. Frames containing call speech
+remain playable.
+
+Decoder scheduling retains its existing 128 mebibytes (MiB) per stream, at most 512 MiB
+across four streams, excluding codec allocations and display textures. Four simultaneous
+hardware decoders, physical playback and live Discord interoperability remain unverified
+on Windows.
+
+Offline regressions cover selection bounds, independent stop/failure handling, keyed
+Gateway events, stale attempt rejection, simultaneous audio mixing and independent
+presentation clocks. These checks do not establish live Discord acceptance.
+
 ## Camera in calls (macOS, Windows and Linux)
 
 ### Windows hardware encoder contracts
@@ -1209,3 +1238,6 @@ request; a target joining during a start, being removed, reaching the requested
 service state, or losing its current call scope cancels obsolete work. The UI
 continues to show service-confirmed state instead of reporting successful state
 changes as failures.
+
+
+The optional offline lab in [`tools/screen-lab/`](../tools/screen-lab/README.md) targets a disposable Linux headless wlroots compositor. With `--features demo`, `--demo-call-stream --demo-stream-file=REC.au` replays a trusted bounded recording through the viewer decoder and upload path; this is a local developer tool, not live Discord evidence. The first selected synthetic share receives the replay; other selected demo textures remain independent.

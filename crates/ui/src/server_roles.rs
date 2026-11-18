@@ -1329,8 +1329,8 @@ impl RolesUi {
 				"Your unsaved changes to this role will be lost.",
 			)
 			.danger()
-			.confirm_label("Discard Changes")
-			.cancel_label("Keep Editing")
+			.confirm_label(crate::i18n::translate("channel-menu-discard-confirm"))
+			.cancel_label(crate::i18n::translate("channel-menu-discard-keep"))
 			.enabled(!state.server_admin.saving)
 			.show(ctx)
 			{
@@ -1355,7 +1355,7 @@ impl RolesUi {
 				format!("Members will lose every permission {name} grants. This cannot be undone."),
 			)
 			.danger()
-			.confirm_label("Delete Role")
+			.confirm_label(crate::i18n::translate("server-roles-editor-delete-role"))
 			.enabled(
 				!state.server_admin.pending
 					&& !state.server_admin.needs_refresh

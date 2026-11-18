@@ -137,7 +137,7 @@ impl ThemeEditor {
 				manifest: Manifest {
 					api_version: extensions::API_VERSION,
 					id: identity(),
-					name: "My theme".into(),
+					name: crate::i18n::translate("theme-my-theme"),
 					version: "1.0.0".into(),
 					author: String::new(),
 					license: "CC0-1.0".into(),
@@ -485,7 +485,7 @@ impl ThemeEditor {
 							"theme-editor-show-theme-name",
 							&mut manifest.name,
 							32,
-							"My theme",
+							&crate::i18n::translate("theme-my-theme"),
 						);
 						if show_errors && manifest.name.trim().is_empty() {
 							design::notice(
@@ -499,7 +499,7 @@ impl ThemeEditor {
 							"theme-editor-show-created-by",
 							&mut manifest.author,
 							32,
-							"Your name",
+							&crate::i18n::translate("theme-your-name"),
 						);
 						if show_errors && manifest.author.trim().is_empty() {
 							design::notice(
@@ -754,9 +754,9 @@ impl ThemeEditor {
 										changed |= row(
 											ui,
 											if index == 0 {
-												"Start color"
+												"theme-start-color"
 											} else {
-												"End color"
+												"theme-end-color"
 											},
 											|ui| color_input(ui, stop),
 										);
@@ -1005,11 +1005,11 @@ impl ThemeEditor {
 		if self.discard {
 			match dialog::Confirm::new(
 				"discard-theme-draft",
-				"Discard unsaved theme?",
-				"Your changes have not been saved.",
+				crate::i18n::translate("theme-discard-title"),
+				crate::i18n::translate("theme-unsaved-detail"),
 			)
-			.confirm_label("Discard changes")
-			.cancel_label("Keep editing")
+			.confirm_label(crate::i18n::translate("theme-discard-action"))
+			.cancel_label(crate::i18n::translate("theme-keep-editing"))
 			.danger()
 			.show(ui.ctx())
 			{
@@ -1694,11 +1694,11 @@ fn color_override(
 	fallback: egui::Color32,
 ) -> bool {
 	let description = match key {
-		"accent" => Some("Buttons, selection and highlights"),
-		"text" => Some("Messages and regular labels"),
-		"muted" => Some("Timestamps and supporting text"),
-		"sidebar" => Some("Channel, conversation and member lists"),
-		"chat" => Some("Background behind your messages"),
+		"accent" => Some("theme-accent-description"),
+		"text" => Some("theme-text-description"),
+		"muted" => Some("theme-muted-description"),
+		"sidebar" => Some("theme-sidebar-description"),
+		"chat" => Some("theme-chat-description"),
 		_ => None,
 	};
 	let changed = settings_row(ui, color_label(key), description, |ui| {

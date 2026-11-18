@@ -5176,3 +5176,535 @@ reading-chat-reading-settings-hide-ignored-messages = 무시한 사용자의 메
 # Context: reading_chat
 reading-chat-reading-settings-hide-ignored-messages-description = 무시한 작성자도 로컬 필터에 포함합니다. 관계 상태를 알 수 없으면 메시지를 숨기지 않습니다.
 
+
+voice-pip-title = 스트림 미니 플레이어
+
+voice-pip-open = 미니 플레이어 열기
+
+voice-pip-close = 미니 플레이어 닫기
+
+voice-pip-return = 음성 채널로 돌아가기
+
+voice-pip-own = 내 화면
+
+voice-pip-remote = { $name }님의 화면
+
+voice-pip-source = 스트림 선택
+
+voice-pip-mute = 스트림 음소거
+
+voice-pip-unmute = 스트림 음소거 해제
+
+voice-pip-waiting = 스트림 영상 대기 중…
+
+voice-pip-stop = 시청 중지
+
+voice-open-chat = 채팅 열기
+
+ui-builtin-voice-connected = 음성 연결됨
+
+ui-builtin-voice-connected-a81da2 = 음성 연결됨
+
+ui-builtin-voice-preview = 음성 미리 보기
+
+ui-builtin-call-failed = 통화 연결 실패
+
+ui-builtin-connecting = 연결 중…
+
+ui-builtin-share-a-screen-or-window = 화면 또는 창 공유
+
+ui-builtin-stop-sharing = 공유 중지
+
+ui-builtin-stop-sharing-your-screen = 화면 공유 중지
+
+ui-builtin-exit-fullscreen = 전체 화면 종료
+
+ui-builtin-exit-fullscreen-esc = 전체 화면 종료 (Esc)
+
+ui-builtin-streaming-now = 방송 중
+
+ui-builtin-this-stream-is-no-longer-live = 종료된 스트림입니다
+
+ui-builtin-could-not-join-this-stream-s-voice-channel = 이 스트림의 음성 채널에 참여할 수 없어요
+
+ui-builtin-leave-the-current-call-before-watching-this-stream = 현재 통화를 종료한 뒤 이 스트림을 시청하세요
+
+ui-builtin-the-four-stream-viewing-limit-is-reached = 스트림은 최대 4개까지 시청할 수 있어요
+
+ui-builtin-up-to-four-streams-can-be-watched-at-once = 최대 4개의 스트림을 동시에 시청할 수 있어요
+
+ui-builtin-this-stream-is-not-available-in-the-connected-voice-channel = 연결된 음성 채널에서는 이 스트림을 볼 수 없어요
+
+ui-builtin-the-stream-is-not-available = 스트림을 볼 수 없어요
+
+ui-builtin-your-screen-local-preview = 내 화면 · 로컬 미리 보기
+
+ui-builtin-screen-share-you-are-watching = 시청 중인 공유 화면
+
+ui-builtin-watch-stream = 스트림 시청
+
+ui-builtin-click-or-press-escape-to-return-to-the-grid = 클릭하거나 Esc를 눌러 격자로 돌아가세요
+
+ui-builtin-click-to-enlarge = 클릭하여 확대
+
+ui-builtin-connecting-to-the-stream = 스트림 연결 중…
+
+ui-builtin-stop-receiving-this-screen-share = 이 공유 화면 시청 중지
+
+ui-builtin-answer-call = 통화 응답
+
+ui-builtin-start-voice-call = 음성 통화 시작
+
+ui-builtin-join-audio-your-microphone-starts-after-the-call-is-secured = 음성 통화에 참여해요. 통화가 보호된 후 마이크가 켜져요.
+
+ui-builtin-join-to-listen-speaking-is-unavailable-in-this-channel = 듣기 위해 참여해요. 이 채널에서는 말할 수 없어요.
+
+ui-builtin-voice-isolation = 음성 분리
+
+ui-builtin-studio = 스튜디오
+
+ui-builtin-custom = 사용자 지정
+
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = RNNoise 소음 억제, 에코 제거 및 자동 음량 조절을 사용해요.
+
+ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = 소음 억제, 에코 제거 또는 자동 음량 조절 없이 마이크를 사용해요.
+
+ui-builtin-turn-on-microphone = 마이크 켜기
+
+ui-builtin-turn-off-microphone = 마이크 끄기
+
+ui-builtin-voice-settings = 음성 설정
+
+ui-builtin-microphone-and-speaker-settings = 마이크 및 스피커 설정
+
+ui-builtin-turn-off-camera = 카메라 끄기
+
+ui-builtin-turn-on-camera = 카메라 켜기
+
+ui-builtin-stop-sharing-your-camera = 카메라 공유 중지
+
+ui-builtin-camera-is-off-in-the-offline-preview = 오프라인 미리 보기에서는 카메라가 꺼져 있어요
+
+ui-builtin-camera-capture-is-unavailable-on-this-platform = 이 플랫폼에서는 카메라를 사용할 수 없어요
+
+ui-builtin-choose-a-camera = 카메라 선택
+
+ui-builtin-more-options = 추가 옵션
+
+ui-builtin-more-call-options = 추가 통화 옵션
+
+ui-builtin-hide-participants = 참가자 숨기기
+
+ui-builtin-show-participants = 참가자 표시
+
+ui-builtin-hide-the-participant-strip-under-the-enlarged-video = 확대된 영상 아래의 참가자 목록 숨기기
+
+ui-builtin-show-the-other-participants-under-the-enlarged-video = 확대된 영상 아래에 다른 참가자 표시
+
+ui-builtin-screen-sharing-requires-a-connected-call-and-video-permission-on-a-supported-desktop = 화면을 공유하려면 지원되는 데스크톱에서 통화에 연결하고 동영상 권한이 있어야 해요.
+
+ui-builtin-public = 공개
+
+ui-builtin-joined-private = 참여한 비공개 스레드
+
+ui-builtin-private = 비공개
+
+ui-builtin-enlarge-image = 이미지 확대
+
+ui-builtin-loading-full-quality = 원본 화질 불러오는 중
+
+ui-builtin-loading-image = 이미지 불러오는 중
+
+ui-builtin-full-quality-unavailable = 원본 화질을 불러올 수 없어요
+
+ui-builtin-close-esc = 닫기 (Esc)
+
+ui-builtin-previous = 이전 (←)
+
+ui-builtin-next = 다음 (→)
+
+ui-builtin-maximize = 최대화
+
+ui-builtin-next-game = 다음 게임
+
+ui-builtin-select-emoji = 이모지 선택
+
+ui-builtin-skip-this-question = 이 질문 건너뛰기
+
+ui-builtin-press-keys = 키를 누르세요…
+
+ui-builtin-control-your-microphone-and-incoming-audio-during-a-connected-call = 통화 중 마이크와 수신 음성을 제어해요.
+
+ui-builtin-proxy-authentication = 프록시 인증
+
+ui-builtin-credentials-stay-in-serein-s-os-credential-store-and-are-never-shared-with-the-plugin-apply-the-prox = 로그인 정보는 운영 체제의 자격 증명 저장소에 보관되며 플러그인에 공유되지 않아요. 저장하기 전에 프록시 URL을 적용하세요.
+
+ui-builtin-http-proxy-authentication-is-unencrypted-anyone-observing-the-connection-to-the-proxy-can-recover-th = HTTP 프록시 인증은 암호화되지 않아 연결을 감시하는 사람이 로그인 정보를 알아낼 수 있어요. 암호화하려면 HTTPS 프록시를 사용하세요.
+
+ui-builtin-save-credentials = 로그인 정보 저장
+
+ui-builtin-remove-saved-credentials = 저장된 로그인 정보 삭제
+
+ui-builtin-choose-url-mode-to-configure-proxy-authentication = 프록시 인증을 설정하려면 URL 모드를 선택하세요.
+
+ui-builtin-profile-preview = 프로필 미리 보기
+
+ui-builtin-your-activity-goes-here = 내 활동이 여기에 표시돼요
+
+ui-builtin-enter-an-application-id-and-activity-name-then-choose-preview = 애플리케이션 ID와 활동 이름을 입력한 후 미리 보기를 선택하세요.
+
+ui-builtin-artwork-resolves-when-applied-this-draft-preview-uses-placeholders = 적용하면 실제 이미지가 표시돼요. 이 초안에는 임시 이미지가 사용돼요.
+
+ui-builtin-activity-sharing-is-off-enable-it-in-settings-registered-games-to-publish-your-presence = 활동 공유가 꺼져 있어요. 설정 > 등록된 게임에서 켜면 내 활동을 표시할 수 있어요.
+
+ui-builtin-offline-demo-nothing-is-published = 오프라인 미리 보기예요. 활동은 게시되지 않아요.
+
+ui-builtin-offline-your-saved-activity-will-wait-for-a-connection = 오프라인 상태예요. 연결되면 저장한 활동이 표시돼요.
+
+ui-builtin-enable-activity-sharing-in-settings-registered-games-invisible-hides-your-activity = 설정 > 등록된 게임에서 활동 공유를 켜세요. 오프라인으로 표시하면 활동이 숨겨져요.
+
+ui-builtin-elapsed-since-starting-applying-edits-keeps-the-timer = 시작한 이후의 시간이에요. 수정해도 타이머는 유지돼요.
+
+ui-builtin-timer-starts-at-local-midnight = 현지 시간 자정부터 시간을 계산해요.
+
+ui-builtin-1-hour = 1시간
+
+ui-builtin-24-hours = 24시간
+
+ui-builtin-3-days = 3일
+
+ui-builtin-1-week = 1주
+
+ui-builtin-recommended = 권장
+
+ui-builtin-new-message-in-the-channel-i-m-currently-reading = 현재 읽고 있는 채널의 새 메시지
+
+ui-builtin-incoming-ring = 수신 통화 벨소리
+
+ui-builtin-outgoing-ring = 발신 통화 벨소리
+
+ui-builtin-voice = 음성
+
+voice-built-in-switch-to-this-voice-channel = 이 음성 채널로 이동
+
+voice-built-in-camera-requires-h264-support-from-the-voice-server = 카메라를 사용하려면 음성 서버가 H264를 지원해야 합니다.
+
+voice-built-in-camera-is-unavailable-with-current-channel-permissions = 현재 채널 권한으로 카메라를 사용할 수 없습니다.
+
+voice-built-in-turn-off-noise-suppression = 소음 억제 끄기
+
+voice-built-in-turn-on-noise-suppression = 소음 억제 켜기
+
+voice-built-in-noise-suppression-reduces-keyboard-noise-breathing-and-fans-locally = 장치에서 키보드, 숨소리, 팬 소음을 줄입니다.
+
+voice-built-in-noise-suppression-is-unavailable-in-this-build-or-preview = 이 빌드 또는 미리 보기에서는 소음 억제를 사용할 수 없습니다.
+
+voice-built-in-fullscreen = 전체 화면
+
+voice-built-in-view-this-screen-share-in-fullscreen = 화면 공유 전체 화면으로 보기
+
+voice-built-in-call-switch-cancelled-previous-call-did-not-finish-disconnecting-try-joining-again = 이전 통화 연결이 종료되지 않아 전환이 취소되었습니다. 다시 참여해 보세요.
+
+join-skip-question = 이 질문 건너뛰기
+
+theme-my-theme = 내 테마
+
+theme-your-name = 이름
+
+theme-start-color = 시작 색상
+
+theme-end-color = 끝 색상
+
+theme-discard-title = 저장하지 않은 테마를 버릴까요?
+
+theme-unsaved-detail = 변경 사항이 저장되지 않았습니다.
+
+theme-discard-action = 변경 사항 버리기
+
+theme-keep-editing = 계속 편집
+
+theme-accent-description = 버튼, 선택 및 강조 표시
+
+theme-text-description = 메시지와 일반 텍스트
+
+theme-muted-description = 시간과 보조 텍스트
+
+theme-sidebar-description = 채널, 대화 및 멤버 목록
+
+theme-chat-description = 메시지 배경
+
+video-exit-fullscreen-shortcut = 전체 화면 종료 (Esc)
+
+video-enter-fullscreen = 전체 화면
+
+presence-party-size = 파티: { $current } / { $max }
+
+proxy-username = 사용자 이름
+
+proxy-password = 비밀번호
+
+signin-early-preview = 초기 미리 보기
+
+signin-waiting = Discord 기다리는 중…
+
+signin-other-account = 다른 계정 사용
+
+signin-continue = Discord로 계속
+
+signin-this-account = 이 계정
+
+signin-forget-title = { $account }의 저장 정보를 삭제할까요?
+
+signin-forget-current = 현재 계정에서 로그아웃되고 이 기기에 저장된 로그인 정보, 캐시 기록 및 초안이 삭제됩니다.
+
+signin-forget-other = 이 기기에 저장된 로그인 정보, 캐시 기록 및 초안이 삭제됩니다. Discord 계정은 유지되며 언제든 다시 로그인할 수 있습니다.
+
+signin-forget = 저장 정보 삭제
+
+signin-keep = 유지
+
+attachment-view-image-name = { $name } 이미지 보기
+
+attachment-enlarge-image = 이미지 확대
+
+voice-input-level-reading = 입력 레벨: { $level } dBFS
+
+voice-speaking-name = { $name } · 말하는 중
+
+voice-codec-rejoin = ; 통화에 다시 참여하세요
+
+ui-owned-unable-to-create-this-server-right-now = 지금 서버를 만들 수 없습니다. 나중에 다시 시도하세요.
+
+ui-owned-enter-a-valid-discord-invite-link-or-invite-code = 올바른 Discord 초대 링크 또는 코드를 입력하세요.
+
+ui-owned-unable-to-proceed-check-your-connection-or-try-again-after-the-current-request = 계속할 수 없습니다. 연결을 확인하거나 현재 요청이 끝난 후 다시 시도하세요.
+
+ui-owned-prepared-icon-is-too-large = 처리된 아이콘이 너무 큽니다.
+
+status-owned-application-data-directory-is-unavailable = 앱 데이터 폴더를 사용할 수 없습니다.
+
+status-owned-result-discarded-because-the-conversation-or-draft-changed = 대화 또는 초안이 변경되어 결과를 버렸습니다.
+
+status-owned-package-inspected-review-its-source-and-capabilities-before-enabling = 패키지를 검사했습니다. 활성화하기 전에 출처와 권한을 확인하세요.
+
+status-owned-extension-enabled = 확장 기능을 활성화했습니다.
+
+status-owned-theme-exported = 테마를 내보냈습니다.
+
+status-owned-extension-file-selection-ended = 확장 파일 선택이 종료되었습니다.
+
+status-owned-refresh-the-catalog-or-import-this-package-again = 목록을 새로 고치거나 이 패키지를 다시 가져오세요.
+
+status-owned-some-plugin-events-were-skipped-because-the-event-queue-was-full = 대기열이 가득 차 일부 플러그인 이벤트를 건너뛰었습니다.
+
+status-owned-disconnected = 연결이 끊겼습니다.
+
+status-owned-preview-only-this-font-is-not-saved = 미리 보기 전용이며 이 글꼴은 저장되지 않았습니다.
+
+status-owned-loading-font = 글꼴 불러오는 중…
+
+status-owned-voice-calls-are-unavailable-in-the-offline-preview = 오프라인 미리 보기에서는 음성 통화를 사용할 수 없습니다.
+
+status-owned-local-storage-worker-stopped-restart-serein-to-save-fonts = 저장 작업이 중지되었습니다. 글꼴을 저장하려면 Serein을 다시 시작하세요.
+
+status-owned-no-saved-login-for-that-account-on-this-device-use-another-account-to-sign-in-again-or-for = 이 기기에 계정의 저장된 로그인이 없습니다. 다른 계정으로 다시 로그인하거나 ×를 눌러 저장 정보를 삭제하세요.
+
+status-owned-could-not-save-this-account-for-the-switcher-sign-in-again-to-retry = 계정 전환 목록에 저장하지 못했습니다. 다시 로그인해 보세요.
+
+status-owned-could-not-save-login-this-session-will-not-restore-automatically = 로그인을 저장하지 못했습니다. 이 세션은 자동으로 복원되지 않습니다.
+
+status-owned-could-not-queue-saved-login-session-only = 로그인 저장을 요청하지 못했습니다. 현재 세션에서만 사용할 수 있습니다.
+
+status-owned-reconnecting-to-discord = Discord에 다시 연결하는 중…
+
+status-owned-proxy-credentials-loaded-future-api-requests-use-this-setting = 프록시 로그인 정보를 불러왔습니다. 이후 API 요청에 적용됩니다.
+
+status-owned-proxy-credential-operation-ended-retry-saving-or-removing-credentials = 프록시 로그인 작업이 종료되었습니다. 저장 또는 삭제를 다시 시도하세요.
+
+status-owned-invalid-proxy-url = 잘못된 프록시 URL입니다.
+
+status-owned-demo-mode-does-not-read-or-save-proxy-credentials = 데모에서는 프록시 로그인 정보를 읽거나 저장하지 않습니다.
+
+status-owned-wait-for-the-current-credential-operation = 현재 로그인 정보 작업이 끝날 때까지 기다리세요.
+
+status-owned-apply-this-url-in-the-plugin-before-saving-credentials = 로그인 정보를 저장하기 전에 플러그인에서 이 URL을 적용하세요.
+
+status-owned-use-a-username-of-1-256-bytes-without-a-colon-and-a-password-up-to-1024-bytes-control-char = 사용자 이름은 콜론 없이 1–256바이트, 비밀번호는 최대 1,024바이트여야 합니다. 제어 문자는 사용할 수 없습니다.
+
+status-owned-enter-a-valid-http-https-proxy-url-first = 먼저 올바른 HTTP 또는 HTTPS 프록시 URL을 입력하세요.
+
+status-owned-screen-sharing-stopped = 화면 공유를 중지했습니다.
+
+status-owned-looking-for-screens-and-windows = 화면과 창을 찾는 중…
+
+status-owned-could-not-start-screen-source-discovery = 화면 공유 소스 검색을 시작하지 못했습니다.
+
+status-owned-screen-sharing-is-unavailable-on-this-platform = 이 플랫폼에서는 화면 공유를 사용할 수 없습니다.
+
+status-owned-screen-source-discovery-stopped = 화면 공유 소스 검색이 중지되었습니다.
+
+status-owned-previous-screen-share-is-still-closing = 이전 화면 공유를 종료하는 중입니다.
+
+status-owned-requesting-screen-share-connection = 화면 공유 연결을 요청하는 중…
+
+status-owned-screen-sharing-requires-the-current-connected-call = 화면을 공유하려면 통화에 연결되어 있어야 합니다.
+
+status-owned-discord-did-not-acknowledge-stopping-screen-share-leave-the-call-before-sharing-again = Discord가 공유 중지를 확인하지 않았습니다. 다시 공유하기 전에 통화에서 나가세요.
+
+status-owned-connecting-screen-share-transport = 화면 공유 전송에 연결하는 중…
+
+status-owned-connecting-to-discord = Discord에 연결하는 중…
+
+status-owned-signed-out-of-this-account-its-saved-login-is-kept = 로그아웃했습니다. 저장된 로그인 정보는 유지됩니다.
+
+status-owned-saved-account-removed-from-this-device = 이 기기에서 저장된 계정 정보를 삭제했습니다.
+
+status-owned-saved-login-restore-cancelled = 저장된 로그인 복원을 취소했습니다.
+
+status-owned-sign-in-through-discord-saved-login-lookup-stopped = Discord로 로그인하세요. 저장된 로그인 검색을 중지했습니다.
+
+status-owned-waiting-for-discord-login = Discord 로그인을 기다리는 중입니다.
+
+status-owned-updates-have-not-been-checked-on-this-channel-yet = 이 채널의 업데이트를 아직 확인하지 않았습니다.
+
+status-owned-update-downloaded-and-verified-restart-when-you-are-ready = 업데이트를 다운로드하고 확인했습니다. 준비되면 다시 시작하세요.
+
+status-owned-update-ready-close-serein-to-install-and-restart = 업데이트가 준비되었습니다. 설치하고 다시 시작하려면 Serein을 닫으세요.
+
+status-owned-the-update-worker-stopped-please-try-again = 업데이트 작업이 중지되었습니다. 다시 시도하세요.
+
+status-owned-preparing-to-restart = 다시 시작할 준비 중…
+
+status-owned-please-wait-one-minute-between-update-checks = 업데이트 확인 사이에는 1분을 기다려 주세요.
+
+status-owned-checking-for-updates = 업데이트 확인 중…
+
+status-owned-stopped-watching = 시청을 중지했습니다.
+
+status-owned-connect-the-call-before-watching-a-stream = 스트림을 시청하기 전에 통화에 연결하세요.
+
+status-owned-requesting-the-stream = 스트림 시청을 요청하는 중…
+
+status-owned-watching-the-stream = 스트림 시청 중입니다.
+
+status-owned-forward-unavailable-check-destinations-connection-and-message-limits = 전달할 수 없습니다. 대상, 연결 및 메시지 제한을 확인하세요.
+
+status-owned-verify-to-join-this-server = 이 서버에 참가하려면 인증하세요.
+
+status-owned-wait-for-the-previous-message-edit-to-finish = 이전 메시지 편집이 끝날 때까지 기다리세요.
+
+status-owned-edit-could-not-be-applied-reload-this-conversation = 편집을 적용하지 못했습니다. 대화를 다시 불러오세요.
+
+status-owned-message-edit-failed-your-edit-was-kept-for-retry = 메시지 편집에 실패했습니다. 다시 시도할 수 있도록 편집 내용을 보관했습니다.
+
+status-owned-wait-for-the-previous-pin-action-to-finish = 이전 고정 작업이 끝날 때까지 기다리세요.
+
+status-owned-pin-action-failed-the-previous-state-was-restored = 고정 작업에 실패하여 이전 상태를 복원했습니다.
+
+status-owned-you-re-in-welcome-to-the-server = 참가했습니다. 서버에 오신 것을 환영합니다!
+
+status-owned-wait-for-the-current-poll-action = 현재 투표 작업이 끝날 때까지 기다리세요.
+
+status-owned-poll-action-is-unavailable-with-the-current-permissions-or-poll-state = 현재 권한 또는 투표 상태에서는 이 작업을 할 수 없습니다.
+
+status-owned-profile-updated-use-reload-history-to-refresh-this-conversation = 프로필을 업데이트했습니다. 대화를 새로 고치려면 기록을 다시 불러오세요.
+
+status-owned-reaction-limit-reached = 반응 제한에 도달했습니다.
+
+status-owned-voice-moderation-request-accepted = 음성 채널 관리 요청을 수락했습니다.
+
+status-owned-enter-a-discord-username-of-at-most-32-characters = 최대 32자의 Discord 사용자 이름을 입력하세요.
+
+status-owned-enter-a-discord-username-2-32-letters-numbers-underscores-or-periods = 문자, 숫자, 밑줄 또는 마침표로 된 2–32자의 Discord 사용자 이름을 입력하세요.
+
+status-owned-already-friends-or-a-request-is-pending-check-the-pending-tab = 이미 친구이거나 요청이 대기 중입니다. 대기 중 탭을 확인하세요.
+
+status-owned-choose-between-two-and-nine-friends-for-a-group-message = 그룹 대화를 만들려면 친구 2–9명을 선택하세요.
+
+status-owned-creating-group-message = 그룹 대화 만드는 중…
+
+status-owned-finish-pending-messages-and-leave-the-call-before-closing-this-dm = 이 개인 메시지를 닫기 전에 대기 중인 메시지를 마치고 통화에서 나가세요.
+
+status-owned-user-actions-unavailable-while-disconnected = 연결이 끊긴 상태에서는 사용자 작업을 할 수 없습니다.
+
+status-owned-outcome-unknown-check-the-official-client-before-retrying = 결과를 알 수 없습니다. 다시 시도하기 전에 공식 Discord 앱에서 확인하세요.
+
+status-owned-direct-message-opened = 개인 메시지를 열었습니다.
+
+status-owned-group-message-opened = 그룹 대화를 열었습니다.
+
+status-owned-verify-to-send-this-message = 이 메시지를 보내려면 인증하세요.
+
+status-owned-discord-requires-verification-for-this-message-retry-it-after-the-current-check = Discord가 이 메시지에 인증을 요구합니다. 현재 인증을 마친 뒤 다시 시도하세요.
+
+status-owned-voice-channel-exceeds-the-64-participant-limit = 음성 채널이 참가자 64명 제한을 초과했습니다.
+
+status-owned-voice-roster-exceeds-safe-capacity-reconnect-to-refresh = 음성 참가자 목록이 안전 한도를 초과했습니다. 다시 연결해 새로 고치세요.
+
+status-owned-session-expired-reconnect-explicitly-drafts-remain-in-ram = 세션이 만료되었습니다. 다시 연결하세요. 초안은 메모리에 유지됩니다.
+
+status-owned-security-challenge-unsupported-here-connection-stopped = 지원되지 않는 보안 인증이 필요하여 연결을 중지했습니다.
+
+status-owned-permission-denied = 권한이 없습니다.
+
+status-owned-discord-requires-account-attention-connection-stopped-check-the-official-client = 계정 확인이 필요하여 연결을 중지했습니다. 공식 Discord 앱에서 확인하세요.
+
+status-owned-discord-blocked-this-request-connection-stopped-check-the-official-client = Discord가 요청을 차단하여 연결을 중지했습니다. 공식 앱에서 확인하세요.
+
+status-owned-rate-limited-wait-before-retrying = 요청이 너무 많습니다. 잠시 후 다시 시도하세요.
+
+status-owned-connection-failed = 연결하지 못했습니다.
+
+status-owned-unsupported-service-response = 지원되지 않는 서버 응답입니다.
+
+status-owned-safe-capacity-exceeded-connection-stopped = 데이터가 안전 한도를 초과하여 연결을 중지했습니다.
+
+status-owned-invalid-session-input-or-bot-account-rejected = 잘못된 세션 정보이거나 지원되지 않는 봇 계정입니다.
+
+status-owned-connecting-to-voice-server = 음성 서버에 연결하는 중…
+
+status-owned-checking-voice-network = 음성 연결을 확인하는 중…
+
+status-owned-opening-audio-devices = 오디오 장치를 여는 중…
+
+status-owned-connecting-call = 통화에 연결하는 중…
+
+status-owned-securing-audio = 오디오를 보호하는 중…
+
+status-owned-connected-waiting-for-others = 연결되었습니다. 다른 참가자를 기다리는 중입니다.
+
+message-delete-keep = 메시지 유지
+
+message-delete-unavailable = 이 메시지를 삭제할 수 없습니다.
+
+voice-notice-deafened-by-the-server = 서버에서 듣기를 차단했습니다.
+
+voice-notice-muted-by-the-server = 서버에서 마이크를 음소거했습니다.
+
+voice-notice-speaking-is-unavailable-in-this-channel-you-can-still-listen = 이 채널에서는 말할 수 없지만 들을 수는 있습니다.
+
+voice-notice-push-to-talk-is-required-to-speak-here-enable-it-in-voice-settings = 이 채널에서는 눌러서 말하기를 사용해야 합니다. 음성 설정에서 켜세요.
+
+voice-notice-synthetic-participants-microphone-and-speakers-are-off = 가상 참가자 · 마이크와 스피커가 꺼져 있습니다.
+
+ui-history-sync = 캐시된 기록 · 동기화 대기 중
+
+ui-history-unavailable = 대화를 이용할 수 없습니다
+
+ui-history-archive = 보관함에서 열림
+
+voice-preview-name = 방송 미리 보기
+
+voice-preview-unavailable = 미리 보기가 숨겨져 있거나 이용할 수 없습니다
+
+status-draft-paste-limit = 붙여넣은 텍스트가 초안 제한을 초과합니다
+
+status-draft-cancel-reply = 이 메시지를 복원하기 전에 현재 답장을 취소하세요
+
+status-draft-restore-pending = 대기 중인 텍스트를 복원하기 전에 기존 초안을 유지하거나 지우세요
+
+status-send-unavailable = 현재 연결 또는 권한으로는 전송할 수 없습니다
+
+status-read-confirm = 읽음 상태를 확인할 수 없습니다 · 읽지 않음 표시가 최신 상태가 아닐 수 있습니다
+
+status-read-sync = 읽음 상태를 동기화할 수 없습니다 · 읽지 않음 표시가 최신 상태가 아닐 수 있습니다

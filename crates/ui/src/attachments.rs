@@ -382,7 +382,10 @@ pub(crate) fn show_subset(
 									egui::WidgetInfo::labeled(
 										egui::Role::Button,
 										ui.is_enabled(),
-										format!("View image {}", attachment.filename),
+										crate::i18n::translate_args(
+											"attachment-view-image-name",
+											&[("name", &attachment.filename)],
+										),
 									)
 								});
 								media_context_menu(&response, attachment, download, opening, demo);
@@ -420,7 +423,12 @@ pub(crate) fn show_subset(
 											attachment
 												.description
 												.as_deref()
-												.unwrap_or("Enlarge image"),
+												.map(str::to_owned)
+												.unwrap_or_else(|| {
+													crate::i18n::translate(
+														"attachment-enlarge-image",
+													)
+												}),
 										)
 										.clicked()
 								{

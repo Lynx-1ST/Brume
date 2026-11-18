@@ -1,5 +1,21 @@
 # Performance findings
 
+## Ported stream repaint scheduling and offline lab — November 17, 2026
+
+The Windows fork ports the presentation-deadline repaint fix from upstream
+[PR #886](https://github.com/ViceVerse-cz/Serein/pull/886), adapting it to each of the
+four independent watched streams from [PR #916](https://github.com/ViceVerse-cz/Serein/pull/916).
+A decoded future picture schedules its presentation wake; a picture without a timestamp
+wakes immediately. The renderer retries lock contention after 5 ms rather than blocking.
+
+The upstream Linux lab and its numbers have not been reproduced on this Windows host.
+No CPU, frame-rate, memory or live-stream performance gain is claimed for this fork.
+The optional lab is documented in [tools/screen-lab](../tools/screen-lab/README.md);
+`--features demo -- --demo --demo-call-stream --demo-stream-file=REC.au` replays a
+trusted, bounded recording through the native decoder without Discord or microphone use.
+The reader caps recordings at 256 MiB and 36,000 access units. Native measurement and
+standard package comparisons remain part of release verification.
+
 ## Voice connection ping
 
 Compared `5a11f95b` with the voice ping change using locked Rust 1.99.1 release builds

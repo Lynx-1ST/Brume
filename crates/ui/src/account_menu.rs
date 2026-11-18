@@ -1340,7 +1340,7 @@ mod tests {
 			let artwork = view.avatars.frame_shapes(
 				&ctx,
 				profile.frame.as_deref().unwrap(),
-				Rect::from_min_size(Pos2::splat(100.0), vec2(300.0, 300.0)),
+				Rect::from_min_size(Pos2::new(100.0, 100.0), vec2(300.0, 300.0)),
 				Rect::EVERYTHING,
 				true,
 				true,
@@ -1379,7 +1379,7 @@ mod tests {
 						});
 					// Cropping the frame to the detail ScrollArea removes these outside UVs.
 					assert!(uv.min.distance(Pos2::ZERO) < 0.001, "{uv:?}");
-					assert!(uv.max.distance(Pos2::splat(1.0)) < 0.001, "{uv:?}");
+					assert!(uv.max.distance(Pos2::new(1.0, 1.0)) < 0.001, "{uv:?}");
 				}
 			}
 			assert_eq!(drawn, texture_ids);

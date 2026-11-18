@@ -5777,7 +5777,7 @@ mod tests {
 		let context = state.voice.active.as_ref().map(|c| (c.channel, c.request));
 		let ctx = egui::Context::default();
 		design::apply(&ctx);
-		ctx.style_mut(|style| style.interaction.tooltip_delay = 0.0);
+		ctx.all_styles_mut(|style| style.interaction.tooltip_delay = 0.0);
 		let mut view = MessagingUi {
 			voice_available: true,
 			..Default::default()

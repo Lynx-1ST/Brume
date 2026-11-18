@@ -94,6 +94,7 @@ impl MessagingUi {
 		let size = max.min(egui::vec2(320.0, 180.0));
 		let choices = self.stream_pip.sources.clone();
 		let mut close = false;
+		let mut stop = false;
 		let mut restore = false;
 		egui::Window::new(i18n::translate("voice-pip-title"))
 			.id(egui::Id::unique("stream-pip-window"))
@@ -184,11 +185,17 @@ impl MessagingUi {
 								&i18n::translate("voice-pip-return"),
 							)
 							.clicked();
-							close |= crate::icons::button(
+							stop |= crate::icons::button(
 								ui,
 								crate::icons::Icon::Close,
 								24.0,
-								&i18n::translate("voice-pip-close"),
+								&i18n::builtin_text(
+									if matches!(selected, StageFocus::LocalScreen) {
+										"Stop sharing"
+									} else {
+										"Stop watching"
+									},
+								),
 							)
 							.clicked();
 						});
@@ -196,6 +203,13 @@ impl MessagingUi {
 				}
 			});
 		self.stream_pip.selected = Some(selected);
+		if stop {
+			match selected {
+				StageFocus::Stream(user) => self.watch_request = Some((user, false)),
+				StageFocus::LocalScreen => self.screen.request = Some(crate::screen::Request::Stop),
+				StageFocus::Participant(_) => {}
+			}
+		}
 		if close {
 			self.stream_pip.dismissed = true;
 			self.stream_pip.forced = false;

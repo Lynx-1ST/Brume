@@ -168,7 +168,7 @@ jobs:
           - Server nickname suggestions include retained offscreen members (issue #1044).
           - Voice participant guild tags and resizable member sidebar.
           - Richer own-account popout with available profile information and supported cosmetics.
-          - Complete outer profile frames and compact guild tags.
+          - Compact guild tags; outer profile-frame changes are deferred.
           - In-app stream Picture-in-Picture and up to four watched streams (upstream PR #916).
           - Deadline-based stream repaint scheduling and offline lab tools (upstream PR #886).
           - Vietnamese labels and tooltips wired across voice controls and other application dialogs.

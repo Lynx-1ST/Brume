@@ -276,7 +276,13 @@ pub(crate) fn server_tag(
 				Rect::from_center_size(pos2(rect.left() + 9.0, rect.center().y), Vec2::splat(10.0));
 			// A detached child paints the existing cached icon without advancing this row.
 			let mut child = ui.new_child(UiBuilder::new().max_rect(icon));
-			avatars.show_icon(&mut child, tag.badge_key(), 10.0, demo, "Server tag badge");
+			avatars.show_icon(
+				&mut child,
+				tag.badge_key(),
+				10.0,
+				demo,
+				&crate::i18n::translate("profiles-server-tag-server-tag"),
+			);
 		}
 		ui.painter().galley(
 			pos2(
@@ -897,7 +903,13 @@ fn clan_chip(
 		.inner_margin(egui::Margin::symmetric(6, 2))
 		.show(ui, |ui| {
 			ui.spacing_mut().item_spacing.x = 4.0;
-			avatars.show_icon(ui, clan.badge_key(), 14.0, demo, "Server tag badge");
+			avatars.show_icon(
+				ui,
+				clan.badge_key(),
+				14.0,
+				demo,
+				&crate::i18n::translate("profiles-server-tag-server-tag"),
+			);
 			ui.add(egui::Label::new(RichText::new(&clan.tag).size(12.0).strong()).extend());
 		})
 		.response

@@ -206,7 +206,11 @@ fn preview_card(
 	activity_status: (&str, bool),
 ) {
 	let colors = design::palette(ui);
-	ui.label(design::eyebrow(ui, "PROFILE PREVIEW", colors.muted));
+	ui.label(design::eyebrow(
+		ui,
+		"ui-builtin-profile-preview",
+		colors.muted,
+	));
 	ui.add_space(8.0);
 	if let Some(presence) = presence {
 		let kind = match presence.kind {
@@ -245,14 +249,19 @@ fn preview_card(
 		if presence.large_image.is_some() || presence.small_image.is_some() {
 			design::hint(
 				ui,
-				"Artwork resolves when applied. This draft preview uses placeholders.",
+				"ui-builtin-artwork-resolves-when-applied-this-draft-preview-uses-placeholders",
 			);
 		}
 	} else {
 		design::card(ui, |ui| {
 			crate::icons::inline(ui, crate::icons::Icon::GameController, 32.0, colors.muted);
-			ui.label(egui::RichText::new("Your activity goes here").strong());
-			ui.label("Enter an application ID and activity name, then choose Preview.");
+			ui.label(
+				egui::RichText::new(crate::i18n::translate("ui-builtin-your-activity-goes-here"))
+					.strong(),
+			);
+			ui.label(crate::i18n::translate(
+				"ui-builtin-enter-an-application-id-and-activity-name-then-choose-preview",
+			));
 		});
 	}
 	ui.add_space(12.0);
@@ -261,7 +270,7 @@ fn preview_card(
 			crate::dialog::notice(
 				ui,
 				crate::dialog::Level::Warning,
-				"Activity sharing is off. Enable it in Settings > Registered Games to publish your presence.",
+				"ui-builtin-activity-sharing-is-off-enable-it-in-settings-registered-games-to-publish-your-presence",
 			);
 		} else if !activity_status.0.is_empty() {
 			design::hint(ui, activity_status.0);
@@ -270,28 +279,34 @@ fn preview_card(
 	design::hint(
 		ui,
 		if state.demo {
-			"Offline demo. Nothing is published."
+			"ui-builtin-offline-demo-nothing-is-published"
 		} else if !state.gateway_connected {
-			"Offline. Your saved activity will wait for a connection."
+			"ui-builtin-offline-your-saved-activity-will-wait-for-a-connection"
 		} else {
-			"Enable activity sharing in Settings > Registered Games. Invisible hides your activity."
+			"ui-builtin-enable-activity-sharing-in-settings-registered-games-invisible-hides-your-activity"
 		},
 	);
 }
 
 pub(crate) fn summary(ui: &mut egui::Ui, presence: &CustomRichPresence) {
 	if let Some(party) = &presence.party {
-		ui.label(format!("Party: {} / {}", party.current, party.max));
+		ui.label(crate::i18n::translate_args(
+			"presence-party-size",
+			&[
+				("current", &party.current.to_string()),
+				("max", &party.max.to_string()),
+			],
+		));
 	}
 	match presence.timer {
 		RichPresenceTimer::Elapsed => {
 			design::hint(
 				ui,
-				"Elapsed since starting; applying edits keeps the timer.",
+				"ui-builtin-elapsed-since-starting-applying-edits-keeps-the-timer",
 			);
 		}
 		RichPresenceTimer::LocalDay => {
-			design::hint(ui, "Timer starts at local midnight.");
+			design::hint(ui, "ui-builtin-timer-starts-at-local-midnight");
 		}
 		_ => {}
 	}

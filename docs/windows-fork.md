@@ -14,8 +14,9 @@ bằng tiếng Việt ở tin nhắn, hồ sơ, huy hiệu, lời mời và thô
 
 ## Người xem stream
 
-Hàng kênh thoại giữ giao diện gốc, không có nút chat bổ sung. Có thể mở chat bằng nút
-sẵn có trên thanh tiêu đề sau khi chọn kênh. Nhấp đúp vào tên kênh vẫn dùng luồng tham gia thoại.
+Khi di chuột lên hàng kênh thoại, nút **Mở trò chuyện** và nút mời (nếu có quyền) xuất hiện.
+Rời chuột khỏi hàng sẽ ẩn các nút. **Mở trò chuyện** trong menu chuột phải cũng mở text chat
+của kênh mà không tham gia cuộc gọi. Nhấp đúp vào tên kênh vẫn dùng luồng tham gia thoại.
 Người tham gia hiển thị tag máy chủ cạnh tên khi có dữ liệu, theo cùng tùy chọn ẩn tag ở
 danh sách thành viên. Tag nhường chỗ cho tên và trạng thái mic khi thanh kênh quá hẹp.
 
@@ -25,6 +26,19 @@ head `9e38c330a66043e34e3052db95cb41c1539c87a4`, của dylanjkl.
 Giữ giới hạn 64 ID người xem và chỉ hiển thị dữ liệu của phiên stream đang hoạt động.
 Việc Discord gửi danh sách người xem cho stream được xem vẫn là hành vi giao thức chưa được
 xác minh trực tiếp; nếu không nhận được dữ liệu, ứng dụng không hiện danh sách.
+
+## Xem nhiều stream và cửa sổ nổi
+
+Port [PR #916](https://github.com/ViceVerse-cz/Serein/pull/916) để chọn tối đa bốn stream
+trong cùng cuộc gọi. Mỗi stream có phiên kết nối, trạng thái, hình ảnh và danh sách người xem
+riêng. Dừng một stream không dừng các stream còn lại; âm lượng stream dùng bộ điều khiển chung.
+[PR #886](https://github.com/ViceVerse-cz/Serein/pull/886) đưa lịch vẽ theo thời điểm trình chiếu
+của khung hình. Các công cụ lab Linux đi kèm chỉ dành cho thử nghiệm ngoại tuyến.
+
+PiP nổi bên trong Serein khi rời màn hình cuộc gọi; có thể mở từ menu của ô stream, kéo,
+đổi kích thước và chọn stream qua menu chuột phải, gồm bản xem trước stream của mình.
+PiP tái sử dụng texture đang xem. Đóng PiP chỉ ẩn cửa sổ; nút trở lại đưa về đúng kênh thoại.
+Lựa chọn được xóa khi đổi tài khoản hoặc phiên gọi, tránh hiển thị ảnh của phiên cũ.
 
 ## Biệt danh khi gợi ý nhắc tên
 

@@ -4388,11 +4388,11 @@ voice-voice-popup-content-speakers = Loa
 # Context: voice_popup_content
 voice-voice-popup-content-voice-privacy-code = Mã bảo mật giọng nói
 # Context: voice_processing_controls
-voice-voice-processing-controls-adjust-microphone-loudness-automatically = Tự động điều chỉnh âm lượng micrô.
+voice-voice-processing-controls-adjust-microphone-loudness-automatically = Giữ âm lượng giọng nói ổn định khi bạn nói to hoặc nhỏ.
 # Context: voice_processing_controls
 voice-voice-processing-controls-applies-to-calls-and-your-local-microphone-test = Áp dụng cho cuộc gọi và kiểm tra micrô cục bộ của bạn.
 # Context: voice_processing_controls
-voice-voice-processing-controls-automatic-gain-control = Kiểm soát độ lợi tự động
+voice-voice-processing-controls-automatic-gain-control = Tự động điều chỉnh âm lượng mic
 # Context: voice_processing_controls
 voice-voice-processing-controls-echo-cancellation = Khử tiếng vọng
 # Context: voice_processing_controls
@@ -5219,3 +5219,535 @@ voice-switch-title = Chuyển kênh thoại?
 voice-switch-detail = Bạn đang trong một cuộc gọi. Rời cuộc gọi để tham gia { $channel }?
 voice-switch-confirm = Chuyển kênh
 voice-switch-cancel = Ở lại cuộc gọi
+
+voice-pip-title = Cửa sổ nổi stream
+
+voice-pip-open = Mở cửa sổ nổi
+
+voice-pip-close = Đóng cửa sổ nổi
+
+voice-pip-return = Trở lại kênh thoại
+
+voice-pip-own = Màn hình của bạn
+
+voice-pip-remote = Màn hình của { $name }
+
+voice-pip-source = Chọn stream
+
+voice-pip-mute = Tắt tiếng stream
+
+voice-pip-unmute = Bật tiếng stream
+
+voice-pip-waiting = Đang chờ hình ảnh…
+
+voice-pip-stop = Dừng xem
+
+voice-open-chat = Mở trò chuyện
+
+ui-builtin-voice-connected = Đã kết nối thoại
+
+ui-builtin-voice-connected-a81da2 = Đã kết nối thoại
+
+ui-builtin-voice-preview = Bản xem trước cuộc gọi
+
+ui-builtin-call-failed = Không thể kết nối cuộc gọi
+
+ui-builtin-connecting = Đang kết nối…
+
+ui-builtin-share-a-screen-or-window = Chia sẻ màn hình hoặc cửa sổ
+
+ui-builtin-stop-sharing = Dừng chia sẻ
+
+ui-builtin-stop-sharing-your-screen = Dừng chia sẻ màn hình
+
+ui-builtin-exit-fullscreen = Thoát toàn màn hình
+
+ui-builtin-exit-fullscreen-esc = Thoát toàn màn hình (Esc)
+
+ui-builtin-streaming-now = Đang phát trực tiếp
+
+ui-builtin-this-stream-is-no-longer-live = Stream này đã kết thúc
+
+ui-builtin-could-not-join-this-stream-s-voice-channel = Không thể vào kênh thoại của stream này
+
+ui-builtin-leave-the-current-call-before-watching-this-stream = Rời cuộc gọi hiện tại trước khi xem stream này
+
+ui-builtin-the-four-stream-viewing-limit-is-reached = Bạn đang xem tối đa 4 stream
+
+ui-builtin-up-to-four-streams-can-be-watched-at-once = Bạn có thể xem cùng lúc tối đa 4 stream
+
+ui-builtin-this-stream-is-not-available-in-the-connected-voice-channel = Stream này không khả dụng trong kênh thoại đang kết nối
+
+ui-builtin-the-stream-is-not-available = Stream không khả dụng
+
+ui-builtin-your-screen-local-preview = Màn hình của bạn · bản xem trước
+
+ui-builtin-screen-share-you-are-watching = Màn hình được chia sẻ mà bạn đang xem
+
+ui-builtin-watch-stream = Xem stream
+
+ui-builtin-click-or-press-escape-to-return-to-the-grid = Nhấp hoặc nhấn Esc để trở lại chế độ lưới
+
+ui-builtin-click-to-enlarge = Nhấp để phóng to
+
+ui-builtin-connecting-to-the-stream = Đang kết nối với stream…
+
+ui-builtin-stop-receiving-this-screen-share = Dừng xem màn hình này
+
+ui-builtin-answer-call = Trả lời cuộc gọi
+
+ui-builtin-start-voice-call = Bắt đầu cuộc gọi thoại
+
+ui-builtin-join-audio-your-microphone-starts-after-the-call-is-secured = Tham gia thoại. Mic chỉ hoạt động sau khi cuộc gọi được bảo mật.
+
+ui-builtin-join-to-listen-speaking-is-unavailable-in-this-channel = Tham gia để nghe. Bạn không có quyền nói trong kênh này.
+
+ui-builtin-voice-isolation = Lọc giọng nói
+
+ui-builtin-studio = Phòng thu
+
+ui-builtin-custom = Tùy chỉnh
+
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = Lọc tạp âm bằng RNNoise, khử tiếng vọng và tự điều chỉnh âm lượng giọng nói.
+
+ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = Thu mic trực tiếp, không lọc tạp âm, khử tiếng vọng hay tự điều chỉnh âm lượng.
+
+ui-builtin-turn-on-microphone = Bật mic
+
+ui-builtin-turn-off-microphone = Tắt mic
+
+ui-builtin-voice-settings = Cài đặt giọng nói
+
+ui-builtin-microphone-and-speaker-settings = Cài đặt mic và loa
+
+ui-builtin-turn-off-camera = Tắt camera
+
+ui-builtin-turn-on-camera = Bật camera
+
+ui-builtin-stop-sharing-your-camera = Dừng chia sẻ camera
+
+ui-builtin-camera-is-off-in-the-offline-preview = Camera không hoạt động trong bản xem trước ngoại tuyến
+
+ui-builtin-camera-capture-is-unavailable-on-this-platform = Nền tảng này chưa hỗ trợ thu hình từ camera
+
+ui-builtin-choose-a-camera = Chọn camera
+
+ui-builtin-more-options = Tùy chọn khác
+
+ui-builtin-more-call-options = Tùy chọn cuộc gọi khác
+
+ui-builtin-hide-participants = Ẩn người tham gia
+
+ui-builtin-show-participants = Hiện người tham gia
+
+ui-builtin-hide-the-participant-strip-under-the-enlarged-video = Ẩn hàng người tham gia dưới video phóng to
+
+ui-builtin-show-the-other-participants-under-the-enlarged-video = Hiện người tham gia khác dưới video phóng to
+
+ui-builtin-screen-sharing-requires-a-connected-call-and-video-permission-on-a-supported-desktop = Để chia sẻ màn hình, hãy kết nối cuộc gọi và cấp quyền video trên máy tính được hỗ trợ.
+
+ui-builtin-public = Công khai
+
+ui-builtin-joined-private = Riêng tư đã tham gia
+
+ui-builtin-private = Riêng tư
+
+ui-builtin-enlarge-image = Phóng to ảnh
+
+ui-builtin-loading-full-quality = Đang tải ảnh chất lượng gốc
+
+ui-builtin-loading-image = Đang tải ảnh
+
+ui-builtin-full-quality-unavailable = Không tải được ảnh chất lượng gốc
+
+ui-builtin-close-esc = Đóng (Esc)
+
+ui-builtin-previous = Trước (←)
+
+ui-builtin-next = Tiếp (→)
+
+ui-builtin-maximize = Phóng to cửa sổ
+
+ui-builtin-next-game = Trò chơi tiếp theo
+
+ui-builtin-select-emoji = Chọn biểu cảm
+
+ui-builtin-skip-this-question = Bỏ qua câu hỏi này
+
+ui-builtin-press-keys = Nhấn tổ hợp phím…
+
+ui-builtin-control-your-microphone-and-incoming-audio-during-a-connected-call = Điều khiển mic và âm thanh đầu ra khi đang trong cuộc gọi.
+
+ui-builtin-proxy-authentication = Xác thực proxy
+
+ui-builtin-credentials-stay-in-serein-s-os-credential-store-and-are-never-shared-with-the-plugin-apply-the-prox = Thông tin đăng nhập được lưu trong kho bảo mật của hệ điều hành và không được chia sẻ với tiện ích. Hãy áp dụng địa chỉ proxy trước khi lưu.
+
+ui-builtin-http-proxy-authentication-is-unencrypted-anyone-observing-the-connection-to-the-proxy-can-recover-th = Xác thực proxy HTTP không được mã hóa: người theo dõi kết nối có thể lấy được thông tin đăng nhập này. Hãy dùng proxy HTTPS để mã hóa xác thực.
+
+ui-builtin-save-credentials = Lưu thông tin đăng nhập
+
+ui-builtin-remove-saved-credentials = Xóa thông tin đăng nhập đã lưu
+
+ui-builtin-choose-url-mode-to-configure-proxy-authentication = Chọn chế độ URL để thiết lập xác thực proxy.
+
+ui-builtin-profile-preview = XEM TRƯỚC HỒ SƠ
+
+ui-builtin-your-activity-goes-here = Hoạt động của bạn sẽ hiển thị ở đây
+
+ui-builtin-enter-an-application-id-and-activity-name-then-choose-preview = Nhập ID ứng dụng và tên hoạt động, rồi chọn Xem trước.
+
+ui-builtin-artwork-resolves-when-applied-this-draft-preview-uses-placeholders = Hình ảnh sẽ được tải khi áp dụng. Bản nháp này chỉ hiển thị ảnh thay thế.
+
+ui-builtin-activity-sharing-is-off-enable-it-in-settings-registered-games-to-publish-your-presence = Bạn đang tắt chia sẻ hoạt động. Bật trong Cài đặt > Trò chơi đã đăng ký để hiển thị hoạt động của bạn.
+
+ui-builtin-offline-demo-nothing-is-published = Bản xem trước ngoại tuyến. Hoạt động không được đăng lên Discord.
+
+ui-builtin-offline-your-saved-activity-will-wait-for-a-connection = Đang ngoại tuyến. Hoạt động đã lưu sẽ được hiển thị khi có kết nối.
+
+ui-builtin-enable-activity-sharing-in-settings-registered-games-invisible-hides-your-activity = Bật chia sẻ hoạt động trong Cài đặt > Trò chơi đã đăng ký. Trạng thái Ẩn sẽ giấu hoạt động của bạn.
+
+ui-builtin-elapsed-since-starting-applying-edits-keeps-the-timer = Tính thời gian từ lúc bắt đầu; chỉnh sửa không đặt lại bộ đếm.
+
+ui-builtin-timer-starts-at-local-midnight = Bộ đếm bắt đầu từ nửa đêm theo giờ địa phương.
+
+ui-builtin-1-hour = 1 giờ
+
+ui-builtin-24-hours = 24 giờ
+
+ui-builtin-3-days = 3 ngày
+
+ui-builtin-1-week = 1 tuần
+
+ui-builtin-recommended = Đề xuất
+
+ui-builtin-new-message-in-the-channel-i-m-currently-reading = Tin nhắn mới trong kênh đang đọc
+
+ui-builtin-incoming-ring = Chuông cuộc gọi đến
+
+ui-builtin-outgoing-ring = Chuông cuộc gọi đi
+
+ui-builtin-voice = Thoại
+
+voice-built-in-switch-to-this-voice-channel = Chuyển đến kênh thoại này
+
+voice-built-in-camera-requires-h264-support-from-the-voice-server = Máy chủ thoại cần hỗ trợ H264 để dùng camera.
+
+voice-built-in-camera-is-unavailable-with-current-channel-permissions = Bạn chưa có quyền dùng camera trong kênh này.
+
+voice-built-in-turn-off-noise-suppression = Tắt lọc tiếng ồn
+
+voice-built-in-turn-on-noise-suppression = Bật lọc tiếng ồn
+
+voice-built-in-noise-suppression-reduces-keyboard-noise-breathing-and-fans-locally = Lọc tiếng gõ phím, tiếng thở và tiếng quạt ngay trên thiết bị của bạn.
+
+voice-built-in-noise-suppression-is-unavailable-in-this-build-or-preview = Bản dựng hoặc chế độ xem trước này chưa hỗ trợ lọc tiếng ồn.
+
+voice-built-in-fullscreen = Toàn màn hình
+
+voice-built-in-view-this-screen-share-in-fullscreen = Xem stream này ở chế độ toàn màn hình
+
+voice-built-in-call-switch-cancelled-previous-call-did-not-finish-disconnecting-try-joining-again = Đã hủy chuyển kênh vì cuộc gọi trước chưa ngắt kết nối xong. Hãy thử tham gia lại.
+
+join-skip-question = Bỏ qua câu hỏi này
+
+theme-my-theme = Chủ đề của tôi
+
+theme-your-name = Tên của bạn
+
+theme-start-color = Màu bắt đầu
+
+theme-end-color = Màu kết thúc
+
+theme-discard-title = Bỏ thay đổi chưa lưu?
+
+theme-unsaved-detail = Các thay đổi của bạn chưa được lưu.
+
+theme-discard-action = Bỏ thay đổi
+
+theme-keep-editing = Tiếp tục chỉnh sửa
+
+theme-accent-description = Nút, vùng chọn và điểm nhấn
+
+theme-text-description = Tin nhắn và nhãn văn bản
+
+theme-muted-description = Mốc thời gian và thông tin bổ sung
+
+theme-sidebar-description = Danh sách kênh, cuộc trò chuyện và thành viên
+
+theme-chat-description = Nền phía sau tin nhắn
+
+video-exit-fullscreen-shortcut = Thoát toàn màn hình (Esc)
+
+video-enter-fullscreen = Toàn màn hình
+
+presence-party-size = Nhóm: { $current } / { $max }
+
+proxy-username = Tên đăng nhập
+
+proxy-password = Mật khẩu
+
+signin-early-preview = Bản xem trước
+
+signin-waiting = Đang chờ Discord…
+
+signin-other-account = Dùng tài khoản khác
+
+signin-continue = Tiếp tục với Discord
+
+signin-this-account = tài khoản này
+
+signin-forget-title = Xóa thông tin đã lưu của { $account }?
+
+signin-forget-current = Bạn sẽ được đăng xuất khỏi tài khoản hiện tại. Thông tin đăng nhập đã lưu, lịch sử trong bộ nhớ đệm và bản nháp của tài khoản trên thiết bị này sẽ bị xóa.
+
+signin-forget-other = Thông tin đăng nhập đã lưu, lịch sử trong bộ nhớ đệm và bản nháp trên thiết bị này sẽ bị xóa. Tài khoản Discord vẫn được giữ nguyên và bạn có thể đăng nhập lại bất cứ lúc nào.
+
+signin-forget = Xóa thông tin đã lưu
+
+signin-keep = Giữ lại
+
+attachment-view-image-name = Xem ảnh { $name }
+
+attachment-enlarge-image = Phóng to ảnh
+
+voice-input-level-reading = Mức âm thanh đầu vào: { $level } dBFS
+
+voice-speaking-name = { $name } · Đang nói
+
+voice-codec-rejoin = ; hãy tham gia lại cuộc gọi
+
+ui-owned-unable-to-create-this-server-right-now = Hiện chưa thể tạo máy chủ. Hãy thử lại sau.
+
+ui-owned-enter-a-valid-discord-invite-link-or-invite-code = Nhập liên kết hoặc mã mời Discord hợp lệ.
+
+ui-owned-unable-to-proceed-check-your-connection-or-try-again-after-the-current-request = Chưa thể tiếp tục. Hãy kiểm tra kết nối hoặc chờ yêu cầu hiện tại hoàn tất rồi thử lại.
+
+ui-owned-prepared-icon-is-too-large = Ảnh biểu tượng đã xử lý vẫn quá lớn.
+
+status-owned-application-data-directory-is-unavailable = Không truy cập được thư mục dữ liệu ứng dụng.
+
+status-owned-result-discarded-because-the-conversation-or-draft-changed = Đã bỏ kết quả vì cuộc trò chuyện hoặc bản nháp đã thay đổi.
+
+status-owned-package-inspected-review-its-source-and-capabilities-before-enabling = Đã kiểm tra gói. Hãy xem nguồn và các quyền trước khi bật.
+
+status-owned-extension-enabled = Đã bật tiện ích.
+
+status-owned-theme-exported = Đã xuất chủ đề.
+
+status-owned-extension-file-selection-ended = Đã đóng hộp thoại chọn tệp tiện ích.
+
+status-owned-refresh-the-catalog-or-import-this-package-again = Hãy làm mới danh mục hoặc nhập lại gói này.
+
+status-owned-some-plugin-events-were-skipped-because-the-event-queue-was-full = Một số sự kiện tiện ích đã bị bỏ qua vì hàng đợi đầy.
+
+status-owned-disconnected = Đã ngắt kết nối.
+
+status-owned-preview-only-this-font-is-not-saved = Chỉ xem trước; phông chữ này chưa được lưu.
+
+status-owned-loading-font = Đang tải phông chữ…
+
+status-owned-voice-calls-are-unavailable-in-the-offline-preview = Không thể gọi thoại trong bản xem trước ngoại tuyến.
+
+status-owned-local-storage-worker-stopped-restart-serein-to-save-fonts = Bộ phận lưu trữ đã dừng. Khởi động lại Serein để lưu phông chữ.
+
+status-owned-no-saved-login-for-that-account-on-this-device-use-another-account-to-sign-in-again-or-for = Thiết bị này chưa lưu thông tin đăng nhập của tài khoản. Hãy đăng nhập lại bằng tài khoản khác, hoặc nhấn × để xóa thông tin đã lưu.
+
+status-owned-could-not-save-this-account-for-the-switcher-sign-in-again-to-retry = Không lưu được tài khoản vào danh sách chuyển đổi. Hãy đăng nhập lại để thử lại.
+
+status-owned-could-not-save-login-this-session-will-not-restore-automatically = Không lưu được thông tin đăng nhập. Phiên này sẽ không tự khôi phục.
+
+status-owned-could-not-queue-saved-login-session-only = Không thể lưu thông tin đăng nhập; chỉ dùng được trong phiên này.
+
+status-owned-reconnecting-to-discord = Đang kết nối lại với Discord…
+
+status-owned-proxy-credentials-loaded-future-api-requests-use-this-setting = Đã tải thông tin đăng nhập proxy. Các yêu cầu API tiếp theo sẽ dùng cấu hình này.
+
+status-owned-proxy-credential-operation-ended-retry-saving-or-removing-credentials = Thao tác với thông tin proxy đã kết thúc. Hãy thử lưu hoặc xóa lại.
+
+status-owned-invalid-proxy-url = URL proxy không hợp lệ.
+
+status-owned-demo-mode-does-not-read-or-save-proxy-credentials = Bản xem trước không đọc hoặc lưu thông tin đăng nhập proxy.
+
+status-owned-wait-for-the-current-credential-operation = Hãy chờ thao tác với thông tin đăng nhập hiện tại hoàn tất.
+
+status-owned-apply-this-url-in-the-plugin-before-saving-credentials = Hãy áp dụng URL này trong tiện ích trước khi lưu thông tin đăng nhập.
+
+status-owned-use-a-username-of-1-256-bytes-without-a-colon-and-a-password-up-to-1024-bytes-control-char = Tên đăng nhập phải dài 1–256 byte và không có dấu hai chấm; mật khẩu tối đa 1.024 byte. Không dùng ký tự điều khiển.
+
+status-owned-enter-a-valid-http-https-proxy-url-first = Trước tiên, hãy nhập URL proxy HTTP hoặc HTTPS hợp lệ.
+
+status-owned-screen-sharing-stopped = Đã dừng chia sẻ màn hình.
+
+status-owned-looking-for-screens-and-windows = Đang tìm màn hình và cửa sổ…
+
+status-owned-could-not-start-screen-source-discovery = Không thể bắt đầu tìm nguồn chia sẻ màn hình.
+
+status-owned-screen-sharing-is-unavailable-on-this-platform = Nền tảng này chưa hỗ trợ chia sẻ màn hình.
+
+status-owned-screen-source-discovery-stopped = Đã dừng tìm nguồn chia sẻ màn hình.
+
+status-owned-previous-screen-share-is-still-closing = Phiên chia sẻ màn hình trước vẫn đang đóng.
+
+status-owned-requesting-screen-share-connection = Đang yêu cầu kết nối chia sẻ màn hình…
+
+status-owned-screen-sharing-requires-the-current-connected-call = Bạn cần ở trong cuộc gọi đã kết nối để chia sẻ màn hình.
+
+status-owned-discord-did-not-acknowledge-stopping-screen-share-leave-the-call-before-sharing-again = Discord chưa xác nhận dừng chia sẻ. Hãy rời cuộc gọi trước khi chia sẻ lại.
+
+status-owned-connecting-screen-share-transport = Đang kết nối đường truyền chia sẻ màn hình…
+
+status-owned-connecting-to-discord = Đang kết nối với Discord…
+
+status-owned-signed-out-of-this-account-its-saved-login-is-kept = Đã đăng xuất; thông tin đăng nhập đã lưu vẫn được giữ lại.
+
+status-owned-saved-account-removed-from-this-device = Đã xóa thông tin tài khoản đã lưu khỏi thiết bị này.
+
+status-owned-saved-login-restore-cancelled = Đã hủy khôi phục phiên đăng nhập đã lưu.
+
+status-owned-sign-in-through-discord-saved-login-lookup-stopped = Đăng nhập qua Discord; đã dừng tìm phiên đăng nhập đã lưu.
+
+status-owned-waiting-for-discord-login = Đang chờ đăng nhập Discord.
+
+status-owned-updates-have-not-been-checked-on-this-channel-yet = Chưa kiểm tra cập nhật trên kênh này.
+
+status-owned-update-downloaded-and-verified-restart-when-you-are-ready = Đã tải và xác minh bản cập nhật. Bạn có thể khởi động lại khi sẵn sàng.
+
+status-owned-update-ready-close-serein-to-install-and-restart = Bản cập nhật đã sẵn sàng. Đóng Serein để cài đặt và khởi động lại.
+
+status-owned-the-update-worker-stopped-please-try-again = Tiến trình cập nhật đã dừng. Hãy thử lại.
+
+status-owned-preparing-to-restart = Đang chuẩn bị khởi động lại…
+
+status-owned-please-wait-one-minute-between-update-checks = Hãy chờ một phút giữa các lần kiểm tra cập nhật.
+
+status-owned-checking-for-updates = Đang kiểm tra cập nhật…
+
+status-owned-stopped-watching = Đã dừng xem.
+
+status-owned-connect-the-call-before-watching-a-stream = Hãy kết nối cuộc gọi trước khi xem stream.
+
+status-owned-requesting-the-stream = Đang yêu cầu xem stream…
+
+status-owned-watching-the-stream = Đang xem stream.
+
+status-owned-forward-unavailable-check-destinations-connection-and-message-limits = Không thể chuyển tiếp. Hãy kiểm tra nơi nhận, kết nối và giới hạn tin nhắn.
+
+status-owned-verify-to-join-this-server = Xác minh để tham gia máy chủ này.
+
+status-owned-wait-for-the-previous-message-edit-to-finish = Hãy chờ lần chỉnh sửa tin nhắn trước hoàn tất.
+
+status-owned-edit-could-not-be-applied-reload-this-conversation = Không thể áp dụng chỉnh sửa. Hãy tải lại cuộc trò chuyện.
+
+status-owned-message-edit-failed-your-edit-was-kept-for-retry = Chỉnh sửa tin nhắn thất bại; nội dung chỉnh sửa được giữ lại để thử lại.
+
+status-owned-wait-for-the-previous-pin-action-to-finish = Hãy chờ thao tác ghim trước hoàn tất.
+
+status-owned-pin-action-failed-the-previous-state-was-restored = Thao tác ghim thất bại; đã khôi phục trạng thái trước.
+
+status-owned-you-re-in-welcome-to-the-server = Đã tham gia. Chào mừng bạn đến với máy chủ!
+
+status-owned-wait-for-the-current-poll-action = Hãy chờ thao tác bình chọn hiện tại hoàn tất.
+
+status-owned-poll-action-is-unavailable-with-the-current-permissions-or-poll-state = Không thể thực hiện thao tác này với quyền hoặc trạng thái bình chọn hiện tại.
+
+status-owned-profile-updated-use-reload-history-to-refresh-this-conversation = Đã cập nhật hồ sơ. Tải lại lịch sử để làm mới cuộc trò chuyện.
+
+status-owned-reaction-limit-reached = Đã đạt giới hạn biểu cảm.
+
+status-owned-voice-moderation-request-accepted = Đã chấp nhận yêu cầu quản lý thành viên trong kênh thoại.
+
+status-owned-enter-a-discord-username-of-at-most-32-characters = Nhập tên người dùng Discord dài tối đa 32 ký tự.
+
+status-owned-enter-a-discord-username-2-32-letters-numbers-underscores-or-periods = Nhập tên người dùng Discord gồm 2–32 chữ cái, chữ số, dấu gạch dưới hoặc dấu chấm.
+
+status-owned-already-friends-or-a-request-is-pending-check-the-pending-tab = Đã là bạn bè hoặc đang có lời mời chờ xử lý. Hãy kiểm tra tab Đang chờ.
+
+status-owned-choose-between-two-and-nine-friends-for-a-group-message = Chọn từ 2 đến 9 người bạn để tạo nhóm trò chuyện.
+
+status-owned-creating-group-message = Đang tạo nhóm trò chuyện…
+
+status-owned-finish-pending-messages-and-leave-the-call-before-closing-this-dm = Hoàn tất các tin nhắn đang chờ và rời cuộc gọi trước khi đóng cuộc trò chuyện này.
+
+status-owned-user-actions-unavailable-while-disconnected = Không thể thao tác với người dùng khi chưa kết nối.
+
+status-owned-outcome-unknown-check-the-official-client-before-retrying = Chưa rõ kết quả. Hãy kiểm tra ứng dụng Discord chính thức trước khi thử lại.
+
+status-owned-direct-message-opened = Đã mở tin nhắn riêng.
+
+status-owned-group-message-opened = Đã mở nhóm trò chuyện.
+
+status-owned-verify-to-send-this-message = Xác minh để gửi tin nhắn này.
+
+status-owned-discord-requires-verification-for-this-message-retry-it-after-the-current-check = Discord yêu cầu xác minh cho tin nhắn này. Hãy thử gửi lại sau khi hoàn tất bước kiểm tra hiện tại.
+
+status-owned-voice-channel-exceeds-the-64-participant-limit = Kênh thoại vượt quá giới hạn 64 người tham gia.
+
+status-owned-voice-roster-exceeds-safe-capacity-reconnect-to-refresh = Danh sách người trong kênh thoại vượt giới hạn an toàn. Hãy kết nối lại để làm mới.
+
+status-owned-session-expired-reconnect-explicitly-drafts-remain-in-ram = Phiên đăng nhập đã hết hạn. Hãy chủ động kết nối lại; bản nháp vẫn được giữ trong bộ nhớ.
+
+status-owned-security-challenge-unsupported-here-connection-stopped = Đã dừng kết nối vì có bước xác minh bảo mật chưa được hỗ trợ.
+
+status-owned-permission-denied = Không có quyền thực hiện thao tác này.
+
+status-owned-discord-requires-account-attention-connection-stopped-check-the-official-client = Đã dừng kết nối vì tài khoản cần được kiểm tra. Hãy mở ứng dụng Discord chính thức.
+
+status-owned-discord-blocked-this-request-connection-stopped-check-the-official-client = Discord đã chặn yêu cầu này và kết nối đã dừng. Hãy kiểm tra trong ứng dụng chính thức.
+
+status-owned-rate-limited-wait-before-retrying = Đã gửi quá nhiều yêu cầu. Hãy chờ rồi thử lại.
+
+status-owned-connection-failed = Kết nối thất bại.
+
+status-owned-unsupported-service-response = Ứng dụng chưa hỗ trợ phản hồi này từ máy chủ.
+
+status-owned-safe-capacity-exceeded-connection-stopped = Đã dừng kết nối vì dữ liệu vượt giới hạn an toàn.
+
+status-owned-invalid-session-input-or-bot-account-rejected = Thông tin phiên không hợp lệ hoặc đây là tài khoản bot không được hỗ trợ.
+
+status-owned-connecting-to-voice-server = Đang kết nối với máy chủ thoại…
+
+status-owned-checking-voice-network = Đang kiểm tra kết nối thoại…
+
+status-owned-opening-audio-devices = Đang mở thiết bị âm thanh…
+
+status-owned-connecting-call = Đang kết nối cuộc gọi…
+
+status-owned-securing-audio = Đang bảo mật âm thanh…
+
+status-owned-connected-waiting-for-others = Đã kết nối. Đang chờ người khác.
+
+message-delete-keep = Giữ tin nhắn
+
+message-delete-unavailable = Hiện không thể xóa tin nhắn này.
+
+voice-notice-deafened-by-the-server = Bạn đã bị tắt âm thanh trên máy chủ.
+
+voice-notice-muted-by-the-server = Bạn đã bị tắt mic trên máy chủ.
+
+voice-notice-speaking-is-unavailable-in-this-channel-you-can-still-listen = Bạn không thể nói trong kênh này nhưng vẫn có thể nghe.
+
+voice-notice-push-to-talk-is-required-to-speak-here-enable-it-in-voice-settings = Kênh này yêu cầu nhấn để nói. Hãy bật tùy chọn đó trong cài đặt Giọng nói.
+
+voice-notice-synthetic-participants-microphone-and-speakers-are-off = Người tham gia giả lập · mic và loa đều tắt.
+
+ui-history-sync = Lịch sử đã lưu · đang chờ đồng bộ
+
+ui-history-unavailable = Không thể truy cập cuộc trò chuyện
+
+ui-history-archive = Đã mở từ kho lưu trữ
+
+voice-preview-name = Bản xem trước buổi phát
+
+voice-preview-unavailable = Bản xem trước bị ẩn hoặc không khả dụng
+
+status-draft-paste-limit = Nội dung đã dán vượt quá giới hạn bản nháp
+
+status-draft-cancel-reply = Hủy trả lời hiện tại trước khi khôi phục tin nhắn này
+
+status-draft-restore-pending = Lưu hoặc xóa bản nháp hiện tại trước khi khôi phục nội dung đang chờ
+
+status-send-unavailable = Không thể gửi do kết nối hoặc quyền hiện tại
+
+status-read-confirm = Không thể xác nhận trạng thái đã đọc · dấu chưa đọc có thể chưa cập nhật
+
+status-read-sync = Không thể đồng bộ trạng thái đã đọc · dấu chưa đọc có thể chưa cập nhật

@@ -52,6 +52,7 @@ struct Dialog {
 pub(super) struct ChannelMenu {
 	posts: crate::post_menu::PostMenu,
 	pub invite_requested: Option<(Id, Id)>,
+	pub open_chat_requested: Option<Id>,
 	/// Browse Channels was chosen for this server.
 	pub browse_requested: Option<Id>,
 	list_requested: Option<(Id, client_core::channel_list::Change)>,
@@ -65,6 +66,26 @@ pub(super) struct ChannelMenu {
 }
 
 impl ChannelMenu {
+	pub fn request_voice_chat(&mut self, state: &State, channel: Id) {
+		if state
+			.channel(channel)
+			.is_some_and(|channel| channel.kind == 2)
+			&& state.can_view(channel)
+		{
+			self.open_chat_requested = Some(channel);
+			self.generation = state.generation;
+		}
+	}
+
+	pub fn request_channel_invite(&mut self, state: &State, channel: Id) {
+		if let Some(guild) = state.channel(channel).and_then(|channel| channel.guild)
+			&& state.can_create_server_invite(guild, channel)
+		{
+			self.invite_requested = Some((guild, channel));
+			self.generation = state.generation;
+		}
+	}
+
 	pub fn is_open(&self) -> bool {
 		self.dialog.is_some()
 	}
@@ -127,6 +148,12 @@ impl ChannelMenu {
 				&& !state.channel_action_pending()
 				&& state.can_view(channel.id);
 			let mut intent = None;
+			if channel.kind == 2
+				&& row(ui, "voice-open-chat", state.can_view(channel.id), false).clicked()
+			{
+				self.request_voice_chat(state, channel.id);
+				ui.close();
+			}
 			crate::extensions_ui::context_menu_items(
 				ui,
 				extensions::MenuTarget::Channel {
@@ -192,8 +219,7 @@ impl ChannelMenu {
 				)
 				.clicked()
 			{
-				self.invite_requested = Some((guild, channel.id));
-				self.generation = state.generation;
+				self.request_channel_invite(state, channel.id);
 				ui.close();
 			}
 			if row(ui, "channel-menu-context-copy-link", true, false).clicked() {
@@ -1584,6 +1610,42 @@ mod tests {
 			}
 		}
 	}
+	#[test]
+	fn voice_chat_menu_navigates_without_starting_a_call_and_drops_stale_intents() {
+		let ctx = egui::Context::default();
+		design::apply(&ctx);
+		let mut state = test_support::chat_demo_state();
+		state
+			.channels
+			.iter_mut()
+			.find(|channel| channel.id == Id(20))
+			.unwrap()
+			.kind = 2;
+		let mut h = Harness {
+			state,
+			menu: Default::default(),
+			prefs: Default::default(),
+			commands: vec![],
+			copied: vec![],
+			width: 360.0,
+		};
+		let (row, _) = h.frame(&ctx, vec![]);
+		h.click(&ctx, row.rect.center(), PointerButton::Secondary);
+		let (_, text) = h.frame(&ctx, vec![]);
+		let label = crate::i18n::translate("voice-open-chat");
+		let target = text
+			.iter()
+			.find(|(text, _)| text == &label)
+			.expect("voice menu exposes chat")
+			.1;
+		h.click(&ctx, target.center(), PointerButton::Primary);
+		assert_eq!(h.menu.open_chat_requested, Some(Id(20)));
+		assert!(h.commands.is_empty() && h.state.voice.active.is_none());
+		h.state.generation += 1;
+		h.frame(&ctx, vec![]);
+		assert!(h.menu.open_chat_requested.is_none());
+	}
+
 	#[test]
 	fn channel_integrations_load_and_create_in_the_selected_channel() {
 		use model::server_integrations::{Action as IntegrationAction, Snapshot};

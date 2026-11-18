@@ -113,8 +113,8 @@ fn voice_section(
 ) {
 	section(
 		ui,
-		"Voice",
-		"Control your microphone and incoming audio during a connected call.",
+		"ui-builtin-voice",
+		"ui-builtin-control-your-microphone-and-incoming-audio-during-a-connected-call",
 		VOICE,
 		bindings,
 		capturing,
@@ -619,7 +619,7 @@ fn shortcut_button(
 		ui.painter().text(
 			rect.center(),
 			egui::Align2::CENTER_CENTER,
-			"Press keys…",
+			crate::i18n::translate("ui-builtin-press-keys"),
 			egui::FontId::new(12.0, design::medium_family(ui.ctx())),
 			colors.text_strong,
 		);

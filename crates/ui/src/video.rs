@@ -717,16 +717,16 @@ impl VideoUi {
 				.response
 				.on_hover_text(crate::i18n::translate("video-show-player-video-volume"));
 			let screen_label = if fullscreen {
-				"Exit fullscreen (Esc)"
+				crate::i18n::translate("video-exit-fullscreen-shortcut")
 			} else {
-				"Fullscreen"
+				crate::i18n::translate("video-enter-fullscreen")
 			};
 			let screen_rect = slot(bar.right() - 22.0);
 			let screen = round_button(
 				ui,
 				screen_rect,
 				id.with("fullscreen"),
-				screen_label,
+				&screen_label,
 				colors.accent,
 				|painter, rect, color| {
 					if fullscreen {

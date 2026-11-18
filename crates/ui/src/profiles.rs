@@ -240,14 +240,17 @@ pub(crate) fn voice_badge(ui: &mut egui::Ui, in_voice: bool, has_status: bool) {
 	}
 }
 
+fn server_tag_text(ui: &egui::Ui, tag: &model::ClanTag) -> std::sync::Arc<egui::Galley> {
+	ui.painter().layout_no_wrap(
+		tag.tag.clone(),
+		egui::FontId::new(10.0, design::medium_family(ui.ctx())),
+		design::palette(ui).text,
+	)
+}
+
 pub(crate) fn server_tag_width(ui: &egui::Ui, tag: Option<&model::ClanTag>) -> f32 {
 	tag.map_or(0.0, |tag| {
-		let text = ui.painter().layout_no_wrap(
-			tag.tag.clone(),
-			egui::FontId::proportional(10.0),
-			design::palette(ui).text,
-		);
-		text.size().x + 8.0 + if tag.badge.is_some() { 13.0 } else { 0.0 }
+		server_tag_text(ui, tag).size().x + 8.0 + if tag.badge.is_some() { 13.0 } else { 0.0 }
 	})
 }
 
@@ -258,24 +261,40 @@ pub(crate) fn server_tag(
 	demo: bool,
 ) -> egui::Response {
 	let colors = design::palette(ui);
-	egui::Frame::new()
-		.fill(colors.raised)
-		.corner_radius(4)
-		.inner_margin(egui::Margin::symmetric(4, 1))
-		.show(ui, |ui| {
-			ui.spacing_mut().item_spacing.x = 3.0;
-			if tag.badge.is_some() {
-				avatars.show_icon(ui, tag.badge_key(), 10.0, demo, "Server tag badge");
-			}
-			ui.add(egui::Label::new(RichText::new(&tag.tag).size(10.0).strong()).selectable(false));
-		})
-		.response
-		.on_hover_text(format!(
-			"{} · {} {}",
-			crate::i18n::translate("profiles-server-tag-server-tag"),
-			crate::i18n::translate("profiles-server-tag-server"),
-			tag.guild
-		))
+	let text = server_tag_text(ui, tag);
+	let badge_width = if tag.badge.is_some() { 13.0 } else { 0.0 };
+	let (rect, response) = ui.allocate_exact_size(
+		vec2(text.size().x + 8.0 + badge_width, 16.0),
+		egui::Sense::hover(),
+	);
+	if ui.is_rect_visible(rect) {
+		// Paint the compact badge directly: a Frame can inherit the member/voice row's
+		// larger cross-axis allocation and turn it into empty padding above the tag.
+		ui.painter().rect_filled(rect, 3, colors.raised);
+		if tag.badge.is_some() {
+			let icon =
+				Rect::from_center_size(pos2(rect.left() + 9.0, rect.center().y), Vec2::splat(10.0));
+			// A detached child paints the existing cached icon without advancing this row.
+			let mut child = ui.new_child(UiBuilder::new().max_rect(icon));
+			avatars.show_icon(&mut child, tag.badge_key(), 10.0, demo, "Server tag badge");
+		}
+		ui.painter().galley(
+			pos2(
+				rect.left() + 4.0 + badge_width,
+				rect.center().y - text.size().y * 0.5,
+			),
+			text,
+			colors.text,
+		);
+	}
+	response
+		.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, ui.is_enabled(), &tag.tag));
+	response.on_hover_text(format!(
+		"{} · {} {}",
+		crate::i18n::translate("profiles-server-tag-server-tag"),
+		crate::i18n::translate("profiles-server-tag-server"),
+		tag.guild
+	))
 }
 
 pub enum Action {
@@ -2631,7 +2650,7 @@ pub(crate) fn debug_board_layout() {
 				row.response.rect.height() > 112.0,
 				"long comments extend the row"
 			);
-			let next = ui.label("Next game");
+			let next = ui.label(crate::i18n::translate("ui-builtin-next-game"));
 			assert!(next.rect.top() >= row.response.rect.bottom());
 		});
 		output.drop_without_applying_deltas();

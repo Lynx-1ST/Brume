@@ -1,4 +1,6 @@
 //! Embedded application translations. Discord content and protocol locale stay untouched.
+mod builtin;
+
 use fluent_templates::{
 	FluentBundle, LanguageIdentifier,
 	fluent_bundle::{FluentArgs, FluentResource},
@@ -346,6 +348,18 @@ pub fn translate_if_key(value: &str) -> String {
 	current()
 		.try_text(value)
 		.unwrap_or_else(|| value.to_owned())
+}
+
+/// Translate an explicitly registered built-in label or static application status.
+/// Never use this adapter for user, message, server or remote service content.
+pub fn builtin_text(value: &'static str) -> String {
+	builtin::key(value).map_or_else(|| translate_if_key(value), translate)
+}
+
+/// Localizes known, application-owned control labels and hints. Never pass user names,
+/// message content, source-window titles or remote text through this boundary.
+pub(crate) fn owned_control_text(value: &str) -> String {
+	builtin::key(value).map_or_else(|| translate_if_key(value), translate)
 }
 
 #[cfg(test)]

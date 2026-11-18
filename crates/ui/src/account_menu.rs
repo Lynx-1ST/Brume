@@ -38,6 +38,30 @@ fn account_profile_progress(state: &State) -> (bool, Option<&'static str>) {
 	})
 }
 
+/// Leave room for the equipped frame around the visible card, outside its scrolling details.
+fn account_popup_geometry(
+	width: f32,
+	height: f32,
+	frame: Option<&model::ProfileFrame>,
+) -> (f32, f32, [f32; 3]) {
+	let available = width.max(1.0);
+	let mut card_width = 340.0_f32.min(available);
+	if let Some(frame) = frame {
+		let [top, bottom, side] = frame.overflow(1.0);
+		card_width = card_width.min(available / (1.0 + 2.0 * side));
+		if top + bottom > 0.0 {
+			card_width = card_width.min((height - 80.0).max(1.0) / (top + bottom));
+		}
+		let overflow = frame.overflow(card_width);
+		return (
+			card_width,
+			(height - overflow[0] - overflow[1]).max(1.0),
+			overflow,
+		);
+	}
+	(card_width, height.max(1.0), [0.0; 3])
+}
+
 /// Discord's own "Clear after" choices. The deadline is absolute once applied, so a status
 /// set for an hour still clears an hour later even if the editor is reopened meanwhile.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -199,9 +223,19 @@ impl MessagingUi {
 		let id = anchor.id.with("account-menu");
 		let popup_anchor = egui::PopupAnchor::from(anchor);
 		const GAP: f32 = 6.0;
-		let available_height = popup_anchor.rect(id, &anchor.ctx).map_or(620.0, |rect| {
-			(rect.top() - anchor.ctx.content_rect().top() - GAP - 8.0).max(180.0)
-		});
+		let bounds = anchor.ctx.content_rect().shrink(8.0);
+		let available_height = popup_anchor
+			.rect(id, &anchor.ctx)
+			.map_or(620.0, |rect| (rect.top() - bounds.top() - GAP).max(180.0))
+			.min(bounds.height().max(1.0));
+		let (width, height, [top, bottom, side]) = account_popup_geometry(
+			bounds.width(),
+			available_height,
+			account_profile(state)
+				.and_then(|profile| profile.frame.as_deref())
+				.filter(|_| self.avatars.cosmetics.frames),
+		);
+		let outer_width = width + 2.0 * side;
 		egui::Popup::from_response(anchor)
 			.id(id)
 			.anchor(popup_anchor)
@@ -209,22 +243,47 @@ impl MessagingUi {
 			.open_bool(&mut open)
 			.align(egui::RectAlign::TOP_START)
 			.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
-			.width(340.0)
-			.frame(
-				egui::Frame::popup(&anchor.ctx.style_of(anchor.ctx.theme()))
-					.fill(colors.raised)
-					.inner_margin(0)
-					.corner_radius(10),
-			)
+			.width(outer_width)
+			.frame(egui::Frame::NONE)
 			.show(|ui| {
-				ui.set_width(340.0);
-				let height = available_height;
-				egui::ScrollArea::vertical()
-					.min_scrolled_height(height)
-					.max_height(height)
-					.show(ui, |ui| {
-						self.account_menu_contents(ui, state, commands, height)
-					});
+				ui.set_width(outer_width);
+				ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+				let frame_back = ui.painter().add(egui::Shape::Noop);
+				ui.add_space(top);
+				let card = ui
+					.horizontal(|ui| {
+						ui.add_space(side);
+						let card = egui::Frame::popup(ui.style())
+							.fill(colors.raised)
+							.stroke(egui::Stroke::NONE)
+							.inner_margin(0)
+							.corner_radius(10)
+							.show(ui, |ui| {
+								ui.set_width(width);
+								ui.spacing_mut().item_spacing = vec2(8.0, 4.0);
+								egui::ScrollArea::vertical()
+									.min_scrolled_height(height)
+									.max_height(height)
+									.show(ui, |ui| {
+										self.account_menu_contents(ui, state, commands, height)
+									});
+							});
+						ui.add_space(side);
+						card.response.rect
+					})
+					.inner;
+				ui.add_space(bottom);
+				if let Some(profile) = account_profile(state) {
+					profiles::paint_collectibles(
+						ui,
+						&mut self.avatars,
+						profile,
+						card,
+						frame_back,
+						(false, None),
+						state.demo,
+					);
+				}
 			});
 		self.account_menu.open = open && !std::mem::take(&mut self.account_menu.close);
 		if self.account_menu.custom_open {
@@ -287,7 +346,6 @@ impl MessagingUi {
 		let top = ui.cursor().top();
 		let left = ui.cursor().left();
 		let width = ui.available_width();
-		let frame_back = ui.painter().add(egui::Shape::Noop);
 		let background = ui.painter().add(egui::Shape::Noop);
 		let (banner, _) =
 			ui.allocate_exact_size(vec2(ui.available_width(), 100.0), egui::Sense::hover());
@@ -375,18 +433,6 @@ impl MessagingUi {
 			egui::pos2(left + width, ui.cursor().top()),
 		);
 		ui.painter().set(background, theme.background(rect));
-		if let Some(profile) = account_profile(state) {
-			let clip = ui.clip_rect().intersect(rect);
-			profiles::paint_collectibles(
-				ui,
-				&mut self.avatars,
-				profile,
-				rect,
-				frame_back,
-				(false, Some(clip)),
-				state.demo,
-			);
-		}
 	}
 
 	/// Other accounts remembered on this device, plus a row to remember one more.
@@ -1214,15 +1260,14 @@ mod tests {
 		assert!(account_profile(&state).is_none());
 	}
 
-	fn frame(
+	fn render_frame(
 		ctx: &egui::Context,
 		view: &mut MessagingUi,
 		state: &mut State,
 		size: egui::Vec2,
 		events: Vec<Event>,
-	) -> Vec<(String, Rect)> {
-		let mut text = vec![];
-		let output = ctx.run_ui(
+	) -> egui::FullOutput {
+		ctx.run_ui(
 			egui::RawInput {
 				screen_rect: Some(Rect::from_min_size(Pos2::ZERO, size)),
 				events,
@@ -1235,7 +1280,17 @@ mod tests {
 					assert!(commands.is_empty());
 				});
 			},
-		);
+		)
+	}
+	fn frame(
+		ctx: &egui::Context,
+		view: &mut MessagingUi,
+		state: &mut State,
+		size: egui::Vec2,
+		events: Vec<Event>,
+	) -> Vec<(String, Rect)> {
+		let mut text = vec![];
+		let output = render_frame(ctx, view, state, size, events);
 		fn collect(shape: &egui::Shape, labels: &mut Vec<(String, Rect)>) {
 			match shape {
 				egui::Shape::Text(t) => labels.push((
@@ -1256,6 +1311,96 @@ mod tests {
 		assert!(output.platform_output.commands.is_empty());
 		output.drop_without_applying_deltas();
 		text
+	}
+
+	#[test]
+	fn account_frame_preserves_complete_artwork_outside_scrolling_details() {
+		fn meshes<'a>(shape: &'a egui::Shape, found: &mut Vec<&'a egui::epaint::Mesh>) {
+			match shape {
+				egui::Shape::Mesh(mesh) => found.push(mesh),
+				egui::Shape::Vec(shapes) => {
+					for shape in shapes {
+						meshes(shape, found);
+					}
+				}
+				_ => {}
+			}
+		}
+		for size in [vec2(340.0, 760.0), vec2(760.0, 520.0)] {
+			let ctx = egui::Context::default();
+			design::apply(&ctx);
+			let mut state = test_support::demo_state();
+			let own = state.user.as_ref().unwrap().clone();
+			let profile = profiles::synthetic(&own, None);
+			let mut view = MessagingUi {
+				cosmetics: model::CosmeticPreferences::SHOWN,
+				..Default::default()
+			};
+			view.avatars.cosmetics = view.cosmetics;
+			let artwork = view.avatars.frame_shapes(
+				&ctx,
+				profile.frame.as_deref().unwrap(),
+				Rect::from_min_size(Pos2::splat(100.0), vec2(300.0, 300.0)),
+				Rect::EVERYTHING,
+				true,
+				true,
+			);
+			let mut source = Vec::new();
+			for shape in &artwork {
+				meshes(shape, &mut source);
+			}
+			let texture_ids: std::collections::HashSet<_> =
+				source.iter().map(|mesh| mesh.texture_id).collect();
+			assert!(!texture_ids.is_empty());
+			state.own_profile.data = Some(profile);
+			view.preview_account_menu(state.generation);
+			for _ in 0..3 {
+				frame(&ctx, &mut view, &mut state, size, vec![]);
+			}
+			let output = render_frame(&ctx, &mut view, &mut state, size, vec![]);
+			let viewport = Rect::from_min_size(Pos2::ZERO, size);
+			let mut drawn = std::collections::HashSet::new();
+			for shape in &output.shapes {
+				let mut found = Vec::new();
+				meshes(&shape.shape, &mut found);
+				for mesh in found
+					.iter()
+					.filter(|mesh| texture_ids.contains(&mesh.texture_id))
+				{
+					drawn.insert(mesh.texture_id);
+					let uv = mesh
+						.vertices
+						.iter()
+						.fold(Rect::NOTHING, |mut bounds, vertex| {
+							bounds.extend_with(vertex.uv);
+							assert!(viewport.contains(vertex.pos));
+							assert!(shape.clip_rect.contains(vertex.pos));
+							bounds
+						});
+					// Cropping the frame to the detail ScrollArea removes these outside UVs.
+					assert!(uv.min.distance(Pos2::ZERO) < 0.001, "{uv:?}");
+					assert!(uv.max.distance(Pos2::splat(1.0)) < 0.001, "{uv:?}");
+				}
+			}
+			assert_eq!(drawn, texture_ids);
+			output.drop_without_applying_deltas();
+			view.cosmetics.frames = false;
+			view.avatars.cosmetics = view.cosmetics;
+			for _ in 0..3 {
+				frame(&ctx, &mut view, &mut state, size, vec![]);
+			}
+			let output = render_frame(&ctx, &mut view, &mut state, size, vec![]);
+			for shape in &output.shapes {
+				let mut found = Vec::new();
+				meshes(&shape.shape, &mut found);
+				assert!(
+					found
+						.iter()
+						.all(|mesh| !texture_ids.contains(&mesh.texture_id))
+				);
+			}
+			output.drop_without_applying_deltas();
+		}
 	}
 	fn click(
 		ctx: &egui::Context,

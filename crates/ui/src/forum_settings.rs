@@ -118,9 +118,9 @@ impl ForumSettingsUi {
 					.as_ref()
 					.map(|emoji| (emoji.id, emoji.name.clone()));
 				let label = if current.is_some() {
-					"Change emoji"
+					"polls-creator-change-emoji"
 				} else {
-					"Select emoji"
+					"ui-builtin-select-emoji"
 				};
 				ui.horizontal(|ui| {
 					if let Some((id, name)) = &current {
@@ -252,7 +252,12 @@ impl ForumSettingsUi {
 		);
 		let hide_after: Vec<(u32, &str)> = HIDE_AFTER
 			.into_iter()
-			.zip(["1 Hour", "24 Hours", "3 Days", "1 Week"])
+			.zip([
+				"ui-builtin-1-hour",
+				"ui-builtin-24-hours",
+				"ui-builtin-3-days",
+				"ui-builtin-1-week",
+			])
 			.collect();
 		select(ui, "forum-hide-after", &mut forum.hide_after, &hide_after);
 	}
@@ -406,9 +411,9 @@ impl ForumSettingsUi {
 					images,
 					"tag-emoji",
 					if draft.tag.emoji_id.is_some() || draft.tag.emoji_name.is_some() {
-						"Change emoji"
+						"polls-creator-change-emoji"
 					} else {
-						"Select emoji"
+						"ui-builtin-select-emoji"
 					},
 				) {
 					draft.tag.emoji_id = choice.0;

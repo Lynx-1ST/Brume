@@ -1938,7 +1938,8 @@ impl Voice {
 		// A few pictures of slack: every predicted picture lost here costs a keyframe.
 		let (camera_frames, camera_receive) =
 			mpsc::sync_channel(discord_voice::camera_video::MAX_QUEUED_FRAMES);
-		let (stream_audio, stream_audio_receive) = mpsc::sync_channel(8);
+		let (stream_audio, stream_audio_receive) =
+			mpsc::sync_channel(8 * voice::MAX_WATCHED_STREAMS);
 		let (playback, playback_receive) = mpsc::sync_channel(8);
 		let (send, events) = mpsc::sync_channel(8);
 		let failure = Arc::new(OnceLock::new());

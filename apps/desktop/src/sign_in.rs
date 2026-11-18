@@ -492,7 +492,7 @@ impl Desktop {
 							);
 							ui.add_space(8.0);
 							ui.label(
-								egui::RichText::new("Early preview")
+								egui::RichText::new(ui::i18n::translate("signin-early-preview"))
 									.size(13.0)
 									.color(p.muted),
 							);
@@ -617,18 +617,18 @@ impl Desktop {
 			ui.add_space(12.0);
 		}
 		let label = if waiting {
-			"Waiting for Discord…"
+			ui::i18n::translate("signin-waiting")
 		} else if returning {
-			"Use another account"
+			ui::i18n::translate("signin-other-account")
 		} else {
-			"Continue with Discord"
+			ui::i18n::translate("signin-continue")
 		};
 		let button = ui
 			.add_enabled_ui(idle, |ui| {
 				if returning {
-					ui::design::secondary_icon_button(ui, ui::icons::Icon::Plus, label)
+					ui::design::secondary_icon_button(ui, ui::icons::Icon::Plus, &label)
 				} else {
-					ui::design::primary_button(ui, label)
+					ui::design::primary_button(ui, &label)
 				}
 			})
 			.inner;
@@ -761,7 +761,7 @@ impl Desktop {
 			.iter()
 			.find(|saved| saved.id == account)
 			.map(|saved| saved.label().to_owned())
-			.unwrap_or_else(|| "this account".to_owned());
+			.unwrap_or_else(|| ui::i18n::translate("signin-this-account").to_owned());
 		let signed_in = self
 			.state
 			.user
@@ -769,16 +769,16 @@ impl Desktop {
 			.is_some_and(|user| user.id == account);
 		let confirm = ui::dialog::Confirm::new(
 			"forget-account",
-			format!("Forget {label}?"),
+			ui::i18n::translate_args("signin-forget-title", &[("account", &label)]),
 			if signed_in {
-				"This is the account you are signed in with: you will be logged out, and its saved login, cached history and drafts on this device are removed."
+				ui::i18n::translate("signin-forget-current")
 			} else {
-				"Its saved login, cached history and drafts on this device are removed. The Discord account itself is untouched; you can sign in again any time."
+				ui::i18n::translate("signin-forget-other")
 			},
 		)
 		.danger()
-		.confirm_label("Forget account")
-		.cancel_label("Keep");
+		.confirm_label(ui::i18n::translate("signin-forget"))
+		.cancel_label(ui::i18n::translate("signin-keep"));
 		match confirm.show(ctx) {
 			Some(ui::dialog::Choice::Confirmed) => {
 				self.confirming_forget = None;
@@ -862,7 +862,7 @@ impl Desktop {
 						if self.state.status != "Disconnected" || attention {
 							ui.add(
 								egui::Label::new(
-									egui::RichText::new(self.state.status)
+									egui::RichText::new(ui::i18n::builtin_text(self.state.status))
 										.size(13.0)
 										.color(color),
 								)
@@ -875,9 +875,11 @@ impl Desktop {
 						if !self.fixture_only && !self.credential_status.is_empty() {
 							ui.add(
 								egui::Label::new(
-									egui::RichText::new(self.credential_status)
-										.size(12.0)
-										.color(p.muted),
+									egui::RichText::new(ui::i18n::builtin_text(
+										self.credential_status,
+									))
+									.size(12.0)
+									.color(p.muted),
 								)
 								.wrap(),
 							);

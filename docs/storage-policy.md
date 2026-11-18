@@ -1,5 +1,31 @@
 # Local storage policy and audit
 
+## Concurrent watched streams (Windows fork, November 17, 2026)
+
+The call retains at most four explicitly selected remote stream user IDs. Each selected
+stream owns a separate ephemeral negotiation/transport, decoder scheduling slot, GPU
+texture and viewer roster. Viewer metadata shares an `Arc` with its UI view and retains
+the existing bound of 64 IDs per roster; it is never written to disk. A failure, stop or
+participant departure retires only that stream. Logout and call-context changes retire
+the complete selection and its pending credentials.
+
+Each decoded scheduling slot remains bounded to eight pending pictures and 128 MiB of
+plane backing capacity including the displayed picture, at most 512 MiB across four
+slots. This excludes native codec allocations and display/GPU textures and is not a
+process-RSS limit. Presentation deadlines schedule UI wakes without another decoded-frame
+queue or callback-side decoding.
+
+Stream audio admits at most four session queues, with eight frames per source queue and
+32 frames in the shared input channel. Each session retains at most 16 presentation
+clocks; a mixed playback frame carries at most 64 clock tags so each contributing clock
+can advance independently. The existing shared stream gain/mute and privacy gates remain
+in force. Samples, timing data and stream credentials remain session-local.
+
+The optional demo recording replay reads at most 256 MiB and 36,000 access units, each
+at most 4 MiB. It runs only with the explicit demo recording argument, does not contact
+Discord or open a microphone, and releases its decoder on stop. The Linux screen-share
+lab is an optional developer tool and is not executed by a Windows application build.
+
 ## Discord device state (November 13, 2026)
 
 REST now keeps the cookies Discord sets, as a browser profile does, so each launch is the same

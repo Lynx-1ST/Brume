@@ -562,8 +562,8 @@ impl Editor {
 				"Your changes to this server will be lost.",
 			)
 			.danger()
-			.confirm_label("Discard Changes")
-			.cancel_label("Keep Editing")
+			.confirm_label(crate::i18n::translate("channel-menu-discard-confirm"))
+			.cancel_label(crate::i18n::translate("channel-menu-discard-keep"))
 			.enabled(!busy);
 			if busy {
 				confirmation = confirmation.note(

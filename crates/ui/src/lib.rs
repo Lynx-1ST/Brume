@@ -132,6 +132,7 @@ mod thumbhash;
 #[cfg(feature = "demo")]
 pub use polls::debug_poll_check;
 mod moderation;
+mod stream_pip;
 mod timeline;
 #[cfg(test)]
 mod title_bar_tests;
@@ -142,11 +143,13 @@ mod user_direct;
 mod user_menu;
 mod verification;
 mod voice;
+#[cfg(test)]
+mod voice_row_tests;
 use client_core::{Command, MAX_DRAFT_BYTES, NavStep, State};
 use egui::{RichText, TextEdit};
 use model::{Freshness, Id};
 pub use verification::VerificationUi;
-pub use voice::{StageFocus, VOICE_DEVICES_LOADED, VOICE_DEVICES_LOOKING};
+pub use voice::{StageFocus, StreamView, VOICE_DEVICES_LOADED, VOICE_DEVICES_LOOKING};
 mod voice_latency;
 pub use voice_latency::VoiceLatency;
 
@@ -519,11 +522,9 @@ pub struct MessagingUi {
 	pub camera_test_texture: Option<egui::TextureHandle>,
 	/// Decoded remote cameras by user; the desktop owns, bounds and replaces the textures.
 	pub voice_remote_video: Vec<(Id, egui::load::SizedTexture)>,
-	/// Latest picture of the screen share this device chose to watch; desktop-owned texture.
-	pub voice_stream_view: Option<egui::load::SizedTexture>,
-	pub voice_stream_status: &'static str,
-	/// Discord's latest viewers of the watched share; desktop-owned.
-	pub voice_stream_viewers: Option<client_core::screen::Viewers>,
+	/// Selected screen shares, with independent pictures and statuses owned by the desktop.
+	pub voice_stream_views: Vec<StreamView>,
+	stream_pip: stream_pip::StreamPip,
 	/// Session-only stream playback level; unset is 100%. Mute preserves the level.
 	voice_stream_volume: Option<u16>,
 	voice_stream_muted: bool,
@@ -539,8 +540,8 @@ pub struct MessagingUi {
 	voice_chrome_hidden: f32,
 	/// Session-only visibility of the selected guild voice channel's chat.
 	pub voice_chat_open: bool,
-	/// Tile click to start (`Some(user)`) or stop (`None`) watching, applied by the stage.
-	watch_request: Option<Option<Id>>,
+	/// Tile click to start (`true`) or stop (`false`) one stream, applied by the stage.
+	watch_request: Option<(Id, bool)>,
 	ring_request: Option<(Id, u64, Id, bool)>,
 	voice_moderation: Option<(Id, Id, Id, model::server_admin::VoiceChange)>,
 	stream_preview_open: Option<((Id, Id, Id), u64)>,
@@ -1523,7 +1524,14 @@ impl MessagingUi {
 								!self.settings.open
 									&& !self.server_settings.is_open()
 									&& state.trail.can_go_forward(),
-								|ui| icons::button(ui, icons::Icon::ArrowRight, 28.0, "Forward"),
+								|ui| {
+									icons::button(
+										ui,
+										icons::Icon::ArrowRight,
+										28.0,
+										&crate::i18n::translate("timeline-message-actions-forward"),
+									)
+								},
 							)
 							.inner
 							.clicked()
@@ -2330,7 +2338,7 @@ impl MessagingUi {
 				if !self.channel_preferences_status.is_empty() {
 					ui.colored_label(
 						design::palette(ui).warning,
-						crate::i18n::translate_if_key(self.channel_preferences_status),
+						crate::i18n::builtin_text(self.channel_preferences_status),
 					);
 					if ui.button(language.text("retry-shortcuts")).clicked() {
 						if self.channel_preferences_loaded {
@@ -2882,7 +2890,7 @@ impl MessagingUi {
 					voice::enlarged_viewers(
 						focus,
 						call,
-						self.voice_stream_viewers.as_ref(),
+						voice::watched_viewers(&self.voice_stream_views, focus),
 						self.screen.viewers.as_ref(),
 					)
 				}) {
@@ -4924,6 +4932,7 @@ impl MessagingUi {
 	/// Draws one frame of the signed-in client and returns the commands it produced for the
 	/// service layer.
 	pub fn show(&mut self, ui: &mut egui::Ui, state: &mut State) -> Vec<Command> {
+		self.stream_pip.stage_visible = false;
 		interface_tweaks::publish(ui.ctx(), &self.interface_tweaks);
 		self.emoji_release = emoji::maintain(ui.ctx());
 		rtl::scope(
@@ -5333,6 +5342,9 @@ impl MessagingUi {
 		self.sync_last_channels(state);
 		self.channel_menu
 			.show(&ctx, state, self.guild, &mut self.avatars, &mut commands);
+		if let Some(channel) = self.channel_menu.open_chat_requested.take() {
+			self.open_voice_chat(state, channel, &mut commands);
+		}
 		if let Some((guild, channel)) = self.channel_menu.invite_requested.take() {
 			self.server_menu.open_invite(state, guild, channel);
 		}
@@ -5769,10 +5781,13 @@ impl MessagingUi {
 						Freshness::Stale => Some("Cached history · awaiting sync"),
 						Freshness::Unavailable => Some("Conversation unavailable"),
 					}
-					.map(str::to_owned),
-					state.read_state.status(channel).map(str::to_owned),
+					.map(crate::i18n::builtin_text),
+					state
+						.read_state
+						.status(channel)
+						.map(crate::i18n::builtin_text),
 					(state.archived_thread.is_some() && state.archived_thread == state.selected)
-						.then(|| "Opened from archive".to_owned()),
+						.then(|| crate::i18n::builtin_text("Opened from archive")),
 				]
 				.into_iter()
 				.flatten()
@@ -6383,13 +6398,15 @@ impl MessagingUi {
 				),
 			)
 			.danger()
-			.confirm_label("Delete")
-			.cancel_label("Keep Message")
+			.confirm_label(crate::i18n::translate(
+				"server-settings-delete-dialog-delete",
+			))
+			.cancel_label(crate::i18n::translate("message-delete-keep"))
 			.enabled(allowed);
 			if !allowed {
 				confirm = confirm.note(
 					dialog::Level::Warning,
-					"Deleting this message is unavailable.",
+					crate::i18n::translate("message-delete-unavailable"),
 				);
 			}
 			match confirm.show(&ctx) {
@@ -6451,6 +6468,7 @@ impl MessagingUi {
 		} else {
 			self.show_steady_refresh_prompt(&ctx);
 		}
+		self.show_stream_pip(&ctx, state, &mut commands);
 		self.scroll.clear_if_unbound(&ctx);
 		self.scroll.paint(&ctx);
 		// Clear the title bar and channel header so a notice never sits on the chrome.

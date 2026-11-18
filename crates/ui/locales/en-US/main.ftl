@@ -5204,3 +5204,535 @@ voice-switch-title = Switch voice channels?
 voice-switch-detail = You are already in a call. Leave it and join { $channel }?
 voice-switch-confirm = Switch channel
 voice-switch-cancel = Stay in call
+
+voice-pip-title = Stream PiP
+
+voice-pip-open = Open Picture-in-Picture
+
+voice-pip-close = Close Picture-in-Picture
+
+voice-pip-return = Return to voice channel
+
+voice-pip-own = Your screen
+
+voice-pip-remote = { $name }'s screen
+
+voice-pip-source = Choose stream
+
+voice-pip-mute = Mute stream audio
+
+voice-pip-unmute = Unmute stream audio
+
+voice-pip-waiting = Waiting for stream video…
+
+voice-pip-stop = Stop watching
+
+voice-open-chat = Open Chat
+
+ui-builtin-voice-connected = Voice Connected
+
+ui-builtin-voice-connected-a81da2 = Voice connected
+
+ui-builtin-voice-preview = Voice preview
+
+ui-builtin-call-failed = Call failed
+
+ui-builtin-connecting = Connecting…
+
+ui-builtin-share-a-screen-or-window = Share a screen or window
+
+ui-builtin-stop-sharing = Stop sharing
+
+ui-builtin-stop-sharing-your-screen = Stop sharing your screen
+
+ui-builtin-exit-fullscreen = Exit fullscreen
+
+ui-builtin-exit-fullscreen-esc = Exit fullscreen (Esc)
+
+ui-builtin-streaming-now = Streaming Now
+
+ui-builtin-this-stream-is-no-longer-live = This stream is no longer live
+
+ui-builtin-could-not-join-this-stream-s-voice-channel = Could not join this stream's voice channel
+
+ui-builtin-leave-the-current-call-before-watching-this-stream = Leave the current call before watching this stream
+
+ui-builtin-the-four-stream-viewing-limit-is-reached = The four-stream viewing limit is reached
+
+ui-builtin-up-to-four-streams-can-be-watched-at-once = Up to four streams can be watched at once
+
+ui-builtin-this-stream-is-not-available-in-the-connected-voice-channel = This stream is not available in the connected voice channel
+
+ui-builtin-the-stream-is-not-available = The stream is not available
+
+ui-builtin-your-screen-local-preview = Your screen · local preview
+
+ui-builtin-screen-share-you-are-watching = Screen share you are watching
+
+ui-builtin-watch-stream = Watch Stream
+
+ui-builtin-click-or-press-escape-to-return-to-the-grid = Click or press Escape to return to the grid
+
+ui-builtin-click-to-enlarge = Click to enlarge
+
+ui-builtin-connecting-to-the-stream = Connecting to the stream…
+
+ui-builtin-stop-receiving-this-screen-share = Stop receiving this screen share
+
+ui-builtin-answer-call = Answer call
+
+ui-builtin-start-voice-call = Start voice call
+
+ui-builtin-join-audio-your-microphone-starts-after-the-call-is-secured = Join audio. Your microphone starts after the call is secured.
+
+ui-builtin-join-to-listen-speaking-is-unavailable-in-this-channel = Join to listen. Speaking is unavailable in this channel.
+
+ui-builtin-voice-isolation = Voice Isolation
+
+ui-builtin-studio = Studio
+
+ui-builtin-custom = Custom
+
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = RNNoise suppression, echo cancellation and automatic gain for speech.
+
+ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = Open microphone without suppression, echo cancellation or automatic gain.
+
+ui-builtin-turn-on-microphone = Turn on microphone
+
+ui-builtin-turn-off-microphone = Turn off microphone
+
+ui-builtin-voice-settings = Voice settings
+
+ui-builtin-microphone-and-speaker-settings = Microphone and speaker settings
+
+ui-builtin-turn-off-camera = Turn off camera
+
+ui-builtin-turn-on-camera = Turn on camera
+
+ui-builtin-stop-sharing-your-camera = Stop sharing your camera
+
+ui-builtin-camera-is-off-in-the-offline-preview = Camera is off in the offline preview
+
+ui-builtin-camera-capture-is-unavailable-on-this-platform = Camera capture is unavailable on this platform
+
+ui-builtin-choose-a-camera = Choose a camera
+
+ui-builtin-more-options = More options
+
+ui-builtin-more-call-options = More call options
+
+ui-builtin-hide-participants = Hide participants
+
+ui-builtin-show-participants = Show participants
+
+ui-builtin-hide-the-participant-strip-under-the-enlarged-video = Hide the participant strip under the enlarged video
+
+ui-builtin-show-the-other-participants-under-the-enlarged-video = Show the other participants under the enlarged video
+
+ui-builtin-screen-sharing-requires-a-connected-call-and-video-permission-on-a-supported-desktop = Screen sharing requires a connected call and video permission on a supported desktop.
+
+ui-builtin-public = Public
+
+ui-builtin-joined-private = Joined private
+
+ui-builtin-private = Private
+
+ui-builtin-enlarge-image = Enlarge image
+
+ui-builtin-loading-full-quality = Loading full quality
+
+ui-builtin-loading-image = Loading image
+
+ui-builtin-full-quality-unavailable = Full quality unavailable
+
+ui-builtin-close-esc = Close (Esc)
+
+ui-builtin-previous = Previous (←)
+
+ui-builtin-next = Next (→)
+
+ui-builtin-maximize = Maximize
+
+ui-builtin-next-game = Next game
+
+ui-builtin-select-emoji = Select emoji
+
+ui-builtin-skip-this-question = Skip this question
+
+ui-builtin-press-keys = Press keys…
+
+ui-builtin-control-your-microphone-and-incoming-audio-during-a-connected-call = Control your microphone and incoming audio during a connected call.
+
+ui-builtin-proxy-authentication = Proxy authentication
+
+ui-builtin-credentials-stay-in-serein-s-os-credential-store-and-are-never-shared-with-the-plugin-apply-the-prox = Credentials stay in Serein's OS credential store and are never shared with the plugin. Apply the proxy URL before saving credentials.
+
+ui-builtin-http-proxy-authentication-is-unencrypted-anyone-observing-the-connection-to-the-proxy-can-recover-th = HTTP proxy authentication is unencrypted: anyone observing the connection to the proxy can recover these credentials. Use an HTTPS proxy for encrypted authentication.
+
+ui-builtin-save-credentials = Save credentials
+
+ui-builtin-remove-saved-credentials = Remove saved credentials
+
+ui-builtin-choose-url-mode-to-configure-proxy-authentication = Choose URL mode to configure proxy authentication.
+
+ui-builtin-profile-preview = PROFILE PREVIEW
+
+ui-builtin-your-activity-goes-here = Your activity goes here
+
+ui-builtin-enter-an-application-id-and-activity-name-then-choose-preview = Enter an application ID and activity name, then choose Preview.
+
+ui-builtin-artwork-resolves-when-applied-this-draft-preview-uses-placeholders = Artwork resolves when applied. This draft preview uses placeholders.
+
+ui-builtin-activity-sharing-is-off-enable-it-in-settings-registered-games-to-publish-your-presence = Activity sharing is off. Enable it in Settings > Registered Games to publish your presence.
+
+ui-builtin-offline-demo-nothing-is-published = Offline demo. Nothing is published.
+
+ui-builtin-offline-your-saved-activity-will-wait-for-a-connection = Offline. Your saved activity will wait for a connection.
+
+ui-builtin-enable-activity-sharing-in-settings-registered-games-invisible-hides-your-activity = Enable activity sharing in Settings > Registered Games. Invisible hides your activity.
+
+ui-builtin-elapsed-since-starting-applying-edits-keeps-the-timer = Elapsed since starting; applying edits keeps the timer.
+
+ui-builtin-timer-starts-at-local-midnight = Timer starts at local midnight.
+
+ui-builtin-1-hour = 1 Hour
+
+ui-builtin-24-hours = 24 Hours
+
+ui-builtin-3-days = 3 Days
+
+ui-builtin-1-week = 1 Week
+
+ui-builtin-recommended = Recommended
+
+ui-builtin-new-message-in-the-channel-i-m-currently-reading = New Message in the channel I'm currently reading
+
+ui-builtin-incoming-ring = Incoming Ring
+
+ui-builtin-outgoing-ring = Outgoing Ring
+
+ui-builtin-voice = Voice
+
+voice-built-in-switch-to-this-voice-channel = Switch to this voice channel
+
+voice-built-in-camera-requires-h264-support-from-the-voice-server = Camera requires H264 support from the voice server
+
+voice-built-in-camera-is-unavailable-with-current-channel-permissions = Camera is unavailable with current channel permissions
+
+voice-built-in-turn-off-noise-suppression = Turn off noise suppression
+
+voice-built-in-turn-on-noise-suppression = Turn on noise suppression
+
+voice-built-in-noise-suppression-reduces-keyboard-noise-breathing-and-fans-locally = Noise suppression reduces keyboard noise, breathing and fans locally.
+
+voice-built-in-noise-suppression-is-unavailable-in-this-build-or-preview = Noise suppression is unavailable in this build or preview.
+
+voice-built-in-fullscreen = Fullscreen
+
+voice-built-in-view-this-screen-share-in-fullscreen = View this screen share in fullscreen
+
+voice-built-in-call-switch-cancelled-previous-call-did-not-finish-disconnecting-try-joining-again = Call switch cancelled: previous call did not finish disconnecting. Try joining again.
+
+join-skip-question = Skip this question
+
+theme-my-theme = My theme
+
+theme-your-name = Your name
+
+theme-start-color = Start color
+
+theme-end-color = End color
+
+theme-discard-title = Discard unsaved theme?
+
+theme-unsaved-detail = Your changes have not been saved.
+
+theme-discard-action = Discard changes
+
+theme-keep-editing = Keep editing
+
+theme-accent-description = Buttons, selection and highlights
+
+theme-text-description = Messages and regular labels
+
+theme-muted-description = Timestamps and supporting text
+
+theme-sidebar-description = Channel, conversation and member lists
+
+theme-chat-description = Background behind your messages
+
+video-exit-fullscreen-shortcut = Exit fullscreen (Esc)
+
+video-enter-fullscreen = Fullscreen
+
+presence-party-size = Party: { $current } / { $max }
+
+proxy-username = Username
+
+proxy-password = Password
+
+signin-early-preview = Early preview
+
+signin-waiting = Waiting for Discord…
+
+signin-other-account = Use another account
+
+signin-continue = Continue with Discord
+
+signin-this-account = this account
+
+signin-forget-title = Forget { $account }?
+
+signin-forget-current = This is the account you are signed in with: you will be logged out, and its saved login, cached history and drafts on this device are removed.
+
+signin-forget-other = Its saved login, cached history and drafts on this device are removed. The Discord account itself is untouched; you can sign in again any time.
+
+signin-forget = Forget account
+
+signin-keep = Keep
+
+attachment-view-image-name = View image { $name }
+
+attachment-enlarge-image = Enlarge image
+
+voice-input-level-reading = Input level: { $level } dBFS
+
+voice-speaking-name = { $name } · Speaking
+
+voice-codec-rejoin = ; rejoin the call
+
+ui-owned-unable-to-create-this-server-right-now = Unable to create this server right now.
+
+ui-owned-enter-a-valid-discord-invite-link-or-invite-code = Enter a valid Discord invite link or invite code.
+
+ui-owned-unable-to-proceed-check-your-connection-or-try-again-after-the-current-request = Unable to proceed. Check your connection or try again after the current request.
+
+ui-owned-prepared-icon-is-too-large = Prepared icon is too large
+
+status-owned-application-data-directory-is-unavailable = Application data directory is unavailable.
+
+status-owned-result-discarded-because-the-conversation-or-draft-changed = Result discarded because the conversation or draft changed.
+
+status-owned-package-inspected-review-its-source-and-capabilities-before-enabling = Package inspected. Review its source and capabilities before enabling.
+
+status-owned-extension-enabled = Extension enabled.
+
+status-owned-theme-exported = Theme exported.
+
+status-owned-extension-file-selection-ended = Extension file selection ended.
+
+status-owned-refresh-the-catalog-or-import-this-package-again = Refresh the catalog or import this package again.
+
+status-owned-some-plugin-events-were-skipped-because-the-event-queue-was-full = Some plugin events were skipped because the event queue was full.
+
+status-owned-disconnected = Disconnected
+
+status-owned-preview-only-this-font-is-not-saved = Preview only; this font is not saved.
+
+status-owned-loading-font = Loading font…
+
+status-owned-voice-calls-are-unavailable-in-the-offline-preview = Voice calls are unavailable in the offline preview
+
+status-owned-local-storage-worker-stopped-restart-serein-to-save-fonts = Local storage worker stopped. Restart Serein to save fonts.
+
+status-owned-no-saved-login-for-that-account-on-this-device-use-another-account-to-sign-in-again-or-for = No saved login for that account on this device. Use another account to sign in again, or forget it with ×.
+
+status-owned-could-not-save-this-account-for-the-switcher-sign-in-again-to-retry = Could not save this account for the switcher; sign in again to retry
+
+status-owned-could-not-save-login-this-session-will-not-restore-automatically = Could not save login; this session will not restore automatically
+
+status-owned-could-not-queue-saved-login-session-only = Could not queue saved login; session only
+
+status-owned-reconnecting-to-discord = Reconnecting to Discord…
+
+status-owned-proxy-credentials-loaded-future-api-requests-use-this-setting = Proxy credentials loaded. Future API requests use this setting.
+
+status-owned-proxy-credential-operation-ended-retry-saving-or-removing-credentials = Proxy credential operation ended; retry saving or removing credentials.
+
+status-owned-invalid-proxy-url = Invalid proxy URL
+
+status-owned-demo-mode-does-not-read-or-save-proxy-credentials = Demo mode does not read or save proxy credentials.
+
+status-owned-wait-for-the-current-credential-operation = Wait for the current credential operation.
+
+status-owned-apply-this-url-in-the-plugin-before-saving-credentials = Apply this URL in the plugin before saving credentials.
+
+status-owned-use-a-username-of-1-256-bytes-without-a-colon-and-a-password-up-to-1024-bytes-control-char = Use a username of 1-256 bytes without a colon, and a password up to 1024 bytes; control characters are unsupported.
+
+status-owned-enter-a-valid-http-https-proxy-url-first = Enter a valid HTTP/HTTPS proxy URL first.
+
+status-owned-screen-sharing-stopped = Screen sharing stopped
+
+status-owned-looking-for-screens-and-windows = Looking for screens and windows…
+
+status-owned-could-not-start-screen-source-discovery = Could not start screen source discovery
+
+status-owned-screen-sharing-is-unavailable-on-this-platform = Screen sharing is unavailable on this platform
+
+status-owned-screen-source-discovery-stopped = Screen source discovery stopped
+
+status-owned-previous-screen-share-is-still-closing = Previous screen share is still closing
+
+status-owned-requesting-screen-share-connection = Requesting screen-share connection…
+
+status-owned-screen-sharing-requires-the-current-connected-call = Screen sharing requires the current connected call
+
+status-owned-discord-did-not-acknowledge-stopping-screen-share-leave-the-call-before-sharing-again = Discord did not acknowledge stopping screen share; leave the call before sharing again
+
+status-owned-connecting-screen-share-transport = Connecting screen-share transport…
+
+status-owned-connecting-to-discord = Connecting to Discord…
+
+status-owned-signed-out-of-this-account-its-saved-login-is-kept = Signed out of this account; its saved login is kept
+
+status-owned-saved-account-removed-from-this-device = Saved account removed from this device
+
+status-owned-saved-login-restore-cancelled = Saved-login restore cancelled
+
+status-owned-sign-in-through-discord-saved-login-lookup-stopped = Sign in through Discord; saved-login lookup stopped
+
+status-owned-waiting-for-discord-login = Waiting for Discord login
+
+status-owned-updates-have-not-been-checked-on-this-channel-yet = Updates have not been checked on this channel yet.
+
+status-owned-update-downloaded-and-verified-restart-when-you-are-ready = Update downloaded and verified. Restart when you are ready.
+
+status-owned-update-ready-close-serein-to-install-and-restart = Update ready. Close Serein to install and restart.
+
+status-owned-the-update-worker-stopped-please-try-again = The update worker stopped. Please try again.
+
+status-owned-preparing-to-restart = Preparing to restart…
+
+status-owned-please-wait-one-minute-between-update-checks = Please wait one minute between update checks.
+
+status-owned-checking-for-updates = Checking for updates…
+
+status-owned-stopped-watching = Stopped watching
+
+status-owned-connect-the-call-before-watching-a-stream = Connect the call before watching a stream
+
+status-owned-requesting-the-stream = Requesting the stream…
+
+status-owned-watching-the-stream = Watching the stream
+
+status-owned-forward-unavailable-check-destinations-connection-and-message-limits = Forward unavailable: check destinations, connection and message limits
+
+status-owned-verify-to-join-this-server = Verify to join this server
+
+status-owned-wait-for-the-previous-message-edit-to-finish = Wait for the previous message edit to finish
+
+status-owned-edit-could-not-be-applied-reload-this-conversation = Edit could not be applied; reload this conversation
+
+status-owned-message-edit-failed-your-edit-was-kept-for-retry = Message edit failed; your edit was kept for retry
+
+status-owned-wait-for-the-previous-pin-action-to-finish = Wait for the previous pin action to finish
+
+status-owned-pin-action-failed-the-previous-state-was-restored = Pin action failed; the previous state was restored
+
+status-owned-you-re-in-welcome-to-the-server = You're in · welcome to the server
+
+status-owned-wait-for-the-current-poll-action = Wait for the current poll action
+
+status-owned-poll-action-is-unavailable-with-the-current-permissions-or-poll-state = Poll action is unavailable with the current permissions or poll state
+
+status-owned-profile-updated-use-reload-history-to-refresh-this-conversation = Profile updated; use Reload history to refresh this conversation
+
+status-owned-reaction-limit-reached = Reaction limit reached
+
+status-owned-voice-moderation-request-accepted = Voice moderation request accepted
+
+status-owned-enter-a-discord-username-of-at-most-32-characters = Enter a Discord username of at most 32 characters.
+
+status-owned-enter-a-discord-username-2-32-letters-numbers-underscores-or-periods = Enter a Discord username: 2–32 letters, numbers, underscores or periods.
+
+status-owned-already-friends-or-a-request-is-pending-check-the-pending-tab = Already friends or a request is pending. Check the Pending tab.
+
+status-owned-choose-between-two-and-nine-friends-for-a-group-message = Choose between two and nine friends for a group message
+
+status-owned-creating-group-message = Creating group message…
+
+status-owned-finish-pending-messages-and-leave-the-call-before-closing-this-dm = Finish pending messages and leave the call before closing this DM
+
+status-owned-user-actions-unavailable-while-disconnected = User actions unavailable while disconnected
+
+status-owned-outcome-unknown-check-the-official-client-before-retrying = Outcome unknown · check the official client before retrying
+
+status-owned-direct-message-opened = Direct message opened
+
+status-owned-group-message-opened = Group message opened
+
+status-owned-verify-to-send-this-message = Verify to send this message
+
+status-owned-discord-requires-verification-for-this-message-retry-it-after-the-current-check = Discord requires verification for this message; retry it after the current check
+
+status-owned-voice-channel-exceeds-the-64-participant-limit = Voice channel exceeds the 64 participant limit
+
+status-owned-voice-roster-exceeds-safe-capacity-reconnect-to-refresh = Voice roster exceeds safe capacity; reconnect to refresh
+
+status-owned-session-expired-reconnect-explicitly-drafts-remain-in-ram = Session expired · reconnect explicitly; drafts remain in RAM
+
+status-owned-security-challenge-unsupported-here-connection-stopped = Security challenge · unsupported here; connection stopped
+
+status-owned-permission-denied = Permission denied
+
+status-owned-discord-requires-account-attention-connection-stopped-check-the-official-client = Discord requires account attention · connection stopped; check the official client
+
+status-owned-discord-blocked-this-request-connection-stopped-check-the-official-client = Discord blocked this request · connection stopped; check the official client
+
+status-owned-rate-limited-wait-before-retrying = Rate limited · wait before retrying
+
+status-owned-connection-failed = Connection failed
+
+status-owned-unsupported-service-response = Unsupported service response
+
+status-owned-safe-capacity-exceeded-connection-stopped = Safe capacity exceeded · connection stopped
+
+status-owned-invalid-session-input-or-bot-account-rejected = Invalid session input or bot account rejected
+
+status-owned-connecting-to-voice-server = Connecting to voice server...
+
+status-owned-checking-voice-network = Checking voice network...
+
+status-owned-opening-audio-devices = Opening audio devices...
+
+status-owned-connecting-call = Connecting call…
+
+status-owned-securing-audio = Securing audio…
+
+status-owned-connected-waiting-for-others = Connected · waiting for others
+
+message-delete-keep = Keep Message
+
+message-delete-unavailable = Deleting this message is unavailable.
+
+voice-notice-deafened-by-the-server = Deafened by the server
+
+voice-notice-muted-by-the-server = Muted by the server
+
+voice-notice-speaking-is-unavailable-in-this-channel-you-can-still-listen = Speaking is unavailable in this channel. You can still listen.
+
+voice-notice-push-to-talk-is-required-to-speak-here-enable-it-in-voice-settings = Push-to-talk is required to speak here. Enable it in Voice settings.
+
+voice-notice-synthetic-participants-microphone-and-speakers-are-off = Synthetic participants · microphone and speakers are off.
+
+ui-history-sync = Cached history · awaiting sync
+
+ui-history-unavailable = Conversation unavailable
+
+ui-history-archive = Opened from archive
+
+voice-preview-name = Stream preview
+
+voice-preview-unavailable = Preview hidden or unavailable
+
+status-draft-paste-limit = Pasted text exceeds the draft limit
+
+status-draft-cancel-reply = Cancel the current reply before restoring this message
+
+status-draft-restore-pending = Keep or clear the existing draft before restoring pending text
+
+status-send-unavailable = Sending is unavailable with the current connection or permissions
+
+status-read-confirm = Read status could not be confirmed · unread markers may be out of date
+
+status-read-sync = Read status could not sync · unread markers may be out of date

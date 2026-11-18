@@ -1357,7 +1357,7 @@ impl MessagingUi {
 					},
 				);
 				if !state.demo && !self.storage_status.is_empty() {
-					design::hint(ui, self.storage_status);
+					design::hint(ui, &crate::i18n::builtin_text(self.storage_status));
 				}
 				design::card_divider(ui);
 				design::hint(

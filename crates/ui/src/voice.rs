@@ -503,7 +503,9 @@ impl MessagingUi {
 		let row = rect.shrink2(egui::vec2(0.0, 1.0));
 		// The buttons must stay present while their own hit regions own the pointer,
 		// and disappear when it leaves even if the selected row retains keyboard focus.
-		let hovered = viewable && ui.rect_contains_pointer(row);
+		let hovered = viewable
+			&& ui.input(|input| input.pointer.hover_pos().is_some())
+			&& ui.rect_contains_pointer(row);
 		let can_invite = channel
 			.guild
 			.is_some_and(|guild| state.can_create_server_invite(guild, channel.id));

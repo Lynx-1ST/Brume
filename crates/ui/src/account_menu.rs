@@ -259,6 +259,7 @@ impl MessagingUi {
 							.inner_margin(0)
 							.corner_radius(10)
 							.show(ui, |ui| {
+								ui.set_layout(egui::Layout::top_down(egui::Align::Min));
 								ui.set_width(width);
 								ui.spacing_mut().item_spacing = vec2(8.0, 4.0);
 								egui::ScrollArea::vertical()

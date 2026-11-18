@@ -11,6 +11,7 @@ use std::borrow::Cow;
 
 pub enum Request {
 	Start(Settings),
+	Restart(Settings),
 	Stop,
 }
 
@@ -24,6 +25,7 @@ pub(crate) struct LiveShare {
 }
 
 pub struct ScreenUi {
+	editing_live: bool,
 	pub context: Option<(u64, Id, u64)>,
 	pub open: bool,
 	pub sources: Vec<Source>,
@@ -54,6 +56,7 @@ pub struct ScreenUi {
 impl Default for ScreenUi {
 	fn default() -> Self {
 		Self {
+			editing_live: false,
 			context: None,
 			open: false,
 			sources: Vec::new(),
@@ -78,7 +81,14 @@ impl Default for ScreenUi {
 	}
 }
 impl ScreenUi {
+	pub(crate) fn edit_quality(&mut self) {
+		if self.busy && self.sharing && self.selected.is_some() {
+			self.editing_live = true;
+			self.open = true;
+		}
+	}
 	pub(crate) fn launch(&mut self, state: &State) {
+		self.editing_live = false;
 		let Some(call) = &state.voice.active else {
 			return;
 		};
@@ -209,18 +219,25 @@ impl ScreenUi {
 		let mut share = false;
 		let response = crate::dialog::Dialog::new(
 			"screen-share-settings",
-			crate::i18n::translate("screen-show-share-your-screen"),
+			crate::i18n::translate(if self.editing_live {
+				"screen-quality-title"
+			} else {
+				"screen-show-share-your-screen"
+			}),
 		)
-		.subtitle(crate::i18n::translate(
-			"screen-show-choose-what-people-in-this-call-can-see",
-		))
+		.subtitle(crate::i18n::translate(if self.editing_live {
+			"screen-quality-restart-hint"
+		} else {
+			"screen-show-choose-what-people-in-this-call-can-see"
+		}))
 		.width(520.0)
 		.show(ctx, |d| {
 			d.scroll(260.0, |ui| self.body(ui, state));
 			d.footer(|ui| {
 				let allowed = !state.demo
 					&& self.supported
-					&& !self.busy && self.settings().is_some()
+					&& (!self.busy || self.editing_live)
+					&& self.settings().is_some()
 					&& state.voice.active.as_ref().is_some_and(|call| {
 						matches!(call.phase, Phase::Connected | Phase::Waiting)
 							&& state.can_stream(call.channel)
@@ -228,7 +245,11 @@ impl ScreenUi {
 				ui.add_enabled_ui(allowed, |ui| {
 					share = crate::dialog::action(
 						ui,
-						"screen-show-share-screen",
+						if self.editing_live {
+							"screen-quality-apply"
+						} else {
+							"screen-show-share-screen"
+						},
 						crate::dialog::Action::Primary,
 					)
 					.clicked();
@@ -249,10 +270,15 @@ impl ScreenUi {
 				height: settings.height,
 				fps: settings.fps,
 			});
-			self.request = Some(Request::Start(settings));
+			self.request = Some(if self.editing_live {
+				Request::Restart(settings)
+			} else {
+				Request::Start(settings)
+			});
 		}
 		if cancel || share {
 			self.open = false;
+			self.editing_live = false;
 		}
 	}
 

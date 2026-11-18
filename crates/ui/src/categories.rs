@@ -16,6 +16,16 @@ fn sidebar_rank(channel: &Channel) -> (bool, i32, Id) {
 	(voice_lane(channel.kind), channel.position, channel.id)
 }
 
+fn sort_voice_participants(state: &State, entries: &mut [&client_core::voice::RosterEntry]) {
+	entries.sort_by_cached_key(|entry| {
+		(
+			!entry.participant.streaming,
+			crate::voice::resolve_member(state, entry).1.to_lowercase(),
+			entry.participant.user,
+		)
+	});
+}
+
 /// Where a channel row came from. A mirrored guild channel differs from its tree copy by slot.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Slot {
@@ -686,6 +696,9 @@ impl MessagingUi {
 				}
 			}
 			let mut rows = Vec::with_capacity(channel_rows.len() + state.voice.roster.len());
+			for entries in participants.values_mut() {
+				sort_voice_participants(state, entries);
+			}
 			for row in channel_rows {
 				let channel = match &row {
 					Row::Channel(channel, _, _) if channel.kind == 2 => Some(channel.id),
@@ -1729,6 +1742,52 @@ pub fn debug_thread_navigation_check(state: &mut State) {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn voice_order_prioritizes_streams_then_visible_nicknames_with_stable_ties() {
+		let state = test_support::voice_demo_state();
+		let seed = state.voice.roster.first().unwrap().clone();
+		let mut entries: Vec<_> = [
+			(9001, "zebra", true),
+			(9002, "Beta", false),
+			(9003, "alpha", false),
+			(9004, "ALPHA", false),
+		]
+		.into_iter()
+		.map(|(id, nick, streaming)| {
+			let mut entry = seed.clone();
+			entry.participant.user = Id(id);
+			entry.participant.streaming = streaming;
+			entry.member = Some(model::Member {
+				user: test_support::message(1, Id(99)).author,
+				nick: Some(nick.into()),
+				roles: vec![],
+				status: None,
+				custom_status: None,
+				activities: vec![],
+				clients: Default::default(),
+			});
+			entry
+		})
+		.collect();
+		let mut refs: Vec<_> = entries.iter().rev().collect();
+		sort_voice_participants(&state, &mut refs);
+		assert_eq!(
+			refs.iter()
+				.map(|e| e.participant.user.0)
+				.collect::<Vec<_>>(),
+			[9001, 9003, 9004, 9002]
+		);
+		entries[0].participant.streaming = false;
+		let mut refs: Vec<_> = entries.iter().collect();
+		sort_voice_participants(&state, &mut refs);
+		assert_eq!(
+			refs.iter()
+				.map(|e| e.participant.user.0)
+				.collect::<Vec<_>>(),
+			[9003, 9004, 9002, 9001]
+		);
+	}
 
 	#[test]
 	fn the_direct_message_heading_offers_new_message_at_the_far_right() {

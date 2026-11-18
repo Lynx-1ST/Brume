@@ -5708,3 +5708,7 @@ status-send-unavailable = 현재 연결 또는 권한으로는 전송할 수 없
 status-read-confirm = 읽음 상태를 확인할 수 없습니다 · 읽지 않음 표시가 최신 상태가 아닐 수 있습니다
 
 status-read-sync = 읽음 상태를 동기화할 수 없습니다 · 읽지 않음 표시가 최신 상태가 아닐 수 있습니다
+
+screen-quality-title = 스트림 품질
+screen-quality-apply = 변경 사항 적용
+screen-quality-restart-hint = 변경 사항을 적용하면 스트림이 잠시 다시 시작됩니다. 음성 통화는 연결된 상태로 유지됩니다.

@@ -5751,3 +5751,7 @@ status-send-unavailable = Không thể gửi do kết nối hoặc quyền hiệ
 status-read-confirm = Không thể xác nhận trạng thái đã đọc · dấu chưa đọc có thể chưa cập nhật
 
 status-read-sync = Không thể đồng bộ trạng thái đã đọc · dấu chưa đọc có thể chưa cập nhật
+
+screen-quality-title = Chất lượng stream
+screen-quality-apply = Áp dụng thay đổi
+screen-quality-restart-hint = Stream sẽ khởi động lại trong giây lát để áp dụng thay đổi. Cuộc gọi thoại vẫn được giữ nguyên.

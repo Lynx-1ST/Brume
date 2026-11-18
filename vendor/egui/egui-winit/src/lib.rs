@@ -1556,7 +1556,10 @@ pub fn update_viewport_info(
 }
 
 fn open_url_in_browser(_url: &str) {
-    #[cfg(feature = "webbrowser")]
+    #[cfg(all(feature = "webbrowser", target_os = "windows"))]
+    open_url_with_windows_shell(_url);
+
+    #[cfg(all(feature = "webbrowser", not(target_os = "windows")))]
     if let Err(err) = webbrowser::open(_url) {
         log::warn!("Failed to open url: {err}");
     }
@@ -1564,6 +1567,42 @@ fn open_url_in_browser(_url: &str) {
     #[cfg(not(feature = "webbrowser"))]
     {
         log::warn!("Cannot open url - feature \"links\" not enabled.");
+    }
+}
+
+// Let Windows resolve protocol associations (including packaged browsers), rather than
+// parsing an executable command template that may not contain a URL placeholder.
+#[cfg(all(feature = "webbrowser", target_os = "windows"))]
+#[expect(unsafe_code)]
+fn open_url_with_windows_shell(url: &str) {
+    use windows_sys::Win32::{
+        System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize},
+        UI::{Shell::ShellExecuteW, WindowsAndMessaging::SW_SHOWNORMAL},
+    };
+    if url.contains('\0') {
+        log::warn!("Cannot open URL containing a NUL character");
+        return;
+    }
+    let target: Vec<u16> = url.encode_utf16().chain(Some(0)).collect();
+    let verb = [b'o' as u16, b'p' as u16, b'e' as u16, b'n' as u16, 0];
+    // SAFETY: all strings are NUL terminated and live through the synchronous shell
+    // call. No command interpreter or URL-derived executable/arguments are used.
+    unsafe {
+        let initialized = CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED as u32);
+        let result = ShellExecuteW(
+            std::ptr::null_mut(),
+            verb.as_ptr(),
+            target.as_ptr(),
+            std::ptr::null(),
+            std::ptr::null(),
+            SW_SHOWNORMAL,
+        ) as isize;
+        if initialized >= 0 {
+            CoUninitialize();
+        }
+        if result <= 32 {
+            log::warn!("Windows refused to open URL (shell error {result})");
+        }
     }
 }
 

@@ -1,25 +1,46 @@
 name: Serein Fork CI
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch:
 concurrency:
   group: native-client-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
 jobs:
+  # Independent and cheap feedback ahead of the longer Windows build/test job.
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          components: rustfmt
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+    needs:
+      - verified-source
+    if: needs.verified-source.outputs.reuse != 'true' && (github.event_name !=
+      'pull_request' || github.event.pull_request.draft == false)
   native:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: needs.verified-source.outputs.reuse != 'true' && (github.event_name !=
+      'pull_request' || github.event.pull_request.draft == false)
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest]
+        os: [ windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dtolnay/rust-toolchain@1.99.1
         with:
           components: rustfmt, clippy
@@ -36,7 +57,8 @@ jobs:
       - name: Check offline demo targets
         run: cargo check --locked -p serein -p ui --all-targets --features serein/demo
       - name: Test offline typing with demo support
-        run: cargo test --locked -p serein -p ui -p client-core -p discord-api --features serein/demo --lib --bins typing
+        run: cargo test --locked -p serein -p ui -p client-core -p discord-api
+          --features serein/demo --lib --bins typing
       - run: cargo xtask check
         env:
           RUST_BACKTRACE: '1'
@@ -45,19 +67,29 @@ jobs:
           - run: bun tests/login-handoff.cjs
           - run: bun tests/xtask-workspace.cjs
       # Windows Release packages this exact commit after every CI job succeeds.
+    needs:
+      - verified-source
+      - preflight
   fork-automation:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - run: node --test tests/upstream-sync.test.mjs
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - run: node --test tests/upstream-sync.test.mjs tests/reuse-pr-ci.test.mjs
+    needs:
+      - verified-source
+      - preflight
+    if: needs.verified-source.outputs.reuse != 'true' && (github.event_name !=
+      'pull_request' || github.event.pull_request.draft == false)
   extension-sdk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dtolnay/rust-toolchain@1.99.1
         with:
           components: rustfmt, clippy
@@ -79,23 +111,39 @@ jobs:
           - run: cargo fmt --manifest-path examples/extensions/Cargo.toml --all -- --check
           - run: cargo fmt --manifest-path extensions/Cargo.toml --all -- --check
       - parallel:
-          - run: cargo test --manifest-path examples/extensions/Cargo.toml --workspace --locked
+          - run: cargo test --manifest-path examples/extensions/Cargo.toml --workspace
+              --locked
           - run: cargo test --manifest-path extensions/Cargo.toml --workspace --locked
-          - run: cargo test --locked -p extensions --test app_contract --example manifest_check
+          - run: cargo test --locked -p extensions --test app_contract --example
+              manifest_check
       - parallel:
-          - run: cargo clippy --manifest-path examples/extensions/Cargo.toml --workspace --all-targets --locked -- -D warnings
-          - run: cargo clippy --manifest-path extensions/Cargo.toml --workspace --all-targets --locked -- -D warnings
+          - run: cargo clippy --manifest-path examples/extensions/Cargo.toml --workspace
+              --all-targets --locked -- -D warnings
+          - run: cargo clippy --manifest-path extensions/Cargo.toml --workspace
+              --all-targets --locked -- -D warnings
       - parallel:
-          - run: cargo build --manifest-path examples/extensions/Cargo.toml --workspace --locked --release --target wasm32-unknown-unknown
-          - run: cargo build --manifest-path extensions/Cargo.toml --workspace --locked --release --target wasm32-unknown-unknown
+          - run: cargo build --manifest-path examples/extensions/Cargo.toml --workspace
+              --locked --release --target wasm32-unknown-unknown
+          - run: cargo build --manifest-path extensions/Cargo.toml --workspace --locked
+              --release --target wasm32-unknown-unknown
       - name: Check existing and rebuilt plugins in the host sandbox (offline)
-        run: cargo run --locked --release -p extensions --example sdk_check -- examples/extensions/target/wasm32-unknown-unknown/release extensions/target/wasm32-unknown-unknown/release
+        run: cargo run --locked --release -p extensions --example sdk_check --
+          examples/extensions/target/wasm32-unknown-unknown/release
+          extensions/target/wasm32-unknown-unknown/release
       - run: cargo run --locked --release -p extensions --example legacy_sdk_check
+    needs:
+      - verified-source
+      - preflight
+    if: needs.verified-source.outputs.reuse != 'true' && (github.event_name !=
+      'pull_request' || github.event.pull_request.draft == false)
   security:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: needs.verified-source.outputs.reuse != 'true' && (github.event_name !=
+      'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dtolnay/rust-toolchain@1.99.1
       - uses: Swatinem/rust-cache@v2.9.2
         with:
@@ -105,11 +153,17 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo install cargo-audit --version 0.22.2 --locked --no-default-features
       - run: cargo audit --deny warnings
+    needs:
+      - verified-source
+      - preflight
   licenses:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: needs.verified-source.outputs.reuse != 'true' && (github.event_name !=
+      'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dtolnay/rust-toolchain@1.99.1
       - uses: Swatinem/rust-cache@v2.9.2
         with:
@@ -126,12 +180,18 @@ jobs:
       - parallel:
           - run: cargo xtask licenses
           - run: bun tests/license-policy.cjs
+    needs:
+      - verified-source
+      - preflight
   fuzz:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: needs.verified-source.outputs.reuse != 'true' && (github.event_name !=
+      'pull_request' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: dtolnay/rust-toolchain@1.99.1
         with:
           components: rustfmt
@@ -156,3 +216,20 @@ jobs:
           path: target/fuzz-smoke/*.crash
           if-no-files-found: ignore
           retention-days: 7
+    needs:
+      - verified-source
+      - preflight
+  verified-source:
+    runs-on: ubuntu-latest
+    outputs:
+      reuse: ${{ steps.evidence.outputs.reuse }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - id: evidence
+        name: Verify identical merged source and complete PR checks
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/reuse-pr-ci.mjs

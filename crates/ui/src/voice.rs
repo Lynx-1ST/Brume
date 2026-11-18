@@ -1732,6 +1732,10 @@ impl MessagingUi {
 			if response.clicked() {
 				return Some(tile.focus());
 			}
+			// Share pictures stay unobstructed; viewer details belong to their eye badge.
+			if matches!(tile, Tile::Stream(_) | Tile::LocalScreen) {
+				return None;
+			}
 			// A live share also says who is watching it without enlarging it.
 			let viewers = match tile {
 				Tile::Stream(user) => {

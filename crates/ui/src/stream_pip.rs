@@ -127,6 +127,16 @@ impl MessagingUi {
 					}
 					StageFocus::Participant(_) => {}
 				}
+				let viewers = match selected {
+					StageFocus::LocalScreen => self.screen.viewers.as_ref(),
+					StageFocus::Stream(_) => {
+						crate::voice::watched_viewers(&self.voice_stream_views, selected)
+					}
+					StageFocus::Participant(_) => None,
+				};
+				if let Some(viewers) = viewers {
+					pip_viewers(ui, &mut self.avatars, state, channel, rect, viewers);
+				}
 				if response.double_clicked() {
 					restore = true;
 				}
@@ -162,7 +172,7 @@ impl MessagingUi {
 				});
 				if ui.rect_contains_pointer(rect) || response.has_focus() {
 					let controls = egui::Rect::from_min_size(
-						rect.right_top() + egui::vec2(-60.0, 4.0),
+						rect.right_bottom() + egui::vec2(-60.0, -32.0),
 						egui::vec2(56.0, 28.0),
 					);
 					ui.scope_builder(egui::UiBuilder::new().max_rect(controls), |ui| {
@@ -201,6 +211,43 @@ impl MessagingUi {
 			}
 		}
 	}
+}
+fn pip_viewers(
+	ui: &mut egui::Ui,
+	avatars: &mut crate::avatars::Avatars,
+	state: &State,
+	channel: Id,
+	rect: egui::Rect,
+	viewers: &client_core::screen::Viewers,
+) {
+	let bounds = egui::Rect::from_min_max(
+		egui::pos2(rect.left() + 4.0, rect.bottom() - 32.0),
+		egui::pos2(rect.right() - 66.0, rect.bottom() - 4.0),
+	);
+	let mut row = ui.new_child(
+		egui::UiBuilder::new()
+			.id_salt("pip-viewers")
+			.max_rect(bounds)
+			.layout(egui::Layout::right_to_left(egui::Align::Center)),
+	);
+	let background = row.painter().add(egui::Shape::Noop);
+	let fill = egui::Color32::from_black_alpha(170);
+	let size = if rect.width() < 220.0 { 14.0 } else { 18.0 };
+	let response = crate::voice::viewer_row(
+		&mut row,
+		avatars,
+		state,
+		channel,
+		viewers,
+		size,
+		fill,
+		egui::Color32::WHITE,
+	);
+	row.painter().set(
+		background,
+		egui::Shape::rect_filled(response.rect.expand(3.0), 6, fill),
+	);
+	response.on_hover_text(crate::voice::viewer_names(state, channel, viewers));
 }
 fn pip_label(state: &State, channel: Id, source: StageFocus) -> String {
 	match source {

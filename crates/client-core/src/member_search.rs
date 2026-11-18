@@ -84,8 +84,85 @@ impl State {
 		current.chain(searches).chain(cached)
 	}
 	pub fn known_member(&self, channel: Id, user: Id) -> Option<&Member> {
-		self.known_members(channel)
-			.find(|member| member.user.id == user)
+		let guild = self.channel(channel).and_then(|channel| channel.guild);
+		self.voice
+			.roster
+			.iter()
+			.find(|entry| Some(entry.guild) == guild && entry.participant.user == user)
+			.and_then(|entry| entry.member.as_ref())
+			.or_else(|| {
+				self.known_members(channel)
+					.find(|member| member.user.id == user)
+			})
+	}
+	/// A server identity is scoped to that server, even while another server is selected.
+	pub fn guild_member(&self, guild: Id, user: Id) -> Option<&Member> {
+		self.voice
+			.roster
+			.iter()
+			.find(|entry| entry.guild == guild && entry.participant.user == user)
+			.and_then(|entry| entry.member.as_ref())
+			.or_else(|| {
+				self.channels
+					.iter()
+					.find(|channel| channel.guild == Some(guild))
+					.and_then(|channel| {
+						self.known_members(channel.id)
+							.find(|member| member.user.id == user)
+					})
+			})
+	}
+	/// Patch only identities already retained for this guild, respecting each cache's budget.
+	pub(crate) fn patch_member_nickname(&mut self, guild: Id, user: Id, nick: &Option<String>) {
+		fn patch(member: &mut Member, user: Id, nick: &Option<String>, spare: &mut usize) {
+			if member.user.id != user {
+				return;
+			}
+			let old = member.nick.as_ref().map_or(0, String::capacity);
+			let new = nick.as_ref().map_or(0, String::len);
+			if new <= spare.saturating_add(old) {
+				*spare = spare.saturating_add(old).saturating_sub(new);
+				member.nick = nick
+					.as_deref()
+					.filter(|nick| !nick.is_empty())
+					.map(str::to_owned);
+			}
+		}
+		if let Some(list) = self
+			.members
+			.as_mut()
+			.filter(|list| list.guild == Some(guild))
+		{
+			let mut spare = (256 * 1024_usize).saturating_sub(list.slot_bytes());
+			for slot in list.slots.iter_mut().flatten() {
+				if let model::MemberSlot::Person(member) = slot {
+					patch(member, user, nick, &mut spare);
+				}
+			}
+			let mut spare = crate::MEMBER_CACHE_BYTES.saturating_sub(self.member_chunks.bytes());
+			for slot in self
+				.member_chunks
+				.chunks
+				.values_mut()
+				.flat_map(|chunk| chunk.iter_mut().flatten())
+			{
+				if let model::MemberSlot::Person(member) = slot {
+					patch(member, user, nick, &mut spare);
+				}
+			}
+		}
+		for view in &mut self.member_search {
+			if view
+				.request
+				.as_ref()
+				.is_some_and(|request| request.guild == guild)
+			{
+				let mut spare = MAX_BYTES.saturating_sub(view.rows.iter().map(Member::bytes).sum());
+				for member in &mut view.rows {
+					patch(member, user, nick, &mut spare);
+				}
+			}
+		}
 	}
 	pub fn search_members(&mut self, channel: Id, query: &str, slot: usize) -> Option<Command> {
 		let guild = self.channel(channel)?.guild?;
@@ -187,6 +264,9 @@ impl State {
 							.all(|member| request.users.contains(&member.user.id)))
 					&& rows.iter().map(Member::bytes).sum::<usize>() <= MAX_BYTES =>
 			{
+				for member in &rows {
+					self.remember_voice_member(request.guild, member);
+				}
 				if request.slot == 1 {
 					for member in &rows {
 						self.timeline.apply_author_membership(

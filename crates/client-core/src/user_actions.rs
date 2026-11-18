@@ -299,7 +299,97 @@ impl State {
 		self.user_actions.friends_since.get(&user).copied()
 	}
 	pub fn user_display_name<'a>(&'a self, user: &'a model::User) -> &'a str {
-		self.friend_nickname(user.id).unwrap_or(&user.name)
+		self.friend_nickname(user.id)
+			.or_else(|| {
+				self.known_profile(user.id)
+					.map(|profile| profile.user.name.as_str())
+			})
+			.unwrap_or_else(|| {
+				self.friend(user.id)
+					.map_or(user.name.as_str(), |friend| friend.name.as_str())
+			})
+	}
+	/// Refresh a global display name without leaking a server nickname into DMs.
+	pub(crate) fn refresh_global_name(&mut self, user: &model::User) {
+		if user.id.0 == 0
+			|| user.name.is_empty()
+			|| user.name.len() > 512
+			|| user.name.chars().any(char::is_control)
+		{
+			return;
+		}
+		let extra = self
+			.channels
+			.iter()
+			.flat_map(|channel| &channel.recipients)
+			.filter(|recipient| recipient.id == user.id)
+			.map(|recipient| user.name.len().saturating_sub(recipient.name.capacity()))
+			.sum::<usize>();
+		if self
+			.navigation_bytes()
+			.saturating_add(extra)
+			.saturating_add(self.permissions.bytes())
+			<= model::account::MAX_BYTES
+		{
+			for recipient in self
+				.channels
+				.iter_mut()
+				.flat_map(|channel| &mut channel.recipients)
+				.filter(|recipient| recipient.id == user.id)
+			{
+				recipient.name = user.name.as_str().to_owned();
+			}
+			self.invalidate_navigation();
+		}
+		let friend_bytes = self
+			.user_actions
+			.friends
+			.values()
+			.map(|(friend, handle)| {
+				friend.heap_bytes()
+					+ handle.capacity()
+					+ size_of::<(Id, model::User, String)>()
+					+ 64
+			})
+			.sum::<usize>();
+		if let Some((friend, _)) = self.user_actions.friends.get_mut(&user.id)
+			&& friend_bytes.saturating_add(user.name.len().saturating_sub(friend.name.capacity()))
+				<= MAX_FRIEND_BYTES
+		{
+			friend.name = user.name.as_str().to_owned();
+		}
+		self.user_actions.bump_view();
+		if let Some(own) = self.user.as_mut().filter(|own| own.id == user.id) {
+			own.name = user.name.as_str().to_owned();
+		}
+		let members: Vec<_> = self
+			.voice
+			.roster
+			.iter()
+			.filter(|entry| entry.participant.user == user.id)
+			.filter_map(|entry| {
+				entry
+					.member
+					.as_ref()
+					.map(|member| (entry.guild, member.clone()))
+			})
+			.collect();
+		for (guild, mut member) in members {
+			member.user.name = user.name.as_str().to_owned();
+			self.remember_voice_member(guild, &member);
+		}
+		self.profile_cache.forget(user.id);
+		if let Some(data) = self
+			.profile
+			.as_mut()
+			.filter(|view| view.user == user.id)
+			.and_then(|view| view.data.as_mut())
+		{
+			let extra = user.name.len().saturating_sub(data.user.name.capacity());
+			if data.bytes().saturating_add(extra) <= model::MAX_PROFILE_BYTES {
+				data.user.name = user.name.as_str().to_owned();
+			}
+		}
 	}
 	pub fn message_author_name<'a>(&'a self, message: &'a model::Message) -> &'a str {
 		if message.author.webhook {
@@ -309,23 +399,10 @@ impl State {
 			.channel(message.channel)
 			.and_then(|channel| channel.guild)
 		{
-			let member = self
-				.members
-				.as_ref()
-				.filter(|list| list.guild == Some(guild))
-				.and_then(|list| {
-					list.slots
-						.iter()
-						.flatten()
-						.filter_map(|slot| match slot {
-							model::MemberSlot::Person(m) => Some(m),
-							_ => None,
-						})
-						.find(|m| m.user.id == message.author.id)
-				});
+			let member = self.guild_member(guild, message.author.id);
 			let nick = member
-				.and_then(|m| m.nick.as_deref().filter(|nick| !nick.is_empty()))
-				.or(message.author_nick.as_deref());
+				.map(|member| member.nick.as_deref())
+				.unwrap_or(message.author_nick.as_deref());
 			if let Some(nick) = nick.filter(|nick| !nick.is_empty()) {
 				return nick;
 			}
@@ -336,7 +413,7 @@ impl State {
 		if channel.kind == 1
 			&& let Some(user) = channel.recipients.first()
 		{
-			self.friend_nickname(user.id).unwrap_or(&channel.name)
+			self.user_display_name(user)
 		} else {
 			&channel.name
 		}
@@ -1398,6 +1475,10 @@ impl State {
 				}
 			}
 			Event::FriendProfile(profile) => {
+				if !valid_friend(&profile.0, &profile.1) {
+					return Err("Invalid friend update");
+				}
+				self.refresh_global_name(&profile.0);
 				if let Some((_, _, ignored)) = self.user_actions.restricted.get(&profile.0.id) {
 					let ignored = *ignored;
 					let user = profile.0.id;
@@ -2359,6 +2440,11 @@ mod tests {
 				.apply_user_action(Event::FriendProfile((changed, "new_username".into())))
 				.unwrap();
 			assert_eq!(state.friends().next().unwrap().name, "New display");
+			assert_eq!(
+				state.conversation_name(&state.channels[0]),
+				"New display",
+				"DM titles must use the updated identity rather than the old channel name"
+			);
 			state
 				.apply_user_action(Event::Friend {
 					user: user.id,

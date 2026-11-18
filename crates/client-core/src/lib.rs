@@ -3560,6 +3560,13 @@ impl State {
 					}
 				} else if ranges_left {
 					if list.freshness == Freshness::Fresh {
+						if let Some(guild) = list.guild {
+							for slot in list.slots.iter().flatten() {
+								if let MemberSlot::Person(member) = slot {
+									self.remember_voice_member(guild, member);
+								}
+							}
+						}
 						let protect = self
 							.members
 							.as_ref()
@@ -3572,6 +3579,9 @@ impl State {
 					let kept_ranges = self.members.as_ref().map(|m| m.ranges.clone());
 					for slot in list.slots.iter().flatten() {
 						if let MemberSlot::Person(member) = slot {
+							if let Some(guild) = list.guild {
+								self.remember_voice_member(guild, member);
+							}
 							self.timeline.apply_author_membership(
 								member.user.id,
 								&member.roles,

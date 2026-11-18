@@ -5740,3 +5740,205 @@ status-read-sync = Read status could not sync · unread markers may be out of da
 screen-quality-title = Stream quality
 screen-quality-apply = Apply changes
 screen-quality-restart-hint = Applying changes briefly restarts your stream. Your voice call stays connected.
+
+ui-status-you-re-streaming = You're streaming
+
+ui-status-open-stream = Open Stream
+
+ui-status-you-are-already-streaming-in-this-channel = You are already streaming in this channel
+
+ui-status-join-this-voice-channel-before-watching = Join this voice channel before watching
+
+ui-status-participant = Participant
+
+ui-status-offline-preview-no-screen-is-captured = Offline preview · no screen is captured
+
+ui-status-system-permission-dialog = System permission dialog
+
+ui-status-you-are-already-in-this-call = You are already in this call.
+
+ui-status-joining-this-channel-is-unavailable-with-current-permission-information = Joining this channel is unavailable with current permission information.
+
+ui-status-calls-are-unavailable-in-the-offline-preview-no-microphone-is-accessed = Calls are unavailable in the offline preview. No microphone is accessed.
+
+ui-status-voice-is-unavailable-in-this-session = Voice is unavailable in this session.
+
+ui-status-reconnect-to-discord-before-calling = Reconnect to Discord before calling.
+
+ui-status-waiting-for-the-previous-call-to-disconnect = Waiting for the previous call to disconnect.
+
+ui-status-looking-for-cameras = Looking for cameras...
+
+ui-status-audio-worker-stopped-restart-serein = Audio worker stopped; restart Serein
+
+ui-status-screen-sharing-stopped-with-a-system-error = Screen sharing stopped with a system error
+
+ui-status-screen-share-connection-ended = Screen-share connection ended
+
+ui-status-checking-screen-share-network = Checking screen-share network…
+
+ui-status-securing-screen-video = Securing screen video…
+
+ui-status-screen-preview-waiting-for-others = Screen preview · waiting for others
+
+ui-status-sharing-your-screen = Sharing your screen
+
+ui-status-checking-the-stream-network = Checking the stream network…
+
+ui-status-securing-the-stream = Securing the stream…
+
+ui-status-waiting-for-the-streamer = Waiting for the streamer…
+
+ui-status-stream-secured-waiting-for-video = Stream secured · waiting for video
+
+ui-status-stream-preview-response-was-too-large = Stream preview response was too large
+
+ui-status-stream-preview-hidden-or-unavailable = Stream preview hidden or unavailable
+
+ui-status-you-are-already-in-another-call = You are already in another call
+
+ui-status-preparing-upload = Preparing upload…
+
+ui-status-note-loaded = Note loaded
+
+ui-status-note-saved = Note saved
+
+ui-status-nickname-saved = Nickname saved
+
+ui-status-friend-request-sent = Friend request sent
+
+ui-status-friend-request-sent-waiting-for-service-update = Friend request sent · waiting for service update
+
+ui-status-friend-removed = Friend removed
+
+ui-status-friend-request-accepted = Friend request accepted
+
+ui-status-friend-request-removed = Friend request removed
+
+ui-status-dm-closed-messages-and-drafts-were-not-deleted = DM closed · messages and drafts were not deleted
+
+ui-status-user-blocked = User blocked
+
+ui-status-user-unblocked = User unblocked
+
+ui-status-user-ignored = User ignored
+
+ui-status-user-unignored = User unignored
+
+ui-status-conversation-notifications-unmuted = Conversation notifications unmuted
+
+ui-status-message-request-accepted = Message request accepted
+
+ui-status-message-request-ignored = Message request ignored
+
+ui-status-direct-message-was-not-confirmed-try-opening-it-again = Direct message was not confirmed; try opening it again
+
+ui-status-group-message-was-not-confirmed-try-creating-it-again = Group message was not confirmed; try creating it again
+
+ui-status-invite-sent = Invite sent
+
+ui-status-reconnect-to-load-your-profile = Reconnect to load your profile
+
+ui-status-sign-in-before-editing-your-profile = Sign in before editing your profile
+
+ui-status-profile-request-was-not-queued-try-again = Profile request was not queued; try again
+
+ui-status-profile-response-was-invalid-or-too-large = Profile response was invalid or too large
+
+ui-status-profile-changes-are-invalid-or-exceed-safe-limits = Profile changes are invalid or exceed safe limits
+
+ui-status-the-font-name-is-invalid = The font name is invalid.
+
+ui-status-this-font-is-missing-readable-text-or-outlines = This font is missing readable text or outlines.
+
+ui-status-that-picture-is-too-large-choose-a-simpler-image = That picture is too large; choose a simpler image
+
+ui-status-after-must-be-earlier-than-before = After must be earlier than Before.
+
+ui-status-wait-for-the-current-emoji-images-to-finish-preparing-or-uploading = Wait for the current emoji images to finish preparing or uploading.
+
+ui-status-save-or-discard-your-server-settings-changes-before-opening-the-conversation = Save or discard your server settings changes before opening the conversation.
+
+ui-status-the-selected-images-exceed-the-emoji-upload-limits = The selected images exceed the emoji upload limits.
+
+ui-status-unknown-time = Unknown time
+
+ui-status-not-provided = Not provided
+
+ui-status-image-selection-cancelled = Image selection cancelled
+
+ui-status-attachment-selection-interrupted = Attachment selection interrupted
+
+ui-status-attachment-upload-interrupted = Attachment upload interrupted
+
+ui-status-send-or-remove-existing-attachments-before-sending-artwork-alone = Send or remove existing attachments before sending artwork alone
+
+ui-status-unsupported-or-invalid-image-data = Unsupported or invalid image data
+
+ui-status-attachments-staged-in-an-earlier-conversation-were-removed = Attachments staged in an earlier conversation were removed
+
+ui-status-message-outcome-unknown-check-the-conversation-before-retrying = Message outcome unknown; check the conversation before retrying
+
+ui-status-loading-local-appearance = Loading local appearance…
+
+ui-status-saving-local-changes = Saving local changes…
+
+ui-status-local-storage-queue-full-some-changes-are-not-saved = Local storage queue full; some changes are not saved
+
+ui-status-font-import-interrupted-try-again = Font import interrupted. Try again.
+
+ui-status-could-not-update-status-connection-unavailable = Could not update status: connection unavailable.
+
+ui-status-could-not-read-or-update-the-saved-account-list = Could not read or update the saved account list
+
+ui-status-cached-history-cleared-saved-drafts-preserved = Cached history cleared; saved drafts preserved
+
+ui-status-could-not-read-channel-preferences-from-local-storage = Could not read channel preferences from local storage.
+
+ui-status-video-worker-stopped-restart-serein = Video worker stopped; restart Serein
+
+ui-status-video-audio-output-stopped = Video audio output stopped
+
+ui-status-video-buffering-stalled-retry-or-download-to-play-externally = Video buffering stalled; retry or download to play externally
+
+ui-status-updates-have-not-been-checked-yet = Updates have not been checked yet.
+
+ui-status-update-cancelled = Update cancelled.
+
+ui-status-the-release-contains-an-untrusted-download-address = The release contains an untrusted download address.
+
+ui-status-github-s-update-limit-was-reached-try-again-later = GitHub's update limit was reached. Try again later.
+
+ui-status-no-published-release-is-available-on-this-channel-yet = No published release is available on this channel yet.
+
+ui-status-github-could-not-provide-the-update-try-again-later = GitHub could not provide the update. Try again later.
+
+ui-status-the-update-checksum-or-length-did-not-match-nothing-was-installed = The update checksum or length did not match. Nothing was installed.
+
+ui-status-run-serein-from-an-extracted-release-package-to-install-updates-source-builds-cannot-replace-themselves = Run Serein from an extracted release package to install updates; source builds cannot replace themselves.
+
+ui-status-the-update-helper-did-not-start-serein-will-remain-open = The update helper did not start. Serein will remain open.
+
+ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder = The installation folder contains too many entries. Move Serein into its own folder.
+
+ui-status-filter-messages-from-non-friends = Filter messages from non-friends
+
+ui-status-server-members = Server members
+
+ui-status-only-from-servers-where-you-also-allow-direct-messages = Only from servers where you also allow Direct Messages.
+
+ui-status-show-personalized-messages = Show personalized messages
+
+ui-status-show-personalized-messages-on-incoming-friend-requests-if-you-accept-the-message-will-still-appear-in-your-dms = Show personalized messages on incoming friend requests. If you accept, the message will still appear in your DMs.
+
+ui-status-allow-friends-from-games-to-send-direct-messages-and-invites = Allow friends from games to send direct messages and invites
+
+ui-status-let-friends-from-connected-games-send-dms-and-invite-you-to-play-even-when-the-game-isn-t-open = Let friends from connected games send DMs and invite you to play, even when the game isn't open.
+
+pending-upload-one = Uploading { $name }
+
+pending-upload-many = Uploading { $count } files
+
+pending-upload-progress = { $sent } of { $total } · { $percent }%
+
+pending-upload-preparing = Preparing upload · { $size }

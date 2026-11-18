@@ -38,11 +38,22 @@ của khung hình. Các công cụ lab Linux đi kèm chỉ dành cho thử nghi
 PiP nổi bên trong Serein khi rời màn hình cuộc gọi; có thể mở từ menu của ô stream, kéo,
 đổi kích thước và chọn stream qua menu chuột phải, gồm bản xem trước stream của mình.
 PiP tái sử dụng texture đang xem, hiện dãy avatar và số người xem; di chuột lên để xem tên.
+Nút trở lại và X nằm ở góc trên phải khi hover PiP. Tên màn hình chia sẻ và người xem
+nằm trong thanh dưới riêng; tên dài được rút gọn để không chồng lên avatar người xem.
 Nút X dừng xem stream được chọn, hoặc dừng chia sẻ nếu là stream của mình; nút trở lại
 đưa về đúng kênh thoại. Mục đóng PiP trong menu chuột phải chỉ ẩn cửa sổ.
 Lựa chọn được xóa khi đổi tài khoản hoặc phiên gọi, tránh hiển thị ảnh của phiên cũ.
 
 ## Biệt danh khi gợi ý nhắc tên
+
+Trong máy chủ, tên ưu tiên biệt danh của đúng máy chủ. Ngoài máy chủ, ứng dụng dùng
+biệt danh bạn bè nếu đã đặt, rồi tên hiển thị toàn cục (hoặc tên tài khoản do Discord cung cấp).
+DM không dùng tên kênh cũ để thay cho tên người dùng. Hồ sơ mở trong máy chủ, tên stream
+và danh sách voice cùng dùng thông tin thành viên đang lưu của máy chủ đó.
+
+Sự kiện đổi/xóa biệt danh cập nhật các bản ghi thành viên đang giữ và danh sách voice,
+không cần rời hoặc tham gia lại kênh. Thông tin voice vẫn được giữ khi đổi máy chủ đang xem.
+Việc cập nhật tên không thay đổi trạng thái mic, stream hay kết nối cuộc gọi.
 
 Gợi ý `@mention` lấy biệt danh máy chủ từ các cửa sổ thành viên, kết quả tìm kiếm và chunk đang
 được giữ trong bộ nhớ có giới hạn, kể cả người nằm ngoài phần danh sách thành viên đang hiển thị.

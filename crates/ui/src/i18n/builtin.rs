@@ -489,6 +489,212 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 		"Read status could not sync · unread markers may be out of date" => {
 			Some("status-read-sync")
 		}
+		"You're streaming" => Some("ui-status-you-re-streaming"),
+		"Open Stream" => Some("ui-status-open-stream"),
+		"You are already streaming in this channel" => {
+			Some("ui-status-you-are-already-streaming-in-this-channel")
+		}
+		"Join this voice channel before watching" => {
+			Some("ui-status-join-this-voice-channel-before-watching")
+		}
+		"Participant" => Some("ui-status-participant"),
+		"Offline preview · no screen is captured" => {
+			Some("ui-status-offline-preview-no-screen-is-captured")
+		}
+		"System permission dialog" => Some("ui-status-system-permission-dialog"),
+		"You are already in this call." => Some("ui-status-you-are-already-in-this-call"),
+		"Joining this channel is unavailable with current permission information." => Some(
+			"ui-status-joining-this-channel-is-unavailable-with-current-permission-information",
+		),
+		"Calls are unavailable in the offline preview. No microphone is accessed." => {
+			Some("ui-status-calls-are-unavailable-in-the-offline-preview-no-microphone-is-accessed")
+		}
+		"Voice is unavailable in this session." => {
+			Some("ui-status-voice-is-unavailable-in-this-session")
+		}
+		"Reconnect to Discord before calling." => {
+			Some("ui-status-reconnect-to-discord-before-calling")
+		}
+		"Waiting for the previous call to disconnect." => {
+			Some("ui-status-waiting-for-the-previous-call-to-disconnect")
+		}
+		"Looking for cameras..." => Some("ui-status-looking-for-cameras"),
+		"Audio worker stopped; restart Serein" => {
+			Some("ui-status-audio-worker-stopped-restart-serein")
+		}
+		"Screen sharing stopped with a system error" => {
+			Some("ui-status-screen-sharing-stopped-with-a-system-error")
+		}
+		"Screen-share connection ended" => Some("ui-status-screen-share-connection-ended"),
+		"Checking screen-share network…" => Some("ui-status-checking-screen-share-network"),
+		"Securing screen video…" => Some("ui-status-securing-screen-video"),
+		"Screen preview · waiting for others" => {
+			Some("ui-status-screen-preview-waiting-for-others")
+		}
+		"Sharing your screen" => Some("ui-status-sharing-your-screen"),
+		"Checking the stream network…" => Some("ui-status-checking-the-stream-network"),
+		"Securing the stream…" => Some("ui-status-securing-the-stream"),
+		"Waiting for the streamer…" => Some("ui-status-waiting-for-the-streamer"),
+		"Stream secured · waiting for video" => Some("ui-status-stream-secured-waiting-for-video"),
+		"Stream preview response was too large" => {
+			Some("ui-status-stream-preview-response-was-too-large")
+		}
+		"Stream preview hidden or unavailable" => {
+			Some("ui-status-stream-preview-hidden-or-unavailable")
+		}
+		"You are already in another call" => Some("ui-status-you-are-already-in-another-call"),
+		"Preparing upload…" => Some("ui-status-preparing-upload"),
+		"Note loaded" => Some("ui-status-note-loaded"),
+		"Note saved" => Some("ui-status-note-saved"),
+		"Nickname saved" => Some("ui-status-nickname-saved"),
+		"Friend request sent" => Some("ui-status-friend-request-sent"),
+		"Friend request sent · waiting for service update" => {
+			Some("ui-status-friend-request-sent-waiting-for-service-update")
+		}
+		"Friend removed" => Some("ui-status-friend-removed"),
+		"Friend request accepted" => Some("ui-status-friend-request-accepted"),
+		"Friend request removed" => Some("ui-status-friend-request-removed"),
+		"DM closed · messages and drafts were not deleted" => {
+			Some("ui-status-dm-closed-messages-and-drafts-were-not-deleted")
+		}
+		"User blocked" => Some("ui-status-user-blocked"),
+		"User unblocked" => Some("ui-status-user-unblocked"),
+		"User ignored" => Some("ui-status-user-ignored"),
+		"User unignored" => Some("ui-status-user-unignored"),
+		"Conversation notifications unmuted" => {
+			Some("ui-status-conversation-notifications-unmuted")
+		}
+		"Message request accepted" => Some("ui-status-message-request-accepted"),
+		"Message request ignored" => Some("ui-status-message-request-ignored"),
+		"Direct message was not confirmed; try opening it again" => {
+			Some("ui-status-direct-message-was-not-confirmed-try-opening-it-again")
+		}
+		"Group message was not confirmed; try creating it again" => {
+			Some("ui-status-group-message-was-not-confirmed-try-creating-it-again")
+		}
+		"Invite sent" => Some("ui-status-invite-sent"),
+		"Reconnect to load your profile" => Some("ui-status-reconnect-to-load-your-profile"),
+		"Sign in before editing your profile" => {
+			Some("ui-status-sign-in-before-editing-your-profile")
+		}
+		"Profile request was not queued; try again" => {
+			Some("ui-status-profile-request-was-not-queued-try-again")
+		}
+		"Profile response was invalid or too large" => {
+			Some("ui-status-profile-response-was-invalid-or-too-large")
+		}
+		"Profile changes are invalid or exceed safe limits" => {
+			Some("ui-status-profile-changes-are-invalid-or-exceed-safe-limits")
+		}
+		"The font name is invalid." => Some("ui-status-the-font-name-is-invalid"),
+		"This font is missing readable text or outlines." => {
+			Some("ui-status-this-font-is-missing-readable-text-or-outlines")
+		}
+		"That picture is too large; choose a simpler image" => {
+			Some("ui-status-that-picture-is-too-large-choose-a-simpler-image")
+		}
+		"After must be earlier than Before." => Some("ui-status-after-must-be-earlier-than-before"),
+		"Wait for the current emoji images to finish preparing or uploading." => {
+			Some("ui-status-wait-for-the-current-emoji-images-to-finish-preparing-or-uploading")
+		}
+		"Save or discard your server settings changes before opening the conversation." => Some(
+			"ui-status-save-or-discard-your-server-settings-changes-before-opening-the-conversation",
+		),
+		"The selected images exceed the emoji upload limits." => {
+			Some("ui-status-the-selected-images-exceed-the-emoji-upload-limits")
+		}
+		"Unknown time" => Some("ui-status-unknown-time"),
+		"Not provided" => Some("ui-status-not-provided"),
+		"Image selection cancelled" => Some("ui-status-image-selection-cancelled"),
+		"Attachment selection interrupted" => Some("ui-status-attachment-selection-interrupted"),
+		"Attachment upload interrupted" => Some("ui-status-attachment-upload-interrupted"),
+		"Wait for the current attachment operation to finish" => Some("public-upload-error-busy"),
+		"Send or remove existing attachments before sending artwork alone" => {
+			Some("ui-status-send-or-remove-existing-attachments-before-sending-artwork-alone")
+		}
+		"Unsupported or invalid image data" => Some("ui-status-unsupported-or-invalid-image-data"),
+		"Attachments staged in an earlier conversation were removed" => {
+			Some("ui-status-attachments-staged-in-an-earlier-conversation-were-removed")
+		}
+		"Message outcome unknown; check the conversation before retrying" => {
+			Some("ui-status-message-outcome-unknown-check-the-conversation-before-retrying")
+		}
+		"Loading local appearance…" => Some("ui-status-loading-local-appearance"),
+		"Saving local changes…" => Some("ui-status-saving-local-changes"),
+		"Local storage queue full; some changes are not saved" => {
+			Some("ui-status-local-storage-queue-full-some-changes-are-not-saved")
+		}
+		"Font import interrupted. Try again." => {
+			Some("ui-status-font-import-interrupted-try-again")
+		}
+		"Could not update status: connection unavailable." => {
+			Some("ui-status-could-not-update-status-connection-unavailable")
+		}
+		"Could not read or update the saved account list" => {
+			Some("ui-status-could-not-read-or-update-the-saved-account-list")
+		}
+		"Cached history cleared; saved drafts preserved" => {
+			Some("ui-status-cached-history-cleared-saved-drafts-preserved")
+		}
+		"Could not read channel preferences from local storage." => {
+			Some("ui-status-could-not-read-channel-preferences-from-local-storage")
+		}
+		"Video worker stopped; restart Serein" => {
+			Some("ui-status-video-worker-stopped-restart-serein")
+		}
+		"Video audio output stopped" => Some("ui-status-video-audio-output-stopped"),
+		"Video buffering stalled; retry or download to play externally" => {
+			Some("ui-status-video-buffering-stalled-retry-or-download-to-play-externally")
+		}
+		"Updates have not been checked yet." => Some("ui-status-updates-have-not-been-checked-yet"),
+		"Update cancelled." => Some("ui-status-update-cancelled"),
+		"The release contains an untrusted download address." => {
+			Some("ui-status-the-release-contains-an-untrusted-download-address")
+		}
+		"GitHub's update limit was reached. Try again later." => {
+			Some("ui-status-github-s-update-limit-was-reached-try-again-later")
+		}
+		"No published release is available on this channel yet." => {
+			Some("ui-status-no-published-release-is-available-on-this-channel-yet")
+		}
+		"GitHub could not provide the update. Try again later." => {
+			Some("ui-status-github-could-not-provide-the-update-try-again-later")
+		}
+		"The update checksum or length did not match. Nothing was installed." => {
+			Some("ui-status-the-update-checksum-or-length-did-not-match-nothing-was-installed")
+		}
+		"Run Serein from an extracted release package to install updates; source builds cannot replace themselves." => {
+			Some(
+				"ui-status-run-serein-from-an-extracted-release-package-to-install-updates-source-builds-cannot-replace-themselves",
+			)
+		}
+		"The update helper did not start. Serein will remain open." => {
+			Some("ui-status-the-update-helper-did-not-start-serein-will-remain-open")
+		}
+		"The installation folder contains too many entries. Move Serein into its own folder." => {
+			Some(
+				"ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder",
+			)
+		}
+		"Filter messages from non-friends" => Some("ui-status-filter-messages-from-non-friends"),
+		"Server members" => Some("ui-status-server-members"),
+		"Only from servers where you also allow Direct Messages." => {
+			Some("ui-status-only-from-servers-where-you-also-allow-direct-messages")
+		}
+		"Show personalized messages" => Some("ui-status-show-personalized-messages"),
+		"Show personalized messages on incoming friend requests. If you accept, the message will still appear in your DMs." => {
+			Some(
+				"ui-status-show-personalized-messages-on-incoming-friend-requests-if-you-accept-the-message-will-still-appear-in-your-dms",
+			)
+		}
+		"Allow friends from games to send direct messages and invites" => {
+			Some("ui-status-allow-friends-from-games-to-send-direct-messages-and-invites")
+		}
+		"Let friends from connected games send DMs and invite you to play, even when the game isn't open." => {
+			Some(
+				"ui-status-let-friends-from-connected-games-send-dms-and-invite-you-to-play-even-when-the-game-isn-t-open",
+			)
+		}
 		_ => None,
 	}
 }

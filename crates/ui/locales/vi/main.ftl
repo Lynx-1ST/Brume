@@ -5284,7 +5284,7 @@ ui-builtin-your-screen-local-preview = Màn hình của bạn · bản xem trư�
 
 ui-builtin-screen-share-you-are-watching = Màn hình được chia sẻ mà bạn đang xem
 
-ui-builtin-watch-stream = Xem stream
+ui-builtin-watch-stream = Xem màn hình chia sẻ
 
 ui-builtin-click-or-press-escape-to-return-to-the-grid = Nhấp hoặc nhấn Esc để trở lại chế độ lưới
 
@@ -5755,3 +5755,205 @@ status-read-sync = Không thể đồng bộ trạng thái đã đọc · dấu 
 screen-quality-title = Chất lượng stream
 screen-quality-apply = Áp dụng thay đổi
 screen-quality-restart-hint = Stream sẽ khởi động lại trong giây lát để áp dụng thay đổi. Cuộc gọi thoại vẫn được giữ nguyên.
+
+ui-status-you-re-streaming = Bạn đang chia sẻ màn hình
+
+ui-status-open-stream = Mở màn hình chia sẻ
+
+ui-status-you-are-already-streaming-in-this-channel = Bạn đang chia sẻ màn hình trong kênh này
+
+ui-status-join-this-voice-channel-before-watching = Tham gia kênh thoại này để xem
+
+ui-status-participant = Người tham gia
+
+ui-status-offline-preview-no-screen-is-captured = Bản xem thử · không thu hình màn hình
+
+ui-status-system-permission-dialog = Hộp thoại cấp quyền của hệ thống
+
+ui-status-you-are-already-in-this-call = Bạn đã ở trong cuộc gọi này.
+
+ui-status-joining-this-channel-is-unavailable-with-current-permission-information = Chưa thể tham gia kênh này với thông tin quyền hiện tại.
+
+ui-status-calls-are-unavailable-in-the-offline-preview-no-microphone-is-accessed = Bản xem thử không hỗ trợ cuộc gọi và không sử dụng mic.
+
+ui-status-voice-is-unavailable-in-this-session = Phiên này chưa hỗ trợ kết nối thoại.
+
+ui-status-reconnect-to-discord-before-calling = Kết nối lại với Discord trước khi gọi.
+
+ui-status-waiting-for-the-previous-call-to-disconnect = Đang chờ kết thúc cuộc gọi trước…
+
+ui-status-looking-for-cameras = Đang tìm camera…
+
+ui-status-audio-worker-stopped-restart-serein = Bộ xử lý âm thanh đã dừng. Hãy khởi động lại Serein.
+
+ui-status-screen-sharing-stopped-with-a-system-error = Chia sẻ màn hình đã dừng do lỗi hệ thống.
+
+ui-status-screen-share-connection-ended = Kết nối chia sẻ màn hình đã kết thúc.
+
+ui-status-checking-screen-share-network = Đang kiểm tra kết nối chia sẻ màn hình…
+
+ui-status-securing-screen-video = Đang bảo mật kết nối chia sẻ màn hình…
+
+ui-status-screen-preview-waiting-for-others = Đang xem trước màn hình · chờ người khác tham gia
+
+ui-status-sharing-your-screen = Bạn đang chia sẻ màn hình
+
+ui-status-checking-the-stream-network = Đang kiểm tra kết nối stream…
+
+ui-status-securing-the-stream = Đang bảo mật kết nối stream…
+
+ui-status-waiting-for-the-streamer = Đang chờ người chia sẻ…
+
+ui-status-stream-secured-waiting-for-video = Đã bảo mật kết nối · đang chờ hình ảnh
+
+ui-status-stream-preview-response-was-too-large = Ảnh xem trước stream vượt quá giới hạn cho phép.
+
+ui-status-stream-preview-hidden-or-unavailable = Ảnh xem trước stream đang ẩn hoặc chưa khả dụng.
+
+ui-status-you-are-already-in-another-call = Bạn đang ở trong một cuộc gọi khác.
+
+ui-status-preparing-upload = Đang chuẩn bị tải lên…
+
+ui-status-note-loaded = Đã tải ghi chú.
+
+ui-status-note-saved = Đã lưu ghi chú.
+
+ui-status-nickname-saved = Đã lưu biệt danh.
+
+ui-status-friend-request-sent = Đã gửi lời mời kết bạn.
+
+ui-status-friend-request-sent-waiting-for-service-update = Đã gửi lời mời kết bạn · đang chờ Discord xác nhận.
+
+ui-status-friend-removed = Đã xóa bạn bè.
+
+ui-status-friend-request-accepted = Đã chấp nhận lời mời kết bạn.
+
+ui-status-friend-request-removed = Đã xóa lời mời kết bạn.
+
+ui-status-dm-closed-messages-and-drafts-were-not-deleted = Đã đóng tin nhắn riêng. Tin nhắn và bản nháp vẫn được giữ.
+
+ui-status-user-blocked = Đã chặn người dùng.
+
+ui-status-user-unblocked = Đã bỏ chặn người dùng.
+
+ui-status-user-ignored = Đã bỏ qua người dùng.
+
+ui-status-user-unignored = Đã ngừng bỏ qua người dùng.
+
+ui-status-conversation-notifications-unmuted = Đã bật lại thông báo cho cuộc trò chuyện.
+
+ui-status-message-request-accepted = Đã chấp nhận tin nhắn chờ.
+
+ui-status-message-request-ignored = Đã bỏ qua tin nhắn chờ.
+
+ui-status-direct-message-was-not-confirmed-try-opening-it-again = Chưa xác nhận được tin nhắn riêng. Hãy thử mở lại.
+
+ui-status-group-message-was-not-confirmed-try-creating-it-again = Chưa xác nhận được nhóm chat. Hãy thử tạo lại.
+
+ui-status-invite-sent = Đã gửi lời mời.
+
+ui-status-reconnect-to-load-your-profile = Kết nối lại để tải hồ sơ của bạn.
+
+ui-status-sign-in-before-editing-your-profile = Đăng nhập để chỉnh sửa hồ sơ.
+
+ui-status-profile-request-was-not-queued-try-again = Chưa thể tải hồ sơ. Hãy thử lại.
+
+ui-status-profile-response-was-invalid-or-too-large = Không thể tải hồ sơ vì dữ liệu không hợp lệ hoặc quá lớn.
+
+ui-status-profile-changes-are-invalid-or-exceed-safe-limits = Thông tin hồ sơ không hợp lệ hoặc vượt giới hạn cho phép.
+
+ui-status-the-font-name-is-invalid = Tên phông chữ không hợp lệ.
+
+ui-status-this-font-is-missing-readable-text-or-outlines = Không thể đọc ký tự trong phông chữ này.
+
+ui-status-that-picture-is-too-large-choose-a-simpler-image = Ảnh quá lớn. Hãy chọn ảnh có dung lượng nhỏ hơn.
+
+ui-status-after-must-be-earlier-than-before = Ngày bắt đầu phải trước ngày kết thúc.
+
+ui-status-wait-for-the-current-emoji-images-to-finish-preparing-or-uploading = Chờ các biểu cảm hiện tại chuẩn bị hoặc tải lên xong.
+
+ui-status-save-or-discard-your-server-settings-changes-before-opening-the-conversation = Lưu hoặc hủy thay đổi cài đặt máy chủ trước khi mở cuộc trò chuyện.
+
+ui-status-the-selected-images-exceed-the-emoji-upload-limits = Các ảnh đã chọn vượt giới hạn tải biểu cảm lên.
+
+ui-status-unknown-time = Không rõ thời gian
+
+ui-status-not-provided = Chưa có thông tin
+
+ui-status-image-selection-cancelled = Đã hủy chọn ảnh.
+
+ui-status-attachment-selection-interrupted = Quá trình chọn tệp bị gián đoạn.
+
+ui-status-attachment-upload-interrupted = Quá trình tải tệp lên bị gián đoạn.
+
+ui-status-send-or-remove-existing-attachments-before-sending-artwork-alone = Gửi hoặc xóa các tệp đã đính kèm trước khi gửi ảnh riêng.
+
+ui-status-unsupported-or-invalid-image-data = Ảnh không hợp lệ hoặc có định dạng chưa được hỗ trợ.
+
+ui-status-attachments-staged-in-an-earlier-conversation-were-removed = Đã bỏ các tệp đính kèm từ cuộc trò chuyện trước.
+
+ui-status-message-outcome-unknown-check-the-conversation-before-retrying = Chưa rõ tin nhắn đã được gửi chưa. Hãy kiểm tra cuộc trò chuyện trước khi thử lại.
+
+ui-status-loading-local-appearance = Đang tải giao diện đã lưu…
+
+ui-status-saving-local-changes = Đang lưu thay đổi trên thiết bị…
+
+ui-status-local-storage-queue-full-some-changes-are-not-saved = Hàng đợi lưu trữ đã đầy. Một số thay đổi chưa được lưu.
+
+ui-status-font-import-interrupted-try-again = Nhập phông chữ bị gián đoạn. Hãy thử lại.
+
+ui-status-could-not-update-status-connection-unavailable = Không thể cập nhật trạng thái do mất kết nối.
+
+ui-status-could-not-read-or-update-the-saved-account-list = Không thể đọc hoặc cập nhật danh sách tài khoản đã lưu.
+
+ui-status-cached-history-cleared-saved-drafts-preserved = Đã xóa lịch sử lưu trên máy. Bản nháp vẫn được giữ.
+
+ui-status-could-not-read-channel-preferences-from-local-storage = Không thể đọc cài đặt kênh đã lưu trên thiết bị.
+
+ui-status-video-worker-stopped-restart-serein = Bộ xử lý video đã dừng. Hãy khởi động lại Serein.
+
+ui-status-video-audio-output-stopped = Âm thanh của video đã dừng.
+
+ui-status-video-buffering-stalled-retry-or-download-to-play-externally = Video bị gián đoạn. Hãy thử lại hoặc tải xuống để xem bằng ứng dụng khác.
+
+ui-status-updates-have-not-been-checked-yet = Chưa kiểm tra bản cập nhật.
+
+ui-status-update-cancelled = Đã hủy cập nhật.
+
+ui-status-the-release-contains-an-untrusted-download-address = Bản phát hành chứa địa chỉ tải xuống không đáng tin cậy.
+
+ui-status-github-s-update-limit-was-reached-try-again-later = Đã chạm giới hạn kiểm tra cập nhật của GitHub. Hãy thử lại sau.
+
+ui-status-no-published-release-is-available-on-this-channel-yet = Kênh cập nhật này chưa có bản phát hành.
+
+ui-status-github-could-not-provide-the-update-try-again-later = Không thể tải bản cập nhật từ GitHub. Hãy thử lại sau.
+
+ui-status-the-update-checksum-or-length-did-not-match-nothing-was-installed = Tệp cập nhật không khớp mã kiểm tra hoặc dung lượng. Chưa cài đặt thay đổi nào.
+
+ui-status-run-serein-from-an-extracted-release-package-to-install-updates-source-builds-cannot-replace-themselves = Hãy chạy Serein từ gói phát hành đã giải nén để cập nhật. Bản chạy từ mã nguồn không thể tự thay thế.
+
+ui-status-the-update-helper-did-not-start-serein-will-remain-open = Không thể khởi chạy trình cập nhật. Serein vẫn đang mở.
+
+ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder = Thư mục cài đặt chứa quá nhiều tệp. Hãy chuyển Serein vào một thư mục riêng.
+
+ui-status-filter-messages-from-non-friends = Lọc tin nhắn từ người chưa kết bạn
+
+ui-status-server-members = Thành viên máy chủ
+
+ui-status-only-from-servers-where-you-also-allow-direct-messages = Chỉ áp dụng với máy chủ mà bạn cho phép nhận tin nhắn riêng.
+
+ui-status-show-personalized-messages = Hiện lời nhắn kèm lời mời kết bạn
+
+ui-status-show-personalized-messages-on-incoming-friend-requests-if-you-accept-the-message-will-still-appear-in-your-dms = Hiện lời nhắn kèm lời mời kết bạn. Khi bạn chấp nhận, lời nhắn vẫn xuất hiện trong tin nhắn riêng.
+
+ui-status-allow-friends-from-games-to-send-direct-messages-and-invites = Cho phép bạn bè trong trò chơi gửi tin nhắn riêng và lời mời
+
+ui-status-let-friends-from-connected-games-send-dms-and-invite-you-to-play-even-when-the-game-isn-t-open = Cho phép bạn bè trong trò chơi đã liên kết gửi tin nhắn và mời bạn chơi, kể cả khi chưa mở trò chơi.
+
+pending-upload-one = Đang tải lên { $name }
+
+pending-upload-many = Đang tải lên { $count } tệp
+
+pending-upload-progress = { $sent } / { $total } · { $percent }%
+
+pending-upload-preparing = Đang chuẩn bị tải lên · { $size }

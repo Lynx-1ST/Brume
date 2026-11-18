@@ -682,6 +682,7 @@ impl State {
 				view.error = None;
 				view.data = Some(*data);
 				let data = view.data.clone().expect("stored profile");
+				self.refresh_global_name(&data.user);
 				self.profile_cache.insert(user, guild, data, Instant::now());
 			}
 			Ok(_) => {

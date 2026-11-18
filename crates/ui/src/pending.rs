@@ -366,29 +366,31 @@ fn upload_strip(ui: &mut egui::Ui, pending: &Pending, upload: Option<&Upload>, c
 	let colors = design::palette(ui);
 	let count = pending.attachments.len();
 	let title = if count == 1 {
-		format!("Uploading {}", pending.attachments[0])
+		crate::i18n::translate_args("pending-upload-one", &[("name", &pending.attachments[0])])
 	} else {
-		format!("Uploading {count} files")
+		crate::i18n::translate_count("pending-upload-many", count, &[])
 	};
 	let (fraction, detail) = match upload.and_then(|u| u.progress) {
 		Some((sent, total)) if total > 0 && sent < total => (
 			(sent as f32 / total as f32).clamp(0.0, 1.0),
-			format!(
-				"{} of {} · {}%",
-				attachments::format_size(sent),
-				attachments::format_size(total),
-				sent.saturating_mul(100) / total
+			crate::i18n::translate_args(
+				"pending-upload-progress",
+				&[
+					("sent", &attachments::format_size(sent)),
+					("total", &attachments::format_size(total)),
+					("percent", &(sent.saturating_mul(100) / total).to_string()),
+				],
 			),
 		),
-		Some((_, total)) if total > 0 => (1.0, "Sending message…".into()),
+		Some((_, total)) if total > 0 => (1.0, crate::i18n::translate("pending-status-sending")),
 		_ => (
 			0.0,
 			match upload {
-				Some(upload) => format!(
-					"Preparing upload · {}",
-					attachments::format_size(upload.bytes())
+				Some(upload) => crate::i18n::translate_args(
+					"pending-upload-preparing",
+					&[("size", &attachments::format_size(upload.bytes()))],
 				),
-				None => "Preparing upload…".into(),
+				None => crate::i18n::builtin_text("Preparing upload…"),
 			},
 		),
 	};

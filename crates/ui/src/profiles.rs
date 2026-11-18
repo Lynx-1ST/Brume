@@ -3630,6 +3630,9 @@ fn card_view(
 	let data = view
 		.and_then(|v| v.data.as_ref())
 		.or(cached.filter(|_| !user.webhook));
+	let profile_guild = view
+		.map(|view| view.guild)
+		.unwrap_or_else(|| data.and_then(|data| data.guild.as_ref().map(|guild| guild.guild)));
 	// Overflow of an equipped frame beyond the card: top, bottom and each side.
 	let frame_overflow = data
 		.and_then(|d| d.frame.as_deref())
@@ -4114,15 +4117,21 @@ fn card_view(
 							);
 							ui.add_space(6.0);
 						}
-						let display = data
-							.and_then(|p| {
-								p.guild
-									.as_ref()
-									.and_then(|g| g.nick.as_deref())
-									.or(state.friend_nickname(user.id))
-									.or(p.global_name.as_deref())
-							})
-							.unwrap_or_else(|| state.user_display_name(user));
+						let member =
+							profile_guild.and_then(|guild| state.guild_member(guild, user.id));
+						let server_nick = member
+							.map(|member| member.nick.as_deref())
+							.unwrap_or_else(|| {
+								data.and_then(|data| data.guild.as_ref())
+									.filter(|guild| Some(guild.guild) == profile_guild)
+									.and_then(|guild| guild.nick.as_deref())
+							});
+						let display =
+							server_nick
+								.filter(|nick| !nick.is_empty())
+								.unwrap_or_else(|| {
+									state.user_display_name(data.map_or(user, |data| &data.user))
+								});
 						let display = display.split_whitespace().collect::<Vec<_>>().join(" ");
 						// Ordinary user payloads already carry the server identity. Keep it visible
 						// while the extended profile loads or when that optional request fails.

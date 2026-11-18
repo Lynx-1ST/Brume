@@ -892,7 +892,8 @@ impl MessagingUi {
 									0.0
 								};
 							if let Some(user) = user {
-								crate::name_styles::in_row(hovered, || {
+								// Keep voice participants' name colours visible between hovers.
+								crate::name_styles::in_row(true, || {
 									crate::account_badge::name(
 										ui,
 										user,

@@ -451,6 +451,18 @@ impl MessagingUi {
 			});
 	}
 
+	pub(super) fn own_account_speaking(&self, state: &State) -> bool {
+		state.user.as_ref().is_some_and(|user| {
+			state.voice.active.as_ref().is_some_and(|call| {
+				matches!(call.phase, Phase::Connected | Phase::Waiting)
+					&& !call.muted && !call.deafened
+					&& !call.server_muted
+					&& !call.server_deafened
+					&& self.voice_speaking.contains(&user.id)
+			})
+		})
+	}
+
 	fn is_speaking(&self, state: &State, channel: Id, participant: &Participant) -> bool {
 		!inactive_recipient(state, channel, participant.user)
 			&& !self.voice_user_locally_muted(participant.user)
@@ -5139,7 +5151,7 @@ fn ringing_pulse(ui: &egui::Ui, avatar: egui::Rect) {
 		.request_repaint_after(std::time::Duration::from_millis(33));
 }
 
-fn speaking_avatar(ui: &egui::Ui, avatar: &egui::Response, name: &str) {
+pub(super) fn speaking_avatar(ui: &egui::Ui, avatar: &egui::Response, name: &str) {
 	let colors = design::palette(ui);
 	// Inset the centered stroke so the ring stays inside the avatar.
 	ui.painter().circle_stroke(
@@ -6820,6 +6832,45 @@ mod tests {
 			})]
 		));
 		assert!(inactive_recipient(&state, Id(22), Id(2)));
+	}
+
+	#[test]
+	fn own_account_speaking_ignores_stale_activity_outside_an_unmuted_call() {
+		let mut state = test_support::call_demo_state();
+		let own = state.user.as_ref().unwrap().id;
+		let mut view = MessagingUi::default();
+		let call = state.voice.active.as_mut().unwrap();
+		call.phase = Phase::Connected;
+		call.muted = false;
+		call.deafened = false;
+		call.server_muted = false;
+		call.server_deafened = false;
+		view.voice_speaking.push(Id(999));
+		assert!(
+			!view.own_account_speaking(&state),
+			"a peer cannot light our avatar"
+		);
+		view.voice_speaking.push(own);
+		assert!(view.own_account_speaking(&state));
+		state.voice.active.as_mut().unwrap().muted = true;
+		assert!(
+			!view.own_account_speaking(&state),
+			"mute hides stale activity immediately"
+		);
+		state.voice.active.as_mut().unwrap().muted = false;
+		state.voice.active.as_mut().unwrap().server_muted = true;
+		assert!(!view.own_account_speaking(&state));
+		state.voice.active.as_mut().unwrap().server_muted = false;
+		state.voice.active.as_mut().unwrap().phase = Phase::Connecting;
+		assert!(
+			!view.own_account_speaking(&state),
+			"rejoining is not connected speech"
+		);
+		state.voice.active = None;
+		assert!(
+			!view.own_account_speaking(&state),
+			"leaving clears the indicator even with stale IDs"
+		);
 	}
 
 	#[test]

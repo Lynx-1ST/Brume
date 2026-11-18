@@ -2519,6 +2519,9 @@ impl MessagingUi {
 							ui.spacing_mut().item_spacing.x = 8.0;
 							if let Some(user) = &state.user {
 								let avatar = self.avatars.show(ui, user, 32.0, state.demo);
+								if self.own_account_speaking(state) {
+									voice::speaking_avatar(ui, &avatar, &user.name);
+								}
 								avatar_rect = Some(avatar.rect);
 								avatar_focused = avatar.has_focus();
 								avatar.widget_info(|| {

@@ -47,6 +47,9 @@ jobs:
       - name: Test offline typing with demo support
         run: cargo test --locked -p serein -p ui -p client-core -p discord-api --features serein/demo --lib --bins typing
       - run: cargo xtask check
+        env:
+          RUST_BACKTRACE: '1'
+          RUST_TEST_NOCAPTURE: '1'
       - parallel:
           - name: Flatpak encoding after GTK initialization (synthetic)
             if: runner.os == 'Linux'

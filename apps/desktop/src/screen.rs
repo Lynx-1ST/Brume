@@ -78,6 +78,7 @@ struct SourceScan {
 
 #[derive(Default)]
 pub(super) struct Screen {
+	restart: Option<(Context, Settings)>,
 	pending: Option<Pending>,
 	live: Option<Live>,
 	closing: Option<Closing>,
@@ -96,6 +97,7 @@ pub(super) struct Screen {
 }
 impl Screen {
 	pub fn stop(&mut self) {
+		self.restart = None;
 		self.pending = None;
 		self.command = None;
 		self.closing = None;
@@ -377,6 +379,18 @@ impl Screen {
 
 		if let Some(request) = ui.screen.request.take() {
 			match request {
+				ui::screen::Request::Restart(settings) => {
+					if let Some(context) = self.context()
+						&& settings.valid()
+						&& ui.screen.context
+							== Some((context.generation, context.channel, context.request))
+						&& context.generation == state.generation
+						&& state.can_stream(context.channel)
+					{
+						self.restart = Some((context, settings));
+						self.close(context, "Stopping screen sharing…");
+					}
+				}
 				ui::screen::Request::Start(settings) => {
 					let requested = ui.screen.context;
 					let valid = settings
@@ -430,6 +444,7 @@ impl Screen {
 					}
 				}
 				ui::screen::Request::Stop => {
+					self.restart = None;
 					// Discord cues the end of this device's own share, like its start.
 					let cue = model::notification_preferences::Sound::ScreenShareOff;
 					if self.live.is_some() && ui.notification_options.allows(cue) {
@@ -543,6 +558,27 @@ impl Screen {
 			|| self.live.is_some()
 			|| self.closing.is_some()
 			|| self.retiring.is_some();
+		if let Some((context, _)) = self.restart {
+			let valid = state.generation == context.generation
+				&& state.can_stream(context.channel)
+				&& state.voice.active.as_ref().is_some_and(|active| {
+					active.channel == context.channel
+						&& active.request == context.request
+						&& matches!(
+							active.phase,
+							voice::Phase::Connected | voice::Phase::Waiting
+						)
+				});
+			if !valid {
+				self.restart = None;
+			} else if !ui.screen.busy
+				&& let Some((_, settings)) = self.restart.take()
+			{
+				ui.screen.context = Some((context.generation, context.channel, context.request));
+				ui.screen.request = Some(ui::screen::Request::Start(settings));
+				ctx.request_repaint();
+			}
+		}
 		// Only the live share lists viewers; it changes rarely, so copy it only then.
 		let live = self.live.as_ref().map(|live| live.context);
 		let roster = self
@@ -686,11 +722,50 @@ mod tests {
 			};
 			let mut screen = Screen::default();
 			assert!(matches!(
-				screen.poll(&runtime, &state, &mut ui, &ctx, Some(call)),
+				screen.poll(&runtime, &state, &mut ui, &ctx, Some(call.clone())),
 				Some(Command::Voice(voice::Command::StartStream { .. }))
 			));
 			assert!(screen.pending.is_some());
 			assert!(screen.live.is_none());
+			let old = screen.pending.as_ref().unwrap().context;
+			let mut settings = screen.pending.as_ref().unwrap().settings;
+			settings.fps = 60;
+			ui.screen.request = Some(ui::screen::Request::Restart(settings));
+			assert!(matches!(
+				screen.poll(&runtime, &state, &mut ui, &ctx, Some(call.clone())),
+				Some(Command::Voice(voice::Command::StopStream { .. }))
+			));
+			assert!(screen.restart.is_some() && ui.screen.request.is_none());
+			screen.observe(
+				&state,
+				&mut Event::Voice(voice::Event::Stream {
+					channel: old.channel,
+					request: old.request,
+					stream_request: old.stream_request,
+					event: screen::Event::Deleted { reason: None },
+				}),
+			);
+			let (done, closing) = mpsc::channel();
+			screen.retiring = Some(closing);
+			screen.poll(&runtime, &state, &mut ui, &ctx, Some(call.clone()));
+			assert!(
+				ui.screen.request.is_none(),
+				"wait for capture shutdown as well as server acknowledgement"
+			);
+			done.send(Ok(())).unwrap();
+			screen.poll(&runtime, &state, &mut ui, &ctx, Some(call.clone()));
+			assert!(
+				matches!(ui.screen.request, Some(ui::screen::Request::Start(s)) if s.fps == 60)
+			);
+			assert!(matches!(
+				screen.poll(&runtime, &state, &mut ui, &ctx, Some(call)),
+				Some(Command::Voice(voice::Command::StartStream { .. }))
+			));
+			assert_eq!(
+				state.voice.active.as_ref().unwrap().request,
+				request,
+				"quality changes must not rejoin the call"
+			);
 		}
 	}
 

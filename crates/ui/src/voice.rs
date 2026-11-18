@@ -3968,31 +3968,45 @@ impl MessagingUi {
 		if actions_shown {
 			pill(&mut row, actions, |ui| {
 				self.screen_share_control(ui, state);
+				let editing_stream = self.screen.busy && self.screen.sharing;
 				let more = control(
 					ui,
 					crate::icons::Icon::More,
 					48.0,
 					true,
 					STAGE_TEXT,
-					"More options",
-					"More call options",
+					if editing_stream {
+						"screen-body-quality"
+					} else {
+						"More options"
+					},
+					if editing_stream {
+						"screen-body-quality"
+					} else {
+						"More call options"
+					},
 				);
-				egui::Popup::menu(&more)
-					.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
-					.show(|ui| {
-						let label = crate::i18n::translate_if_key(if deafened {
-							"Undeafen"
-						} else {
-							"Deafen"
+				if editing_stream && more.clicked() {
+					self.screen.edit_quality();
+				}
+				if !editing_stream {
+					egui::Popup::menu(&more)
+						.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
+						.show(|ui| {
+							let label = crate::i18n::owned_control_text(if deafened {
+								"Undeafen"
+							} else {
+								"Deafen"
+							});
+							if ui
+								.add_enabled(voice_toggles, egui::Button::new(label))
+								.clicked()
+							{
+								deafen_clicked = true;
+								ui.close();
+							}
 						});
-						if ui
-							.add_enabled(voice_toggles, egui::Button::new(label))
-							.clicked()
-						{
-							deafen_clicked = true;
-							ui.close();
-						}
-					});
+				}
 			});
 		}
 		// While a watched share is enlarged, the red action stops watching, as in Discord.

@@ -556,6 +556,20 @@ pub(super) fn confirm_external_link(
 	confirm_external_link_noting(ctx, opening, confirm_links, false);
 }
 
+fn link_context_menu(response: &egui::Response, target: &str) {
+	egui::Popup::context_menu(response)
+		.id(response.id.with("link-context-menu"))
+		.show(|ui| {
+			if ui
+				.button(crate::i18n::translate("attachments-media-menu-copy-link"))
+				.clicked()
+			{
+				ui.ctx().copy_text(target.to_owned());
+				ui.close();
+			}
+		});
+}
+
 /// Like [`confirm_external_link`]; `truncated` always asks first and says that only the start
 /// of the text fits in the destination, so a shortened translation is never sent silently.
 pub(super) fn confirm_external_link_noting(
@@ -2054,6 +2068,7 @@ impl Formatted {
 						if response.clicked() {
 							*render.opening = Some(url.clone());
 						}
+						link_context_menu(&response, url);
 					} else {
 						Self::show_emoji(
 							spans,
@@ -2579,6 +2594,7 @@ impl Formatted {
 					if hit.clicked() {
 						*render.opening = Some(url.clone());
 					}
+					link_context_menu(&hit, url);
 				}
 				Action::Channel(id) => {
 					if hit.clicked() {
@@ -3006,6 +3022,9 @@ impl Formatted {
 		if link && let Some(index) = response.hover_pos().and_then(slot_at) {
 			response = response
 				.on_hover_text_at_pointer(crate::emoji_details::name(&inlines[index].text, guilds));
+		}
+		if link {
+			return response;
 		}
 		let menu = response.id.with("emoji-menu");
 		if response.secondary_clicked() {

@@ -5736,3 +5736,7 @@ status-send-unavailable = Sending is unavailable with the current connection or 
 status-read-confirm = Read status could not be confirmed · unread markers may be out of date
 
 status-read-sync = Read status could not sync · unread markers may be out of date
+
+screen-quality-title = Stream quality
+screen-quality-apply = Apply changes
+screen-quality-restart-hint = Applying changes briefly restarts your stream. Your voice call stays connected.

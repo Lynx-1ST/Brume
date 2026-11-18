@@ -148,3 +148,7 @@ Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của ups
 
 Các EXE chưa được ký mã. Chưa xác minh đăng nhập, cuộc gọi, stream thật hoặc giao diện native
 trên máy phát triển này; kiểm thử tổng hợp không chứng minh tương thích Discord thực tế.
+
+Voice participants are ordered with active streamers first, then the displayed server nickname/name case-insensitively, with user ID breaking ties. This is a deterministic Discord-like order, not a claim of identical locale collation.
+
+While sharing, the stage's three-dot button opens quality settings. Apply retires the old capture and waits for stream-stop acknowledgement before restarting; the voice call stays connected. Leaving the call or losing stream permission cancels the queued restart. Right-clicking a message link offers Copy link (including masked and RTL links). Windows external links use the OS protocol association directly rather than parsing a browser command template.

@@ -124,7 +124,7 @@ impl MessagingUi {
 				match selected {
 					StageFocus::LocalScreen => self.screen_tile(ui, rect, true),
 					StageFocus::Stream(user) => {
-						self.stream_tile(ui, state, rect, channel, user, false)
+						self.stream_tile(ui, state, rect, channel, user, false, false)
 					}
 					StageFocus::Participant(_) => {}
 				}
@@ -135,9 +135,33 @@ impl MessagingUi {
 					}
 					StageFocus::Participant(_) => None,
 				};
-				if let Some(viewers) = viewers {
-					pip_viewers(ui, &mut self.avatars, state, channel, rect, viewers);
-				}
+				let footer = egui::Rect::from_min_max(
+					egui::pos2(rect.left() + 6.0, rect.bottom() - 30.0),
+					rect.right_bottom() - egui::vec2(6.0, 6.0),
+				);
+				ui.painter()
+					.rect_filled(footer, 6, egui::Color32::from_black_alpha(180));
+				let name_right = viewers
+					.map(|viewers| {
+						pip_viewers(ui, &mut self.avatars, state, channel, rect, viewers).left()
+							- 8.0
+					})
+					.unwrap_or(footer.right() - 6.0);
+				let name_rect = egui::Rect::from_min_max(
+					footer.min + egui::vec2(6.0, 0.0),
+					egui::pos2(name_right.max(footer.left() + 6.0), footer.bottom()),
+				);
+				ui.scope_builder(egui::UiBuilder::new().max_rect(name_rect), |ui| {
+					ui.set_clip_rect(ui.clip_rect().intersect(name_rect));
+					ui.add(
+						egui::Label::new(
+							egui::RichText::new(pip_label(state, channel, selected))
+								.size(12.0)
+								.color(egui::Color32::WHITE),
+						)
+						.truncate(),
+					);
+				});
 				if response.double_clicked() {
 					restore = true;
 				}
@@ -173,19 +197,22 @@ impl MessagingUi {
 				});
 				if ui.rect_contains_pointer(rect) || response.has_focus() {
 					let controls = egui::Rect::from_min_size(
-						rect.right_bottom() + egui::vec2(-60.0, -32.0),
+						rect.right_top() + egui::vec2(-66.0, 6.0),
 						egui::vec2(56.0, 28.0),
 					);
 					ui.scope_builder(egui::UiBuilder::new().max_rect(controls), |ui| {
+						ui.painter()
+							.rect_filled(controls, 6, egui::Color32::from_black_alpha(190));
+
 						ui.horizontal(|ui| {
-							restore |= crate::icons::button(
+							restore |= pip_control(
 								ui,
 								crate::icons::Icon::External,
 								24.0,
 								&i18n::translate("voice-pip-return"),
 							)
 							.clicked();
-							stop |= crate::icons::button(
+							stop |= pip_control(
 								ui,
 								crate::icons::Icon::Close,
 								24.0,
@@ -226,6 +253,23 @@ impl MessagingUi {
 		}
 	}
 }
+
+fn pip_control(
+	ui: &mut egui::Ui,
+	icon: crate::icons::Icon,
+	size: f32,
+	label: &str,
+) -> egui::Response {
+	let (rect, response) = ui.allocate_exact_size(egui::Vec2::splat(size), egui::Sense::click());
+	if response.hovered() || response.has_focus() {
+		ui.painter()
+			.rect_filled(rect, 4, egui::Color32::from_white_alpha(40));
+	}
+	crate::icons::paint(ui.painter(), icon, rect.shrink(4.0), egui::Color32::WHITE);
+	response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, label));
+	response.on_hover_text(label)
+}
+
 fn pip_viewers(
 	ui: &mut egui::Ui,
 	avatars: &mut crate::avatars::Avatars,
@@ -233,10 +277,10 @@ fn pip_viewers(
 	channel: Id,
 	rect: egui::Rect,
 	viewers: &client_core::screen::Viewers,
-) {
+) -> egui::Rect {
 	let bounds = egui::Rect::from_min_max(
-		egui::pos2(rect.left() + 4.0, rect.bottom() - 32.0),
-		egui::pos2(rect.right() - 66.0, rect.bottom() - 4.0),
+		egui::pos2(rect.left() + 6.0, rect.bottom() - 30.0),
+		egui::pos2(rect.right() - 12.0, rect.bottom() - 6.0),
 	);
 	let mut row = ui.new_child(
 		egui::UiBuilder::new()
@@ -244,9 +288,8 @@ fn pip_viewers(
 			.max_rect(bounds)
 			.layout(egui::Layout::right_to_left(egui::Align::Center)),
 	);
-	let background = row.painter().add(egui::Shape::Noop);
 	let fill = egui::Color32::from_black_alpha(170);
-	let size = if rect.width() < 220.0 { 14.0 } else { 18.0 };
+	let size = if rect.width() < 260.0 { 14.0 } else { 18.0 };
 	let response = crate::voice::viewer_row(
 		&mut row,
 		avatars,
@@ -257,19 +300,15 @@ fn pip_viewers(
 		fill,
 		egui::Color32::WHITE,
 	);
-	row.painter().set(
-		background,
-		egui::Shape::rect_filled(response.rect.expand(3.0), 6, fill),
-	);
+	let rect = response.rect;
 	response.on_hover_text(crate::voice::viewer_names(state, channel, viewers));
+	rect
 }
 fn pip_label(state: &State, channel: Id, source: StageFocus) -> String {
 	match source {
 		StageFocus::LocalScreen => i18n::translate("voice-pip-own"),
 		StageFocus::Stream(user) => {
-			let name = crate::voice::participant_user(state, channel, user)
-				.map(|u| u.name.as_str())
-				.unwrap_or("");
+			let name = crate::voice::participant_name(state, channel, user).unwrap_or("");
 			i18n::translate_args("voice-pip-remote", &[("name", name)])
 		}
 		StageFocus::Participant(_) => String::new(),

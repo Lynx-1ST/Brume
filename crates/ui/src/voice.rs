@@ -109,7 +109,7 @@ impl MessagingUi {
 				match focus {
 					StageFocus::LocalScreen => self.screen_tile(ui, rect, false),
 					StageFocus::Stream(user) => {
-						self.stream_tile(ui, state, rect, channel, user, true)
+						self.stream_tile(ui, state, rect, channel, user, true, true)
 					}
 					StageFocus::Participant(_) => unreachable!("validated screen share"),
 				}
@@ -1149,7 +1149,7 @@ impl MessagingUi {
 								ui.painter().text(
 									image_rect.center(),
 									egui::Align2::CENTER_CENTER,
-									label,
+									crate::i18n::builtin_text(label),
 									egui::FontId::new(16.0, design::medium_family(ui.ctx())),
 									egui::Color32::WHITE,
 								);
@@ -1178,13 +1178,13 @@ impl MessagingUi {
 									)
 								})
 								.inner
-								.on_disabled_hover_text(if is_own {
+								.on_disabled_hover_text(crate::i18n::builtin_text(if is_own {
 									"You are already streaming in this channel"
 								} else if at_limit {
 									"The four-stream viewing limit is reached"
 								} else {
 									"Join this voice channel before watching"
-								});
+								}));
 							if button.clicked() {
 								self.stream_preview_watch =
 									Some((entry.channel, entry.participant.user));
@@ -1663,7 +1663,7 @@ impl MessagingUi {
 					.unwrap_or("Your screen · local preview")
 			}
 			Tile::Stream(streamer) if has_video => {
-				self.stream_tile(ui, state, rect, channel, *streamer, false);
+				self.stream_tile(ui, state, rect, channel, *streamer, false, true);
 				egui::Popup::context_menu(&response)
 					.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
 					.show(|ui| {
@@ -1849,6 +1849,7 @@ impl MessagingUi {
 	}
 
 	/// The screen share this device chose to watch: the latest decoded picture or a status.
+	#[allow(clippy::too_many_arguments)]
 	pub(super) fn stream_tile(
 		&mut self,
 		ui: &mut egui::Ui,
@@ -1857,9 +1858,10 @@ impl MessagingUi {
 		channel: Id,
 		streamer: Id,
 		overlay: bool,
+		label: bool,
 	) {
-		let name = participant_user(state, channel, streamer)
-			.map_or_else(|| "Participant".to_owned(), |user| user.name.clone());
+		let name = participant_name(state, channel, streamer)
+			.map_or_else(|| crate::i18n::builtin_text("Participant"), str::to_owned);
 		let view = self
 			.voice_stream_views
 			.iter()
@@ -1896,7 +1898,7 @@ impl MessagingUi {
 			}
 		};
 		// Even a small strip-sized share names whose screen it is.
-		if content.height() >= 72.0 {
+		if label && content.height() >= 72.0 {
 			name_badge(
 				ui,
 				content,
@@ -2007,8 +2009,8 @@ impl MessagingUi {
 	) -> bool {
 		let colors = design::palette(ui);
 		ui.painter().rect_filled(rect, 8, PILL_FILL);
-		let name = participant_user(state, channel, streamer)
-			.map_or("Participant", |user| user.name.as_str());
+		let name = participant_name(state, channel, streamer)
+			.map_or_else(|| crate::i18n::builtin_text("Participant"), str::to_owned);
 		let (pill, font, margin) = if compact {
 			(egui::vec2(30.0, 15.0), 9.0, 5.0)
 		} else {
@@ -2036,7 +2038,7 @@ impl MessagingUi {
 		);
 		let enabled = self.can_watch(state, channel, streamer);
 		if !compact {
-			self.watch_stream_button(ui, rect, name, enabled);
+			self.watch_stream_button(ui, rect, &name, enabled);
 		}
 		// One click target over the whole box, button included.
 		let response = ui.interact(
@@ -2290,13 +2292,17 @@ impl MessagingUi {
 				(egui::vec2(40.0, 20.0), 11.0)
 			};
 			let margin = if compact { 5.0 } else { 8.0 };
+			let live_text = crate::i18n::translate("voice-live-badge-live");
+			let live_font = egui::FontId::new(font, design::medium_family(ui.ctx()));
+			let galley = ui
+				.painter()
+				.layout_no_wrap(live_text, live_font, egui::Color32::WHITE);
+			let pill = egui::vec2(pill.x.max(galley.size().x + 8.0), pill.y);
 			let live = egui::Rect::from_min_size(rect.left_top() + egui::Vec2::splat(margin), pill);
 			ui.painter().rect_filled(live, 4, colors.badge_fill());
-			ui.painter().text(
-				live.center(),
-				egui::Align2::CENTER_CENTER,
-				crate::i18n::translate("voice-live-badge-live"),
-				egui::FontId::new(font, design::medium_family(ui.ctx())),
+			ui.painter().galley(
+				live.center() - galley.size() * 0.5,
+				galley,
 				egui::Color32::WHITE,
 			);
 		}
@@ -3093,7 +3099,7 @@ impl MessagingUi {
 		}
 		if !self.voice_preview_status.is_empty() {
 			ui.label(
-				RichText::new(crate::i18n::translate_if_key(self.voice_preview_status))
+				RichText::new(crate::i18n::builtin_text(self.voice_preview_status))
 					.size(13.0)
 					.color(colors.muted),
 			);
@@ -5478,21 +5484,36 @@ pub(crate) fn resolve_member<'a>(
 	state: &'a State,
 	entry: &'a RosterEntry,
 ) -> (Option<&'a model::User>, &'a str) {
-	let member = state
-		.known_member(entry.channel, entry.participant.user)
-		.or(entry.member.as_ref());
+	// Voice identities are refreshed by member updates and survive channel/guild navigation.
+	let member = entry
+		.member
+		.as_ref()
+		.or_else(|| state.known_member(entry.channel, entry.participant.user));
 	let user = member
 		.map(|m| &m.user)
 		.or_else(|| participant_user(state, entry.channel, entry.participant.user));
 	let name = member
 		.and_then(|m| m.nick.as_deref())
-		.or_else(|| user.map(|u| u.name.as_str()))
+		.filter(|nick| !nick.is_empty())
+		.or_else(|| user.map(|user| state.user_display_name(user)))
 		.unwrap_or("Participant");
 	(user, name)
 }
 
 /// Faces drawn before the eye and count; the hover text names the rest.
 const VIEWER_FACES: usize = 4;
+
+pub(super) fn participant_name(state: &State, channel: Id, user: Id) -> Option<&str> {
+	state
+		.voice
+		.roster
+		.iter()
+		.find(|entry| entry.channel == channel && entry.participant.user == user)
+		.map(|entry| resolve_member(state, entry).1)
+		.or_else(|| {
+			participant_user(state, channel, user).map(|user| state.user_display_name(user))
+		})
+}
 
 pub(super) fn watched_viewers(views: &[StreamView], focus: StageFocus) -> Option<&Viewers> {
 	let StageFocus::Stream(user) = focus else {
@@ -5589,10 +5610,7 @@ pub(super) fn viewer_names(state: &State, channel: Id, viewers: &Viewers) -> Str
 		.ids
 		.iter()
 		.take(LISTED)
-		.map(|id| {
-			participant_user(state, channel, *id)
-				.map_or(unknown.as_str(), |user| user.name.as_str())
-		})
+		.map(|id| participant_name(state, channel, *id).unwrap_or(unknown.as_str()))
 		.collect();
 	if names.is_empty() {
 		return crate::i18n::translate_count(

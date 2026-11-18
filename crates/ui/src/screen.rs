@@ -405,7 +405,7 @@ impl ScreenUi {
 					ui.set_width(ui.available_width());
 					ui.add(
 						egui::Label::new(
-							egui::RichText::new(&*self.status)
+							egui::RichText::new(crate::i18n::owned_control_text(&self.status))
 								.size(12.0)
 								.color(colors.muted),
 						)

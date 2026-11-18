@@ -1635,7 +1635,7 @@ fn wide_button(
 	stroke: Stroke,
 	text: Color32,
 ) -> egui::Response {
-	let label = crate::i18n::translate_if_key(label);
+	let label = crate::i18n::owned_control_text(label);
 	let p = palette(ui);
 	let (rect, response) =
 		ui.allocate_exact_size(egui::vec2(ui.available_width(), 44.0), egui::Sense::click());
@@ -2284,8 +2284,8 @@ pub fn switch(
 	description: Option<&str>,
 	enabled: &mut bool,
 ) -> egui::Response {
-	let label = crate::i18n::translate_if_key(label);
-	let description = description.map(crate::i18n::translate_if_key);
+	let label = crate::i18n::owned_control_text(label);
+	let description = description.map(crate::i18n::owned_control_text);
 	let p = palette(ui);
 	let width = ui.available_width();
 	let text_width = (width - 64.0).max(80.0);
@@ -2466,7 +2466,7 @@ pub fn label(ui: &mut egui::Ui, text: &str) -> egui::Response {
 
 /// Small muted explanation under a form control.
 pub fn hint(ui: &mut egui::Ui, text: &str) {
-	let text = crate::i18n::translate_if_key(text);
+	let text = crate::i18n::owned_control_text(text);
 	let colors = palette(ui);
 	ui.add_space(4.0);
 	ui.add(egui::Label::new(RichText::new(text).size(12.0).color(colors.muted)).wrap());
@@ -2507,7 +2507,7 @@ pub enum Level {
 /// Tinted callout used for dialog status, permission and failure messages. Replaces the bare
 /// coloured labels these dialogs used to print.
 pub fn notice(ui: &mut egui::Ui, level: Level, text: &str) {
-	let text = crate::i18n::translate_if_key(text);
+	let text = crate::i18n::owned_control_text(text);
 	let colors = palette(ui);
 	let (tint, icon) = match level {
 		Level::Info => (colors.accent, crate::icons::Icon::Help),

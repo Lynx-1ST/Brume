@@ -63,10 +63,7 @@ impl State {
 			revisions.catalog_skipped = revisions.catalog_skipped.wrapping_add(1);
 			revisions.labels_skipped = revisions.labels_skipped.wrapping_add(1);
 		}
-		let metadata_unchanged = matches!(
-			event,
-			Event::Patch(_) | Event::Reactions(_) | Event::Members(_)
-		);
+		let metadata_unchanged = matches!(event, Event::Patch(_) | Event::Reactions(_));
 		if metadata_unchanged || guild_message {
 			revisions.channels_skipped = revisions.channels_skipped.wrapping_add(1);
 		}

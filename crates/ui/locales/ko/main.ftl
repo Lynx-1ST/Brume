@@ -5712,3 +5712,205 @@ status-read-sync = 읽음 상태를 동기화할 수 없습니다 · 읽지 않�
 screen-quality-title = 스트림 품질
 screen-quality-apply = 변경 사항 적용
 screen-quality-restart-hint = 변경 사항을 적용하면 스트림이 잠시 다시 시작됩니다. 음성 통화는 연결된 상태로 유지됩니다.
+
+ui-status-you-re-streaming = 화면을 공유 중입니다
+
+ui-status-open-stream = 방송 열기
+
+ui-status-you-are-already-streaming-in-this-channel = 이 채널에서 이미 화면을 공유 중입니다
+
+ui-status-join-this-voice-channel-before-watching = 시청하려면 이 음성 채널에 참가하세요
+
+ui-status-participant = 참가자
+
+ui-status-offline-preview-no-screen-is-captured = 오프라인 미리보기 · 화면을 캡처하지 않습니다
+
+ui-status-system-permission-dialog = 시스템 권한 대화상자
+
+ui-status-you-are-already-in-this-call = 이미 이 통화에 참가 중입니다.
+
+ui-status-joining-this-channel-is-unavailable-with-current-permission-information = 현재 권한 정보로는 이 채널에 참가할 수 없습니다.
+
+ui-status-calls-are-unavailable-in-the-offline-preview-no-microphone-is-accessed = 오프라인 미리보기에서는 통화와 마이크를 사용하지 않습니다.
+
+ui-status-voice-is-unavailable-in-this-session = 이 세션에서는 음성을 사용할 수 없습니다.
+
+ui-status-reconnect-to-discord-before-calling = 통화하기 전에 Discord에 다시 연결하세요.
+
+ui-status-waiting-for-the-previous-call-to-disconnect = 이전 통화가 종료되기를 기다리는 중입니다.
+
+ui-status-looking-for-cameras = 카메라를 찾는 중…
+
+ui-status-audio-worker-stopped-restart-serein = 오디오 처리가 중단되었습니다. Serein을 다시 시작하세요.
+
+ui-status-screen-sharing-stopped-with-a-system-error = 시스템 오류로 화면 공유가 중단되었습니다.
+
+ui-status-screen-share-connection-ended = 화면 공유 연결이 종료되었습니다.
+
+ui-status-checking-screen-share-network = 화면 공유 네트워크를 확인하는 중…
+
+ui-status-securing-screen-video = 화면 공유를 보호하는 중…
+
+ui-status-screen-preview-waiting-for-others = 화면 미리보기 · 다른 참가자를 기다리는 중
+
+ui-status-sharing-your-screen = 화면을 공유 중입니다
+
+ui-status-checking-the-stream-network = 방송 네트워크를 확인하는 중…
+
+ui-status-securing-the-stream = 방송을 보호하는 중…
+
+ui-status-waiting-for-the-streamer = 방송자를 기다리는 중…
+
+ui-status-stream-secured-waiting-for-video = 방송 연결이 보호됨 · 영상을 기다리는 중
+
+ui-status-stream-preview-response-was-too-large = 방송 미리보기 응답이 너무 큽니다.
+
+ui-status-stream-preview-hidden-or-unavailable = 방송 미리보기가 숨겨져 있거나 사용할 수 없습니다.
+
+ui-status-you-are-already-in-another-call = 이미 다른 통화에 참가 중입니다.
+
+ui-status-preparing-upload = 업로드 준비 중…
+
+ui-status-note-loaded = 메모를 불러왔습니다.
+
+ui-status-note-saved = 메모를 저장했습니다.
+
+ui-status-nickname-saved = 별명을 저장했습니다.
+
+ui-status-friend-request-sent = 친구 요청을 보냈습니다.
+
+ui-status-friend-request-sent-waiting-for-service-update = 친구 요청을 보냄 · Discord 확인 대기 중
+
+ui-status-friend-removed = 친구를 삭제했습니다.
+
+ui-status-friend-request-accepted = 친구 요청을 수락했습니다.
+
+ui-status-friend-request-removed = 친구 요청을 삭제했습니다.
+
+ui-status-dm-closed-messages-and-drafts-were-not-deleted = DM을 닫았습니다. 메시지와 초안은 유지됩니다.
+
+ui-status-user-blocked = 사용자를 차단했습니다.
+
+ui-status-user-unblocked = 사용자 차단을 해제했습니다.
+
+ui-status-user-ignored = 사용자를 무시했습니다.
+
+ui-status-user-unignored = 사용자 무시를 해제했습니다.
+
+ui-status-conversation-notifications-unmuted = 대화 알림을 다시 켰습니다.
+
+ui-status-message-request-accepted = 메시지 요청을 수락했습니다.
+
+ui-status-message-request-ignored = 메시지 요청을 무시했습니다.
+
+ui-status-direct-message-was-not-confirmed-try-opening-it-again = DM을 확인하지 못했습니다. 다시 여세요.
+
+ui-status-group-message-was-not-confirmed-try-creating-it-again = 그룹 대화를 확인하지 못했습니다. 다시 만드세요.
+
+ui-status-invite-sent = 초대를 보냈습니다.
+
+ui-status-reconnect-to-load-your-profile = 프로필을 불러오려면 다시 연결하세요.
+
+ui-status-sign-in-before-editing-your-profile = 프로필을 편집하려면 로그인하세요.
+
+ui-status-profile-request-was-not-queued-try-again = 프로필을 요청하지 못했습니다. 다시 시도하세요.
+
+ui-status-profile-response-was-invalid-or-too-large = 프로필 응답이 잘못되었거나 너무 큽니다.
+
+ui-status-profile-changes-are-invalid-or-exceed-safe-limits = 프로필 변경 내용이 잘못되었거나 한도를 초과합니다.
+
+ui-status-the-font-name-is-invalid = 글꼴 이름이 잘못되었습니다.
+
+ui-status-this-font-is-missing-readable-text-or-outlines = 이 글꼴에는 읽을 수 있는 문자나 윤곽선이 없습니다.
+
+ui-status-that-picture-is-too-large-choose-a-simpler-image = 사진이 너무 큽니다. 더 작은 이미지를 선택하세요.
+
+ui-status-after-must-be-earlier-than-before = 시작 날짜는 종료 날짜보다 빨라야 합니다.
+
+ui-status-wait-for-the-current-emoji-images-to-finish-preparing-or-uploading = 현재 이모지 준비나 업로드가 끝날 때까지 기다리세요.
+
+ui-status-save-or-discard-your-server-settings-changes-before-opening-the-conversation = 대화를 열기 전에 서버 설정 변경 내용을 저장하거나 취소하세요.
+
+ui-status-the-selected-images-exceed-the-emoji-upload-limits = 선택한 이미지가 이모지 업로드 한도를 초과합니다.
+
+ui-status-unknown-time = 알 수 없는 시간
+
+ui-status-not-provided = 제공되지 않음
+
+ui-status-image-selection-cancelled = 이미지 선택을 취소했습니다.
+
+ui-status-attachment-selection-interrupted = 첨부 파일 선택이 중단되었습니다.
+
+ui-status-attachment-upload-interrupted = 첨부 파일 업로드가 중단되었습니다.
+
+ui-status-send-or-remove-existing-attachments-before-sending-artwork-alone = 이미지를 따로 보내기 전에 기존 첨부 파일을 보내거나 삭제하세요.
+
+ui-status-unsupported-or-invalid-image-data = 지원하지 않거나 잘못된 이미지 데이터입니다.
+
+ui-status-attachments-staged-in-an-earlier-conversation-were-removed = 이전 대화에서 준비한 첨부 파일을 제거했습니다.
+
+ui-status-message-outcome-unknown-check-the-conversation-before-retrying = 메시지 전송 결과를 알 수 없습니다. 다시 시도하기 전에 대화를 확인하세요.
+
+ui-status-loading-local-appearance = 저장된 모양을 불러오는 중…
+
+ui-status-saving-local-changes = 기기의 변경 내용을 저장하는 중…
+
+ui-status-local-storage-queue-full-some-changes-are-not-saved = 로컬 저장 대기열이 가득 찼습니다. 일부 변경 내용이 저장되지 않았습니다.
+
+ui-status-font-import-interrupted-try-again = 글꼴 가져오기가 중단되었습니다. 다시 시도하세요.
+
+ui-status-could-not-update-status-connection-unavailable = 연결할 수 없어 상태를 업데이트하지 못했습니다.
+
+ui-status-could-not-read-or-update-the-saved-account-list = 저장된 계정 목록을 읽거나 업데이트하지 못했습니다.
+
+ui-status-cached-history-cleared-saved-drafts-preserved = 캐시된 기록을 삭제했습니다. 저장된 초안은 유지됩니다.
+
+ui-status-could-not-read-channel-preferences-from-local-storage = 기기에 저장된 채널 설정을 읽지 못했습니다.
+
+ui-status-video-worker-stopped-restart-serein = 비디오 처리가 중단되었습니다. Serein을 다시 시작하세요.
+
+ui-status-video-audio-output-stopped = 비디오 오디오 출력이 중단되었습니다.
+
+ui-status-video-buffering-stalled-retry-or-download-to-play-externally = 비디오 버퍼링이 중단되었습니다. 다시 시도하거나 다운로드하여 다른 앱에서 재생하세요.
+
+ui-status-updates-have-not-been-checked-yet = 아직 업데이트를 확인하지 않았습니다.
+
+ui-status-update-cancelled = 업데이트를 취소했습니다.
+
+ui-status-the-release-contains-an-untrusted-download-address = 릴리스에 신뢰할 수 없는 다운로드 주소가 있습니다.
+
+ui-status-github-s-update-limit-was-reached-try-again-later = GitHub 업데이트 요청 한도에 도달했습니다. 나중에 다시 시도하세요.
+
+ui-status-no-published-release-is-available-on-this-channel-yet = 이 업데이트 채널에는 아직 릴리스가 없습니다.
+
+ui-status-github-could-not-provide-the-update-try-again-later = GitHub에서 업데이트를 가져오지 못했습니다. 나중에 다시 시도하세요.
+
+ui-status-the-update-checksum-or-length-did-not-match-nothing-was-installed = 업데이트 검사값이나 크기가 일치하지 않습니다. 아무것도 설치하지 않았습니다.
+
+ui-status-run-serein-from-an-extracted-release-package-to-install-updates-source-builds-cannot-replace-themselves = 업데이트하려면 압축을 푼 릴리스 패키지에서 실행하세요. 소스 빌드는 자체 교체할 수 없습니다.
+
+ui-status-the-update-helper-did-not-start-serein-will-remain-open = 업데이트 도우미를 시작하지 못했습니다. Serein은 계속 열려 있습니다.
+
+ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder = 설치 폴더에 항목이 너무 많습니다. Serein을 별도 폴더로 옮기세요.
+
+ui-status-filter-messages-from-non-friends = 친구가 아닌 사람의 메시지 필터링
+
+ui-status-server-members = 서버 멤버
+
+ui-status-only-from-servers-where-you-also-allow-direct-messages = DM을 허용한 서버에만 적용됩니다.
+
+ui-status-show-personalized-messages = 맞춤 메시지 표시
+
+ui-status-show-personalized-messages-on-incoming-friend-requests-if-you-accept-the-message-will-still-appear-in-your-dms = 받은 친구 요청에 첨부된 메시지를 표시합니다. 수락하면 DM에도 메시지가 표시됩니다.
+
+ui-status-allow-friends-from-games-to-send-direct-messages-and-invites = 게임 친구의 DM과 초대 허용
+
+ui-status-let-friends-from-connected-games-send-dms-and-invite-you-to-play-even-when-the-game-isn-t-open = 게임을 실행하지 않아도 연결된 게임의 친구가 DM과 게임 초대를 보낼 수 있습니다.
+
+pending-upload-one = { $name } 업로드 중
+
+pending-upload-many = 파일 { $count }개 업로드 중
+
+pending-upload-progress = { $sent } / { $total } · { $percent }%
+
+pending-upload-preparing = 업로드 준비 중 · { $size }

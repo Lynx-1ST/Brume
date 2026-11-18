@@ -4999,7 +4999,8 @@ impl MessagingUi {
 		crate::i18n::set_current(self.language);
 		let language = self.language;
 		if let Some(status) = state.take_user_action_status() {
-			self.toasts.push(design::Level::Error, status);
+			self.toasts
+				.push(design::Level::Error, crate::i18n::builtin_text(status));
 		}
 		let mention_waiting = self.pending_mention.is_some();
 		let composer_open = self.editing.is_some()

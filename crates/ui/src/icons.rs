@@ -520,7 +520,7 @@ fn button_with_tooltip(
 	label: &str,
 	immediate: bool,
 ) -> Response {
-	let label = crate::i18n::translate_if_key(label);
+	let label = crate::i18n::owned_control_text(label);
 	let colors = design::palette(ui);
 	let (rect, response) = ui.allocate_exact_size(Vec2::splat(size), Sense::click());
 	if response.hovered() || response.has_focus() {

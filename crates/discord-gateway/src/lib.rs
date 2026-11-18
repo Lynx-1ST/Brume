@@ -2417,6 +2417,20 @@ async fn run_session(
 										if let Some(gate)=owner_id.and_then(|owner|onboarding::guild(packet.d.get().as_bytes(),owner)) {emit(Event::Onboarding(client_core::onboarding::Event::Gates { snapshot: false, gates: vec![gate] }))?;}
 									}
 									"GUILD_MEMBER_UPDATE" => {
+										if let Some(event) = voice::member_nickname(packet.d.get().as_bytes())? {
+											if let Event::Voice(client_core::voice::Event::MemberNick {guild,user,nick}) = &event
+												&& let Some(active) = active_members.as_mut().filter(|active| active.subscription.guild == *guild) {
+												let mut spare = MEMBER_LIST_BYTES.saturating_sub(active.slot_bytes());
+												for slot in active.slots.iter_mut().flatten() {
+													if let model::MemberSlot::Person(member) = slot && member.user.id == *user {
+														let old = member.nick.as_ref().map_or(0,String::capacity);
+														let new = nick.as_ref().map_or(0,String::len);
+														if new <= spare.saturating_add(old) { spare = spare.saturating_add(old).saturating_sub(new); member.nick = nick.as_deref().map(str::to_owned); }
+													}
+												}
+											}
+											emit(event)?;
+										}
 										if let Some(owner)=owner_id && let Some((guild,roles,timeout_until))=permissions::member(packet.d.get().as_bytes(),owner).map_err(|_|Failure::Protocol)? {
 											emit(Event::Permissions(client_core::permissions::Event::Member {guild,roles,timeout_until}))?;
 										}

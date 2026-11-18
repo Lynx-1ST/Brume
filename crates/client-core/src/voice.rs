@@ -287,6 +287,12 @@ pub enum Command {
 	},
 }
 pub enum Event {
+	/// A guild member changed/cleared their nickname without changing voice state.
+	MemberNick {
+		guild: Id,
+		user: Id,
+		nick: Option<String>,
+	},
 	/// Gateway accepted the current local transport candidate, scoped to its attempt.
 	SessionConfirmed {
 		channel: Id,
@@ -399,6 +405,7 @@ pub enum Event {
 impl Event {
 	pub fn bytes(&self) -> usize {
 		match self {
+			Self::MemberNick { nick, .. } => nick.as_ref().map_or(0, String::capacity),
 			Self::Snapshot { participants, .. } => {
 				participants.capacity() * size_of::<RosterEntry>()
 					+ participants.iter().map(RosterEntry::bytes).sum::<usize>()
@@ -832,6 +839,27 @@ impl ClientState {
 	}
 	pub fn apply_voice(&mut self, event: Event) {
 		match event {
+			Event::MemberNick { guild, user, nick } => {
+				if guild.0 == 0
+					|| user.0 == 0 || nick.as_ref().is_some_and(|nick| {
+					nick.len() > 512
+						|| nick.chars().count() > 128
+						|| nick.chars().any(char::is_control)
+				}) {
+					return;
+				}
+				self.patch_member_nickname(guild, user, &nick);
+				if let Some(mut entry) = self
+					.voice
+					.roster
+					.iter()
+					.find(|entry| entry.guild == guild && entry.participant.user == user)
+					.cloned() && let Some(member) = entry.member.as_mut()
+				{
+					member.nick = nick.filter(|nick| !nick.is_empty());
+					self.remember_voice_member(guild, member);
+				}
+			}
 			Event::RingFailed {
 				channel,
 				request,
@@ -1293,6 +1321,38 @@ impl ClientState {
 			| Event::Watch { .. } => {} // The desktop consumes negotiation material; core never retains it.
 		}
 	}
+	/// Refresh retained identities without growing the roster or disturbing media state.
+	pub(crate) fn remember_voice_member(&mut self, guild: Id, member: &Member) {
+		if !member.valid() {
+			return;
+		}
+		let Some(index) = self
+			.voice
+			.roster
+			.iter()
+			.position(|entry| entry.guild == guild && entry.participant.user == member.user.id)
+		else {
+			return;
+		};
+		let previous = self.voice.roster[index]
+			.member
+			.as_ref()
+			.map_or(0, Member::bytes);
+		let bytes = self
+			.voice
+			.roster
+			.iter()
+			.map(RosterEntry::bytes)
+			.sum::<usize>();
+		if bytes
+			.saturating_sub(previous)
+			.saturating_add(member.bytes())
+			<= MAX_ROSTER_BYTES
+		{
+			self.voice.roster[index].member = Some(member.clone());
+		}
+	}
+
 	fn update_roster(&mut self, entry: RosterEntry) -> bool {
 		if !self
 			.channels
@@ -1483,6 +1543,80 @@ mod tests {
 		};
 		crate::tests::grant_permissions(&mut state);
 		state
+	}
+
+	#[test]
+	fn voice_nickname_updates_are_scoped_and_survive_navigation_and_clears() {
+		let mut state = stream_preview_state();
+		let mut user = state.user.as_ref().unwrap().clone();
+		user.id = Id(30);
+		user.name = "Global name".into();
+		let member = Member {
+			user,
+			nick: Some("Old server name".into()),
+			roles: vec![],
+			status: None,
+			custom_status: None,
+			activities: vec![],
+			clients: Default::default(),
+		};
+		state.remember_voice_member(Id(10), &member);
+		let participants = state
+			.voice
+			.roster
+			.iter()
+			.map(|entry| entry.participant)
+			.collect::<Vec<_>>();
+		state.apply_voice(Event::MemberNick {
+			guild: Id(99),
+			user: Id(30),
+			nick: Some("Other server".into()),
+		});
+		assert_eq!(
+			state.known_member(Id(20), Id(30)).unwrap().nick.as_deref(),
+			Some("Old server name")
+		);
+		let before = state.channel_list_revision();
+		state.apply(Envelope {
+			generation: state.generation,
+			event: CoreEvent::Voice(Event::MemberNick {
+				guild: Id(10),
+				user: Id(30),
+				nick: Some("New server name".into()),
+			}),
+		});
+		assert!(
+			state.channel_list_revision() > before,
+			"nickname sorting must refresh immediately"
+		);
+		state.selected = None;
+		state.members = None;
+		assert_eq!(
+			state.guild_member(Id(10), Id(30)).unwrap().nick.as_deref(),
+			Some("New server name")
+		);
+		state.apply_voice(Event::MemberNick {
+			guild: Id(10),
+			user: Id(30),
+			nick: None,
+		});
+		assert!(state.known_member(Id(20), Id(30)).unwrap().nick.is_none());
+		state.apply_voice(Event::MemberNick {
+			guild: Id(10),
+			user: Id(30),
+			nick: Some("x".repeat(513)),
+		});
+		assert!(state.known_member(Id(20), Id(30)).unwrap().nick.is_none());
+		assert_eq!(
+			participants,
+			state
+				.voice
+				.roster
+				.iter()
+				.map(|entry| entry.participant)
+				.collect::<Vec<_>>(),
+			"identity updates must not change media state"
+		);
 	}
 
 	#[test]

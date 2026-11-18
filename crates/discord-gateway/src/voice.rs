@@ -19,6 +19,41 @@ use zeroize::Zeroizing;
 /// Rapid mute/deafen toggles inside this window collapse into one voice state update.
 const STATE_COALESCE: Duration = Duration::from_millis(120);
 
+/// A missing `nick` is unrelated metadata; null explicitly clears the server nickname.
+pub(super) fn member_nickname(bytes: &[u8]) -> Result<Option<Event>, Failure> {
+	#[derive(serde::Deserialize)]
+	struct UserId {
+		id: Id,
+	}
+	#[derive(serde::Deserialize)]
+	struct Update {
+		guild_id: Id,
+		user: UserId,
+		#[serde(default)]
+		nick: model::Patch<String>,
+	}
+	let update: Update = decode(bytes).map_err(|_| Failure::Protocol)?;
+	if update.guild_id.0 == 0 || update.user.id.0 == 0 {
+		return Err(Failure::Protocol);
+	}
+	let nick = match update.nick {
+		model::Patch::Absent => return Ok(None),
+		model::Patch::Null => None,
+		model::Patch::Value(nick) => {
+			if nick.len() > 512 || nick.chars().count() > 128 || nick.chars().any(char::is_control)
+			{
+				return Err(Failure::Protocol);
+			}
+			Some(nick)
+		}
+	};
+	Ok(Some(Event::Voice(voice::Event::MemberNick {
+		guild: update.guild_id,
+		user: update.user.id,
+		nick,
+	})))
+}
+
 struct StreamAttempt {
 	channel: Id,
 	request: u64,
@@ -1276,6 +1311,31 @@ pub fn debug_voice_state_retry_check() {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn nickname_dispatch_distinguishes_missing_null_and_invalid_payloads() {
+		assert!(
+			member_nickname(br#"{"guild_id":"10","user":{"id":"30"},"roles":[]}"#)
+				.unwrap()
+				.is_none()
+		);
+		assert!(matches!(
+			member_nickname(br#"{"guild_id":"10","user":{"id":"30"},"nick":null}"#).unwrap(),
+			Some(Event::Voice(voice::Event::MemberNick {
+				guild: Id(10),
+				user: Id(30),
+				nick: None
+			}))
+		));
+		assert!(
+			matches!(member_nickname(br#"{"guild_id":"10","user":{"id":"30"},"nick":"Updated"}"#).unwrap(), Some(Event::Voice(voice::Event::MemberNick { nick: Some(ref nick), .. })) if nick == "Updated")
+		);
+		assert!(member_nickname(br#"{"guild_id":"0","user":{"id":"30"},"nick":"Bad"}"#).is_err());
+		assert!(
+			member_nickname(br#"{"guild_id":"10","user":{"id":"30"},"nick":"Bad\nName"}"#).is_err()
+		);
+	}
+
 	use std::sync::Mutex;
 	#[test]
 	fn failed_watch_keeps_its_subscription_until_the_scoped_stop() {

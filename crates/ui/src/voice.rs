@@ -2255,7 +2255,7 @@ impl MessagingUi {
 			ui.painter().text(
 				live.center(),
 				egui::Align2::CENTER_CENTER,
-				live_text,
+				crate::i18n::translate("voice-live-badge-live"),
 				egui::FontId::new(font, design::medium_family(ui.ctx())),
 				egui::Color32::WHITE,
 			);

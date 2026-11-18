@@ -1005,11 +1005,11 @@ impl ThemeEditor {
 		if self.discard {
 			match dialog::Confirm::new(
 				"discard-theme-draft",
-				&crate::i18n::translate("theme-discard-title"),
-				&crate::i18n::translate("theme-unsaved-detail"),
+				crate::i18n::translate("theme-discard-title"),
+				crate::i18n::translate("theme-unsaved-detail"),
 			)
-			.confirm_label(&crate::i18n::translate("theme-discard-action"))
-			.cancel_label(&crate::i18n::translate("theme-keep-editing"))
+			.confirm_label(crate::i18n::translate("theme-discard-action"))
+			.cancel_label(crate::i18n::translate("theme-keep-editing"))
 			.danger()
 			.show(ui.ctx())
 			{

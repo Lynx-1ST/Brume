@@ -5798,6 +5798,7 @@ mod tests {
 			for shape in &output.shapes {
 				texts(&shape.shape, &mut shown);
 			}
+			output.drop_without_applying_deltas();
 			assert!(
 				shown
 					.iter()
@@ -5846,6 +5847,7 @@ mod tests {
 						"{hints:?}"
 					);
 				}
+				output.drop_without_applying_deltas();
 			}
 			assert_eq!(
 				state.voice.active.as_ref().map(|c| (c.channel, c.request)),

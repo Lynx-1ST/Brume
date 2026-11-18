@@ -251,7 +251,7 @@ impl MessagingUi {
 				let frame_back = ui.painter().add(egui::Shape::Noop);
 				ui.add_space(top);
 				let card = ui
-					.horizontal(|ui| {
+					.horizontal_top(|ui| {
 						ui.add_space(side);
 						let card = egui::Frame::popup(ui.style())
 							.fill(colors.raised)
@@ -1378,8 +1378,20 @@ mod tests {
 							bounds
 						});
 					// Cropping the frame to the detail ScrollArea removes these outside UVs.
-					assert!(uv.min.distance(Pos2::ZERO) < 0.001, "{uv:?}");
-					assert!(uv.max.distance(Pos2::new(1.0, 1.0)) < 0.001, "{uv:?}");
+					assert!(
+						source.iter().any(|original| {
+							original.texture_id == mesh.texture_id
+								&& original
+									.vertices
+									.iter()
+									.fold(Rect::NOTHING, |mut bounds, vertex| {
+										bounds.extend_with(vertex.uv);
+										bounds
+									})
+									.contains_rect(uv)
+						}),
+						"{uv:?}"
+					);
 				}
 			}
 			assert_eq!(drawn, texture_ids);

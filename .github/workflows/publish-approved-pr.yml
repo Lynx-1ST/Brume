@@ -1,0 +1,41 @@
+name: Publish approved PR 10
+
+on:
+  workflow_run:
+    workflows: ['Serein Fork CI']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-approved-pr-10
+  cancel-in-progress: false
+
+jobs:
+  merge-and-release:
+    if: >-
+      github.repository == 'Lynx-1ST/Serein' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.event == 'pull_request' &&
+        github.event.workflow_run.head_sha == 'c9257897b3dd6dec470624b713d9a0b4f6326fde' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      # workflow_run uses the trusted default-branch workflow and script, never PR code.
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify release admission with offline fixtures
+        run: node --test tests/publish-approved-pr.test.mjs
+      - name: Merge only the approved source after every required CI job passes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/publish-approved-pr.mjs

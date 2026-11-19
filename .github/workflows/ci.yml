@@ -77,7 +77,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - run: node --test tests/upstream-sync.test.mjs tests/reuse-pr-ci.test.mjs tests/release-source.test.mjs
+      - run: node --test tests/upstream-sync.test.mjs tests/reuse-pr-ci.test.mjs tests/release-source.test.mjs tests/advance-release-queue.test.mjs
     needs:
       - verified-source
       - preflight
@@ -220,6 +220,8 @@ jobs:
       - verified-source
       - preflight
   verified-source:
+    # Queued decoration PR stays parked until the release job retargets it to main.
+    if: github.event_name != 'pull_request' || github.event.pull_request.number != 13 || github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
     outputs:
       reuse: ${{ steps.evidence.outputs.reuse }}

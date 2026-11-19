@@ -220,3 +220,26 @@ jobs:
           $releaseArgs += @(Get-ChildItem release-assets -File | ForEach-Object { $_.FullName })
           & gh @releaseArgs
           if ($LASTEXITCODE -ne 0) { throw 'GitHub Release publication failed.' }
+
+  next-pr:
+    needs: [build, publish]
+    if: github.event_name == 'workflow_run' && needs.publish.result == 'success' && needs.build.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          # Trusted default-branch code from this workflow_run, never PR code with write tokens.
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: node --test tests/advance-release-queue.test.mjs
+      - name: Start decoration CI only after PR 12 Windows assets are published
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.build.outputs.sha }}
+          RELEASE_TAG: ${{ needs.build.outputs.tag }}
+        run: node .github/scripts/advance-release-queue.mjs

@@ -607,15 +607,33 @@ impl SearchUi {
 											}
 										}
 										if matching_len == 0 {
-											ui.label(crate::i18n::translate_if_key(
-												if key == "in" {
-													"search-overlays-no-matching-channels"
+											let no_users = if filters::guild(state).is_some() {
+												if crate::i18n::current().resolved()
+													== crate::i18n::Language::Vietnamese
+												{
+													"Không có người dùng phù hợp trong máy chủ này."
+														.to_string()
 												} else {
-													"search-overlays-no-matching-users-in-this-conversation"
-												},
-											));
+													"No matching users in this server.".to_string()
+												}
+											} else {
+												crate::i18n::translate_if_key(
+													"search-overlays-no-matching-users-in-this-conversation",
+												)
+											};
+											ui.label(if key == "in" {
+												crate::i18n::translate_if_key(
+													"search-overlays-no-matching-channels",
+												)
+											} else {
+												no_users
+											});
 										}
 									});
+								if matching_len == 0 && enter && self.wire(state).is_ok() {
+									self.filters_open = false;
+									submit = state.can_search();
+								}
 								if let Some((label, id)) = chosen {
 									let query = format!("{}{key}:{label} ", &self.query[..start]);
 									if model::valid_search_query(&query) {

@@ -6065,9 +6065,17 @@ native-login-qr-confirm-on-phone = Xác nhận đăng nhập trong ứng dụng 
 
 native-login-qr-not-me = Không phải tôi, bắt đầu lại
 
+native-login-settings = Cài đặt
+
 native-login-more-token = Token phiên đăng nhập
 
 native-login-more-web = Đăng nhập qua web
+
+native-login-token-detail = Dán token phiên bạn đã có, ví dụ từ một bản cài đặt Serein khác.
+
+native-login-about-risk = Các client không chính thức như Serein có thể gây rủi ro cho tài khoản Discord của bạn.
+
+native-login-about-storage = Tin nhắn và bản nháp được lưu đệm trên thiết bị này. Thông tin đăng nhập được lưu trong kho lưu trữ chứng thực của hệ điều hành.
 
 native-login-web-detail = Mở trang đăng nhập Discord để dùng khóa bảo mật, passkey hoặc hoàn tất bước đăng nhập chưa được hỗ trợ.
 

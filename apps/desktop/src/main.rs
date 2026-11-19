@@ -1195,6 +1195,9 @@ struct Desktop {
 	last_stop: Option<SessionStop>,
 	/// Until when the sign-in failure copy button reads "Copied".
 	sign_in_copied: Option<f64>,
+	/// The credential message the sign-in screen is showing and when it appeared, so a one-off
+	/// notice fades instead of staying until the next attempt.
+	sign_in_notice: Option<(&'static str, f64)>,
 	forgetting: bool,
 	confirming_close: bool,
 	confirming_logout: bool,
@@ -2483,9 +2486,16 @@ impl Desktop {
 			// shows the first-run layout, `=panels` the opened disclosures and `=failed` the
 			// attention banner. `=mfa`, `=scanned`, `=expired` and `=error` show the native
 			// form in those states.
-			let form = matches!(rest.as_str(), "mfa" | "scanned" | "expired" | "error");
+			let form = matches!(rest.as_str(), "mfa" | "scanned" | "expired" | "error")
+				|| rest.starts_with("settings");
 			if form {
 				native.preview(&rest);
+			}
+			// `=settings` opens the sign-in settings; `=settings-updates` on its updates page.
+			match rest.as_str() {
+				"settings" => messaging.open_sign_in_settings(),
+				"settings-updates" => messaging.open_update_settings(),
+				_ => {}
 			}
 			if !form && !matches!(rest.as_str(), "new" | "panels") {
 				messaging.accounts = state
@@ -2741,13 +2751,14 @@ impl Desktop {
 			presence_saved: None,
 			confirming_forget: sign_in_forget,
 			sign_in_copied: None,
+			sign_in_notice: None,
 			last_stop: None,
 			credential_status: if demo {
-				"Fixture mode skips saved login; extensions use public GitHub downloads"
+				""
 			} else if loading_saved {
 				"Checking saved login…"
 			} else {
-				"Saved login unavailable; could not start credential lookup"
+				"Could not read the saved login. Sign in again."
 			},
 			forgetting: false,
 			confirming_close: false,
@@ -5343,10 +5354,11 @@ impl Desktop {
 									has_token: false,
 								},
 							);
-							self.credential_status = "No saved login for that account on this device. Use another account to sign in again, or forget it with ×.";
+							self.credential_status =
+								"No saved login for that account. Sign in again to refresh it.";
 							self.messaging.toasts.push(
 								ui::design::Level::Warning,
-								"That account's saved login is missing; sign in again to refresh it",
+								"That account's saved login is missing. Sign in again to refresh it.",
 							);
 						}
 					}
@@ -5362,7 +5374,7 @@ impl Desktop {
 						);
 					} else if result != Err(platform::CredentialError::NoStore) {
 						self.credential_status =
-							"Could not save this account for the switcher; sign in again to retry";
+							"Could not save this account for switching. Sign in again to retry.";
 					}
 				}
 				credentials::Outcome::Saved(Ok(saved)) => {
@@ -5371,7 +5383,7 @@ impl Desktop {
 							"Login saved in the OS credential store"
 						}
 						platform::Saved::Plaintext => {
-							"No OS keyring found, so the login is saved in a private file in Serein's data folder"
+							"No OS keyring found. The login is saved in a private file in Serein's data folder."
 						}
 					}
 				}
@@ -5383,7 +5395,7 @@ impl Desktop {
 				}
 				credentials::Outcome::Saved(Err(_)) => {
 					self.credential_status =
-						"Could not save login; this session will not restore automatically"
+						"Could not save the login. You will need to sign in again next time."
 				}
 				credentials::Outcome::AccountForgotten(result) => {
 					if result.is_err_and(|error| error != platform::CredentialError::NoStore) {
@@ -5407,9 +5419,7 @@ impl Desktop {
 						Ok(()) => "Saved login removed",
 						// Nothing could have been saved without a credential store.
 						Err(platform::CredentialError::NoStore) => "",
-						Err(_) => {
-							"Could not remove the Serein saved login in your OS credential manager"
-						}
+						Err(_) => "Could not remove the saved login from the OS credential store.",
 					};
 				}
 			}
@@ -5672,7 +5682,8 @@ impl Desktop {
 							.is_ok();
 					}
 					if !queued {
-						self.credential_status = "Could not queue saved login; session only";
+						self.credential_status =
+							"Could not save the login. You will need to sign in again next time.";
 					}
 				}
 			}
@@ -5823,9 +5834,9 @@ impl Desktop {
 				self.login = None;
 				self.state.auth = AuthState::Challenged;
 				self.state.status = if crashed {
-					"Login window stopped unexpectedly (web process ended); no session accepted"
+					"The login window closed unexpectedly. Try again."
 				} else {
-					"Login timed out or token handoff unavailable; no session accepted"
+					"Login did not finish. Try again."
 				};
 			}
 		}
@@ -6825,6 +6836,7 @@ impl eframe::App for Desktop {
 							{
 								self.login = None;
 								self.state.auth = AuthState::Unauthenticated;
+								self.state.status = "Disconnected";
 							}
 						});
 					});

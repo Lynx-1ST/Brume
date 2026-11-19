@@ -5948,87 +5948,47 @@ audio-error-busy = 다른 앱이 오디오 출력 장치를 사용 중입니다.
 
 audio-error-format = 오디오 출력 장치에 사용 가능한 형식이 없습니다.
 
-native-login-email-or-phone = Email or phone number
-
-native-login-password = Password
-
-native-login-forgot-password = Forgot your password?
-
-native-login-log-in = Log In
-
-native-login-logging-in = Logging in…
-
-native-login-need-an-account = Need an account?
-
-native-login-register = Register
-
-native-login-or = or
-
-native-login-back-to-saved-accounts = Back to saved accounts
-
-native-login-credentials-note = Your password and codes go straight to Discord and are never stored.
-
-native-login-mfa-title = Two-factor authentication
-
-native-login-mfa-totp-subtitle = Enter the 6-digit code from your authenticator app
-
-native-login-mfa-sms-subtitle = Enter the code Discord texted to your phone
-
-native-login-mfa-backup-subtitle = Enter one of your 8-character backup codes
-
-native-login-mfa-totp-label = Authentication code
-
-native-login-mfa-sms-label = SMS code
-
-native-login-mfa-backup-label = Backup code
-
-native-login-mfa-six-digits = 6-digit code
-
-native-login-mfa-eight-characters = 8-character backup code
-
-native-login-mfa-use-authenticator = Use your authenticator app
-
-native-login-mfa-use-sms = Receive a code by SMS
-
-native-login-mfa-use-backup = Use a backup code
-
-native-login-mfa-resend-sms = Send the code again
-
-native-login-sms-sent = Discord sent a code to your phone.
-
-native-login-back-to-login = Go back to login
-
-native-login-captcha-title = Wait! Are you human?
-
-native-login-captcha-subtitle = Please confirm you're not a robot
-
-native-login-captcha-cancel = Cancel
-
-native-login-qr-title = Log in with QR Code
-
-native-login-qr-detail = Scan this with the Discord mobile app to log in instantly.
-
-native-login-qr-expired = This code expired. Refresh it to get a new one.
-
-native-login-qr-unavailable = The QR code could not be loaded.
-
-native-login-qr-refresh = Refresh
-
-native-login-qr-check-your-phone = Check your phone!
-
-native-login-qr-logging-in-as = Logging in as { $name }
-
-native-login-qr-confirm-on-phone = Confirm the login in the Discord mobile app.
-
-native-login-qr-not-me = Not me, start over
-
-native-login-more-token = Session token
-
-native-login-more-web = Web login
-
-native-login-web-detail = Opens Discord's own login page in a temporary window. Use it for a security key or passkey, or if the form above cannot finish your sign-in.
-
-native-login-web-open = Open Discord's login page
+native-login-email-or-phone = 이메일 또는 전화번호
+native-login-password = 비밀번호
+native-login-forgot-password = 비밀번호를 잊으셨나요?
+native-login-log-in = 로그인
+native-login-logging-in = 로그인 중…
+native-login-need-an-account = 계정이 필요하신가요?
+native-login-register = 가입하기
+native-login-or = 또는
+native-login-back-to-saved-accounts = 저장된 계정으로 돌아가기
+native-login-credentials-note = 비밀번호와 인증 코드는 Discord로 바로 전송되며 저장되지 않습니다.
+native-login-mfa-title = 2단계 인증
+native-login-mfa-totp-subtitle = 인증 앱의 6자리 코드를 입력하세요
+native-login-mfa-sms-subtitle = Discord가 휴대폰으로 보낸 코드를 입력하세요
+native-login-mfa-backup-subtitle = 백업 코드 중 하나를 입력하세요
+native-login-mfa-totp-label = 인증 코드
+native-login-mfa-sms-label = SMS 코드
+native-login-mfa-backup-label = 백업 코드
+native-login-mfa-six-digits = 6자리 코드
+native-login-mfa-eight-characters = 8자 백업 코드
+native-login-mfa-use-authenticator = 인증 앱 사용
+native-login-mfa-use-sms = SMS로 코드 받기
+native-login-mfa-use-backup = 백업 코드 사용
+native-login-mfa-resend-sms = 코드 다시 보내기
+native-login-sms-sent = Discord가 휴대폰으로 코드를 보냈습니다.
+native-login-back-to-login = 로그인으로 돌아가기
+native-login-captcha-title = 잠깐! 사람이신가요?
+native-login-captcha-subtitle = 로봇이 아님을 확인해 주세요
+native-login-captcha-cancel = 취소
+native-login-qr-title = QR 코드로 로그인
+native-login-qr-detail = Discord 모바일 앱으로 스캔하여 로그인하세요.
+native-login-qr-expired = 이 코드가 만료되었습니다.
+native-login-qr-unavailable = QR 코드를 불러오지 못했습니다.
+native-login-qr-refresh = 새로고침
+native-login-qr-check-your-phone = 휴대폰을 확인하세요!
+native-login-qr-logging-in-as = { $name }(으)로 로그인하는 중
+native-login-qr-confirm-on-phone = 휴대폰에서 확인해 주세요.
+native-login-qr-not-me = 내가 아니에요, 다시 시작
+native-login-more-token = 세션 토큰
+native-login-more-web = 웹 로그인
+native-login-web-detail = Discord 로그인 페이지를 임시 창에서 엽니다. 보안 키와 패스키에 필요합니다.
+native-login-web-open = Discord 로그인 페이지 열기
 
 native-login-error-invalid = Login or password is invalid.
 
@@ -6065,3 +6025,11 @@ native-login-error-http = Discord returned HTTP { $status } during sign-in.
 native-login-error-busy = Sign-in is busy. Try again in a moment.
 
 native-login-error-verification-expired = Verification expired. Start the check again.
+
+native-login-settings = 설정
+
+native-login-token-detail = 이미 가지고 있는 세션 토큰을 붙여 넣으세요. 예: 다른 Serein 설치본에서 가져온 토큰.
+
+native-login-about-risk = Serein 같은 비공식 클라이언트는 Discord 계정을 위험하게 할 수 있습니다.
+
+native-login-about-storage = 메시지와 임시 저장본은 이 기기에 캐시됩니다. 로그인 정보는 OS 자격 증명 저장소에 보관됩니다.

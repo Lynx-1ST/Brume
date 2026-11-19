@@ -79,7 +79,9 @@ impl Viewport {
 			let dragging = self.factor > 1.0
 				&& ui.input(|i| {
 					i.pointer.button_down(egui::PointerButton::Primary)
-						&& i.pointer.interact_pos().is_some_and(|pos| rect.contains(pos))
+						&& i.pointer
+							.interact_pos()
+							.is_some_and(|pos| rect.contains(pos))
 				});
 			ui.ctx().set_cursor_icon(if dragging {
 				egui::CursorIcon::Grabbing
@@ -93,7 +95,9 @@ impl Viewport {
 			let dragging = ui.input(|i| {
 				i.pointer.is_decidedly_dragging()
 					&& i.pointer.button_down(egui::PointerButton::Primary)
-					&& i.pointer.press_origin().is_some_and(|pos| rect.contains(pos))
+					&& i.pointer
+						.press_origin()
+						.is_some_and(|pos| rect.contains(pos))
 			});
 			if dragging {
 				let delta = ui.input(|i| i.pointer.delta());

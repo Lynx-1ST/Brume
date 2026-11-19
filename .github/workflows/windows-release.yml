@@ -6,7 +6,6 @@ on:
     tags: ['v*']
   workflow_run:
     workflows: ['Serein Fork CI']
-    branches: [main]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -23,14 +22,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    # Never publish PR code through the privileged workflow_run event.
+  source:
     if: >-
-      github.event_name != 'workflow_run' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main' &&
-       github.event.workflow_run.head_repository.full_name == github.repository &&
-       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
+      github.repository == 'Lynx-1ST/Serein' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    outputs:
+      ready: ${{ steps.source.outputs.ready }}
+      verified: ${{ steps.source.outputs.verified }}
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      # workflow_run's github.sha is the trusted default branch, never the PR head.
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check release source admission offline
+        run: node --test tests/release-source.test.mjs
+      - name: Resolve checked source and merge owner PR when CI passed
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/release-source.mjs
+
+  build:
+    needs: source
+    if: needs.source.outputs.ready == 'true'
     runs-on: windows-latest
     timeout-minutes: 120
     defaults:
@@ -39,16 +63,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ needs.source.outputs.sha }}
           persist-credentials: false
       - name: Pin and validate the release commit
         id: source
         env:
-          CI_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_SOURCE_SHA: ${{ needs.source.outputs.sha }}
+          CI_SOURCE_SHA: ${{ needs.source.outputs.verified == 'true' && needs.source.outputs.sha || '' }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          $source = if ($env:CI_SOURCE_SHA) { $env:CI_SOURCE_SHA } else { $env:GITHUB_SHA }
+          $source = $env:RELEASE_SOURCE_SHA
           if ($source -notmatch '^[a-f0-9]{40}$') { throw 'Invalid source commit.' }
           $current = (& git rev-parse HEAD).Trim()
           if ($LASTEXITCODE -ne 0 -or $current -ne $source) { throw 'Checkout does not match the verified source.' }
@@ -156,7 +181,16 @@ jobs:
           TAG: ${{ needs.build.outputs.tag }}
           VERSION: ${{ needs.build.outputs.version }}
           SOURCE_SHA: ${{ needs.build.outputs.sha }}
+          VERIFIED_SOURCE: ${{ github.event_name == 'workflow_run' }}
         run: |
+          if ($env:VERIFIED_SOURCE -eq 'true') {
+            $tip = & gh api "repos/$env:GH_REPO/git/ref/heads/main" --jq '.object.sha'
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot verify current main before publication.' }
+            if ($tip.Trim() -ne $env:SOURCE_SHA) {
+              'Main changed during the build; leaving the package as an Actions artifact.' >> $env:GITHUB_STEP_SUMMARY
+              exit 0
+            }
+          }
           $notes = @"
           Windows x64 build of this fork at commit $env:SOURCE_SHA.
 

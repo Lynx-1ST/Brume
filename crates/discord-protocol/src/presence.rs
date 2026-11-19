@@ -441,13 +441,19 @@ mod tests {
 			decode(br#"{"user":{"id":"2"}}"#).unwrap().status_emoji,
 			Patch::Absent
 		));
-		for activities in ["[]", "null", r#"[{"type":4,"emoji":{"id":"0"}}]"#] {
+		for activities in [
+			"[]",
+			"null",
+			r#"[{"type":4,"emoji":{"id":null,"name":"📚"}}]"#,
+		] {
 			assert!(matches!(
 				update(activities).unwrap().status_emoji,
 				Patch::Null
 			));
 		}
-		assert!(update(r#"[{"type":4,"emoji":{"id":"not-an-id"}}]"#).is_err());
+		for id in ["0", "not-an-id"] {
+			assert!(update(&format!(r#"[{{"type":4,"emoji":{{"id":"{id}"}}}}]"#)).is_err());
+		}
 	}
 
 	fn update(activities: &str) -> Result<PresenceUpdate, DecodeError> {

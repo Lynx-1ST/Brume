@@ -441,33 +441,76 @@ pub fn insert(draft: &mut String, pick: Pick, editing: bool, remaining: usize) -
 		limit,
 	)
 }
-/// Rank a name against the typed query: prefix hits first, then substrings, then snowflakes.
+fn strip_diacritics(c: char) -> char {
+	match c {
+		'à' | 'á' | 'ả' | 'ã' | 'ạ' | 'ă' | 'ằ' | 'ắ' | 'ẳ' | 'ẵ' | 'ặ' | 'â' | 'ầ' | 'ấ' | 'ẩ'
+		| 'ẫ' | 'ậ' => 'a',
+		'è' | 'é' | 'ẻ' | 'ẽ' | 'ẹ' | 'ê' | 'ề' | 'ế' | 'ể' | 'ễ' | 'ệ' => 'e',
+		'ì' | 'í' | 'ỉ' | 'ĩ' | 'ị' => 'i',
+		'ò' | 'ó' | 'ỏ' | 'õ' | 'ọ' | 'ô' | 'ồ' | 'ố' | 'ổ' | 'ỗ' | 'ộ' | 'ơ' | 'ờ' | 'ớ' | 'ở'
+		| 'ỡ' | 'ợ' => 'o',
+		'ù' | 'ú' | 'ủ' | 'ũ' | 'ụ' | 'ư' | 'ừ' | 'ứ' | 'ử' | 'ữ' | 'ự' => 'u',
+		'ỳ' | 'ý' | 'ỷ' | 'ỹ' | 'ỵ' => 'y',
+		'đ' => 'd',
+		_ => c,
+	}
+}
+
+fn normalize(s: &str) -> String {
+	s.chars()
+		.flat_map(char::to_lowercase)
+		.map(strip_diacritics)
+		.collect()
+}
+
+/// Rank a name against the typed query: prefix hits first, then word-boundary or squashed hits, then substrings, then snowflakes.
 pub(super) fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
 	if query.is_empty() {
 		return Some(1);
 	}
-	// Most names are ASCII; compare those in place instead of allocating a lowercase copy.
-	let (prefix, substring) = if name.is_ascii() {
-		let (name, query) = (name.as_bytes(), query.as_bytes());
-		let prefix = name.len() >= query.len() && name[..query.len()].eq_ignore_ascii_case(query);
-		let substring = prefix
-			|| name
-				.windows(query.len())
-				.any(|window| window.eq_ignore_ascii_case(query));
-		(prefix, substring)
-	} else {
-		let name = name.to_lowercase();
-		(name.starts_with(query), name.contains(query))
-	};
-	if prefix {
-		Some(0)
-	} else if substring {
-		Some(1)
-	} else if id.0 != 0 && id.to_string().starts_with(query) {
-		Some(2)
-	} else {
-		None
+	let query_norm = normalize(query);
+	let name_norm = normalize(name);
+
+	if name_norm.starts_with(&query_norm) {
+		return Some(0);
 	}
+
+	for word in name_norm.split(|c: char| {
+		c.is_whitespace()
+			|| matches!(
+				c,
+				'!' | '_' | '-' | '.' | ',' | '|' | ':' | '/' | '(' | '[' | '{' | '@'
+			)
+	}) {
+		let word = word.trim();
+		if !word.is_empty() && word.starts_with(&query_norm) {
+			return Some(0);
+		}
+	}
+
+	let squashed_name: String = name_norm
+		.chars()
+		.filter(|c| {
+			!c.is_whitespace()
+				&& !matches!(
+					c,
+					'!' | '_' | '-' | '.' | ',' | '|' | ':' | '/' | '(' | '[' | '{' | '@'
+				)
+		})
+		.collect();
+	if squashed_name.starts_with(&query_norm) {
+		return Some(0);
+	}
+
+	if name_norm.contains(&query_norm) || squashed_name.contains(&query_norm) {
+		return Some(1);
+	}
+
+	if id.0 != 0 && id.to_string().starts_with(query) {
+		return Some(2);
+	}
+
+	None
 }
 
 /// Keep only the best bounded choices, without cloning every joined server's matching catalog.
@@ -593,24 +636,31 @@ impl Menu {
 							Some(&MentionSource { state, channel }),
 						);
 						let name = label.strip_prefix('@').unwrap_or(&label);
-						rank(&query, name, user.id)
-							.or_else(|| rank(&query, &user.name, user.id))
+						let display_name = state.user_display_name(user);
+						let member_nick =
+							member(state, channel, user.id).and_then(|m| m.nick.as_deref());
+						let r = rank(&query, name, user.id)
+							.into_iter()
+							.chain(rank(&query, &user.name, user.id))
+							.chain(rank(&query, display_name, user.id))
+							.chain(member_nick.and_then(|nick| rank(&query, nick, user.id)))
+							.min()
 							.or_else(|| {
 								let search = &state.member_search[0];
 								(search.request.as_ref().is_some_and(|r| {
 									r.channel == channel && r.query.to_lowercase() == query
 								}) && search.rows.iter().any(|m| m.user.id == user.id))
 								.then_some(0)
-							})
-							.map(|r| {
-								(
-									(r, 0, recency.get(&user.id).copied().unwrap_or(u64::MAX)),
-									Candidate::User {
-										user: user.clone(),
-										name: name.to_owned(),
-									},
-								)
-							})
+							});
+						r.map(|r| {
+							(
+								(r, 0, recency.get(&user.id).copied().unwrap_or(u64::MAX)),
+								Candidate::User {
+									user: user.clone(),
+									name: name.to_owned(),
+								},
+							)
+						})
 					})
 					.collect::<Vec<_>>();
 				for role in known_roles(state, channel)
@@ -961,6 +1011,7 @@ fn row(
 	let source = match candidate {
 		Candidate::Custom { server, .. } => Some(server.as_str()),
 		Candidate::Role { .. } => Some("Role"),
+		Candidate::User { user, name } if name != &user.name => Some(user.name.as_str()),
 		_ => None,
 	};
 	let primary = match candidate {
@@ -1107,6 +1158,32 @@ fn row(
 mod tests {
 	use super::*;
 	use model::Channel;
+
+	#[test]
+	fn mention_matching_supports_word_boundaries_squashed_and_vietnamese_diacritics() {
+		// Word-boundary prefix on nicknames with symbols like "! Lynx"
+		assert_eq!(rank("lynx", "! Lynx", Id(0)), Some(0));
+		assert_eq!(rank("Lynx", "! Lynx", Id(0)), Some(0));
+
+		// Word-boundary on multi-word nicknames
+		assert_eq!(rank("nom", "Lofi nom nom", Id(0)), Some(0));
+		assert_eq!(rank("yoshii", "Lofi Yoshii", Id(0)), Some(0));
+
+		// Squashed / no-space typing
+		assert_eq!(rank("lofinom", "Lofi nom nom", Id(0)), Some(0));
+		assert_eq!(rank("lofiyoshii", "Lofi Yoshii", Id(0)), Some(0));
+		assert_eq!(rank("congchua", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+
+		// Vietnamese diacritics-insensitive matching
+		assert_eq!(rank("lacmap", "LạcMập", Id(0)), Some(0));
+		assert_eq!(rank("lac", "LạcMập", Id(0)), Some(0));
+		assert_eq!(rank("map", "LạcMập", Id(0)), Some(1));
+		assert_eq!(rank("cong", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+		assert_eq!(rank("chua", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+		assert_eq!(rank("phong", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+		assert_eq!(rank("tro", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+		assert_eq!(rank("2a9", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+	}
 
 	#[test]
 	fn composer_shortcuts_respect_position_edits_and_conversation_identity() {

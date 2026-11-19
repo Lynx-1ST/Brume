@@ -212,6 +212,7 @@ impl Calls {
 			status: None,
 			custom_status: None,
 			activities: vec![],
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 		})
 	}

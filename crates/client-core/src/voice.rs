@@ -1558,6 +1558,7 @@ mod tests {
 			status: None,
 			custom_status: None,
 			activities: vec![],
+			status_emoji: None,
 			clients: Default::default(),
 		};
 		state.remember_voice_member(Id(10), &member);
@@ -2020,6 +2021,7 @@ mod tests {
 				status: None,
 				custom_status: None,
 				activities: vec![],
+				status_emoji: None,
 				clients: model::ClientPlatforms::default(),
 			});
 			state.apply_voice(Event::Snapshot {

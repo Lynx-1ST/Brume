@@ -152,6 +152,7 @@ fn member_row() {
 		status: Some("online".into()),
 		custom_status: None,
 		activities: vec![],
+		status_emoji: None,
 		clients: Default::default(),
 	}))];
 	state.demo = false;

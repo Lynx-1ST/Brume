@@ -1472,6 +1472,7 @@ mod tests {
 			status: None,
 			custom_status: None,
 			activities: vec![],
+			status_emoji: None,
 			clients: Default::default(),
 		};
 		let mut list = model::MemberList {
@@ -1596,6 +1597,7 @@ mod tests {
 			status: None,
 			custom_status: None,
 			activities: vec![],
+			status_emoji: None,
 			clients: Default::default(),
 		};
 		let target = Id(20199);

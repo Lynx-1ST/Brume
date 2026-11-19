@@ -52,12 +52,14 @@ pub struct TimelineView {
 	pub(super) cancel_upload: bool,
 	pending_heights: BTreeMap<String, f32>,
 	pub(super) hide_media_links: bool,
+	pub(super) hide_link_previews: bool,
 	pub(super) instant_scrolling: bool,
 	applied_hide_media_links: bool,
 	pub(super) hide_blocked_messages: bool,
 	pub(super) hide_ignored_messages: bool,
 	applied_hide_blocked_messages: bool,
 	applied_hide_ignored_messages: bool,
+	applied_hide_link_previews: bool,
 	pub(super) compact_messages: bool,
 	applied_compact_messages: bool,
 	pub(super) gif_favorite: Option<model::Gif>,
@@ -2560,6 +2562,7 @@ impl TimelineView {
 				hide_media_links: self.hide_media_links,
 				hide_blocked_messages: self.hide_blocked_messages,
 				hide_ignored_messages: self.hide_ignored_messages,
+				hide_link_previews: self.hide_link_previews,
 				instant_scrolling: self.instant_scrolling,
 				suppressed_deleted_highlight: std::mem::take(
 					&mut self.suppressed_deleted_highlight,
@@ -2667,11 +2670,13 @@ impl TimelineView {
 			|| self.font_revision != font_revision
 			|| self.scale != scale
 			|| self.hide_media_links != self.applied_hide_media_links
+			|| self.hide_link_previews != self.applied_hide_link_previews
 			|| self.hide_blocked_messages != self.applied_hide_blocked_messages
 			|| self.hide_ignored_messages != self.applied_hide_ignored_messages
 			|| self.compact_messages != self.applied_compact_messages;
 		let dimensions_changed = width_changed || content_dimensions_changed;
 		self.applied_hide_media_links = self.hide_media_links;
+		self.applied_hide_link_previews = self.hide_link_previews;
 		self.applied_hide_blocked_messages = self.hide_blocked_messages;
 		self.applied_hide_ignored_messages = self.hide_ignored_messages;
 		self.applied_compact_messages = self.compact_messages;
@@ -4089,6 +4094,7 @@ impl TimelineView {
 													state,
 													crate::design::MessageCardSurface::Conversation,
 													self.hide_media_links,
+													self.hide_link_previews,
 												) {
 													self.gif_favorite = Some(gif);
 												}
@@ -10621,6 +10627,7 @@ mod tests {
 						..Default::default()
 					},
 					crate::design::MessageCardSurface::Conversation,
+					false,
 					false,
 				);
 				assert!(

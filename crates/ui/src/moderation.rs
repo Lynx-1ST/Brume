@@ -311,6 +311,7 @@ pub(crate) mod tests {
 				status: None,
 				custom_status: None,
 				activities: vec![],
+				status_emoji: None,
 				clients: Default::default(),
 			}))],
 			total: 1,

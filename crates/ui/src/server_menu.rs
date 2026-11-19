@@ -177,6 +177,7 @@ impl ServerMenu {
 		}
 	}
 	pub fn settings_item(&mut self, ui: &mut egui::Ui, state: &State, guild: Id) -> bool {
+		crate::profiles::copy_id_button(ui, "copy-server-id", guild);
 		if (state.can_manage_guild(guild)
 			|| state.can_open_role_settings(guild)
 			|| state.can_open_emoji_settings(guild)

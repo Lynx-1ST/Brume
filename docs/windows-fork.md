@@ -149,6 +149,27 @@ cùng commit lỗi mỗi 6 giờ. Theo dõi lỗi/xung đột tại tab Actions 
 Lịch GitHub Actions có thể chạy trễ và có thể bị tắt khi repo công khai lâu không hoạt động.
 Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của upstream.
 
+## Chat, stream và trạng thái
+
+- Stream đang xem và bản xem trước màn hình của bạn hỗ trợ cuộn để thu phóng, kéo để
+  di chuyển và nhấp đúp để đặt lại. Menu chuột phải cũng có nút đặt lại. Mỗi stream giữ
+  vùng xem riêng; tối đa bốn stream từ xa và một bản xem trước trong phiên voice.
+- Cài đặt Chat có các lựa chọn hiện trạng thái đang nhập, nhắc đến khi trả lời và hiện
+  bản xem trước liên kết (tham khảo PR upstream #932). Tùy chọn lưu riêng trên thiết bị;
+  tắt preview vẫn giữ ảnh/GIF liên kết và tệp đính kèm.
+- Emoji tùy chỉnh trong trạng thái được giữ riêng với nội dung chữ và vẽ bằng bộ nhớ đệm
+  emoji hiện có. Dữ liệu chỉ gồm ID và cờ động, không lưu URL tùy ý; xóa trạng thái hoặc
+  chuyển offline sẽ xóa emoji. Emoji Unicode vẫn nằm trong dòng trạng thái như trước.
+- Menu người dùng/hồ sơ, máy chủ, DM và vai trò có lựa chọn sao chép ID, không cần bật
+  chế độ nhà phát triển. Không gửi yêu cầu mạng để sao chép.
+- Phục hồi thiết bị âm thanh giữ đúng khoảng thử lại khi giao diện đánh thức worker
+  (PR upstream #1065); lỗi thiết bị được hiển thị rõ hơn và dịch sang tiếng Việt.
+- Popup xem trước stream đóng khi mở hồ sơ. Kênh nằm gần đáy cửa sổ chỉ làm popup dịch
+  lên, không tự thu nhỏ ảnh theo khoảng trống bên dưới kênh; thông báo trong ảnh được
+  xuống dòng và cắt trong khung xem trước.
+- Đã ghép upstream `dba98fba`: form đăng nhập native, MFA và QR, kèm lựa chọn đăng nhập
+  qua web. Các nhãn và lỗi form mới có tiếng Việt; đăng nhập thật vẫn chưa được xác minh.
+
 ## CI/CD
 
 Đợt PR #12 → #13 chạy tuần tự: chỉ sau khi release của đúng commit merge PR #12 có đủ

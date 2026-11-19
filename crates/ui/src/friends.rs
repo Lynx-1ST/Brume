@@ -728,6 +728,15 @@ impl MessagingUi {
 									});
 								text.horizontal(|ui| {
 									ui.spacing_mut().item_spacing.x = 4.0;
+									if restricted.is_none() {
+										profiles::paint_status_emoji(
+											ui,
+											&mut self.avatars,
+											state,
+											user.id,
+											None,
+										);
+									}
 									profiles::voice_badge(
 										ui,
 										restricted.is_none() && voice_users.contains(&user.id),
@@ -1183,6 +1192,7 @@ mod tests {
 							ends_at: None,
 							started_at: None,
 						}]),
+						status_emoji: model::Patch::Absent,
 						clients: Patch::Absent,
 					}]),
 				);
@@ -1207,6 +1217,7 @@ mod tests {
 						status,
 						custom_status: Patch::Absent,
 						activities: Patch::Absent,
+						status_emoji: model::Patch::Absent,
 						clients: Patch::Absent,
 					}]),
 				);
@@ -1260,6 +1271,7 @@ mod tests {
 					status: Patch::Value(if index < 7 { "online" } else { "offline" }.into()),
 					custom_status: Patch::Null,
 					activities: Patch::Null,
+					status_emoji: model::Patch::Absent,
 					clients: Patch::Absent,
 				})
 				.collect();

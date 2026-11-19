@@ -841,6 +841,7 @@ pub fn voice_demo_state() -> State {
 			status: None,
 			custom_status: None,
 			activities: vec![],
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 		}),
 	})
@@ -1521,6 +1522,7 @@ pub fn friends_demo_state() -> State {
 						model::Patch::Null
 					},
 					activities: model::Patch::Value(Vec::new()),
+					status_emoji: model::Patch::Absent,
 					clients: model::Patch::Absent,
 				})
 				.collect(),

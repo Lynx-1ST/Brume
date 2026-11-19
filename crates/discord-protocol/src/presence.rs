@@ -15,6 +15,7 @@ pub struct PresenceUpdate {
 	pub status: Patch<String>,
 	pub custom_status: Patch<String>,
 	pub activities: Patch<Vec<RichActivity>>,
+	pub status_emoji: Patch<model::StatusEmoji>,
 	pub clients: Patch<ClientPlatforms>,
 }
 
@@ -43,7 +44,11 @@ pub struct ApplicationIcon {
 
 /// Activity payloads are consumed one at a time; only bounded display metadata survives.
 #[derive(Default)]
-pub struct Activities(pub(crate) Option<String>, pub Vec<RichActivity>);
+pub struct Activities(
+	pub(crate) Option<String>,
+	pub Vec<RichActivity>,
+	pub Option<model::StatusEmoji>,
+);
 
 // Derived structs also accept positional arrays; wire activities and emoji must be objects.
 struct Object<T>(T);
@@ -122,6 +127,8 @@ struct Emoji {
 	name: Option<Text<128>>,
 	#[serde(default)]
 	id: Option<Id>,
+	#[serde(default)]
+	animated: bool,
 }
 impl Activity {
 	fn images(&self) -> (Option<ActivityImage>, Option<ActivityImage>) {
@@ -227,6 +234,7 @@ impl<'de> Deserialize<'de> for Activities {
 			}
 			fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Activities, A::Error> {
 				let mut custom = None;
+				let mut custom_emoji = None;
 				let mut rich: Vec<RichActivity> = Vec::new();
 				let richness = |activity: &RichActivity| {
 					(
@@ -261,6 +269,16 @@ impl<'de> Deserialize<'de> for Activities {
 					count += 1;
 					if activity.kind == 4 && !found {
 						custom = activity.custom_status();
+						custom_emoji = activity.emoji.as_ref().and_then(|emoji| {
+							emoji
+								.0
+								.id
+								.filter(|id| id.0 != 0)
+								.map(|id| model::StatusEmoji {
+									id,
+									animated: emoji.0.animated,
+								})
+						});
 						found = true;
 					} else if let Some(activity) = activity.rich_activity() {
 						// ponytail: match display names; retain application identity if same-name games need separating.
@@ -278,7 +296,7 @@ impl<'de> Deserialize<'de> for Activities {
 						}
 					}
 				}
-				Ok(Activities(custom, rich))
+				Ok(Activities(custom, rich, custom_emoji))
 			}
 		}
 		d.deserialize_seq(Bounded)
@@ -374,12 +392,14 @@ pub fn decode(bytes: &[u8]) -> Result<PresenceUpdate, DecodeError> {
 		Patch::Absent => Patch::Absent,
 		_ => Patch::Null,
 	};
-	let (custom_status, activities) = match presence.activities {
-		Patch::Absent => (Patch::Absent, Patch::Absent),
-		Patch::Null => (Patch::Null, Patch::Null),
-		Patch::Value(Activities(custom, rich)) => {
-			(custom.map_or(Patch::Null, Patch::Value), Patch::Value(rich))
-		}
+	let (custom_status, activities, status_emoji) = match presence.activities {
+		Patch::Absent => (Patch::Absent, Patch::Absent, Patch::Absent),
+		Patch::Null => (Patch::Null, Patch::Null, Patch::Null),
+		Patch::Value(Activities(custom, rich, emoji)) => (
+			custom.map_or(Patch::Null, Patch::Value),
+			Patch::Value(rich),
+			emoji.map_or(Patch::Null, Patch::Value),
+		),
 	};
 	let clients = match presence.client_status {
 		Patch::Absent => Patch::Absent,
@@ -392,6 +412,7 @@ pub fn decode(bytes: &[u8]) -> Result<PresenceUpdate, DecodeError> {
 		avatar,
 		status,
 		custom_status,
+		status_emoji,
 		activities,
 		clients,
 	})
@@ -400,6 +421,40 @@ pub fn decode(bytes: &[u8]) -> Result<PresenceUpdate, DecodeError> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	#[test]
+	fn custom_status_asset_survives_snapshots_and_explicit_updates() {
+		let activities =
+			r#"[{"type":4,"state":"Reading","emoji":{"id":"42","name":"book","animated":true}}]"#;
+		let snapshot: crate::PresenceDto =
+			crate::decode(format!(r#"{{"status":"online","activities":{activities}}}"#).as_bytes())
+				.unwrap();
+		let emoji = model::StatusEmoji {
+			id: Id(42),
+			animated: true,
+		};
+		assert_eq!(snapshot.status_emoji(), Some(emoji));
+		assert_eq!(snapshot.custom_status().as_deref(), Some("Reading"));
+		assert!(
+			matches!(update(activities).unwrap().status_emoji, Patch::Value(value) if value == emoji)
+		);
+		assert!(matches!(
+			decode(br#"{"user":{"id":"2"}}"#).unwrap().status_emoji,
+			Patch::Absent
+		));
+		for activities in [
+			"[]",
+			"null",
+			r#"[{"type":4,"emoji":{"id":null,"name":"📚"}}]"#,
+		] {
+			assert!(matches!(
+				update(activities).unwrap().status_emoji,
+				Patch::Null
+			));
+		}
+		for id in ["0", "not-an-id"] {
+			assert!(update(&format!(r#"[{{"type":4,"emoji":{{"id":"{id}"}}}}]"#)).is_err());
+		}
+	}
 
 	fn update(activities: &str) -> Result<PresenceUpdate, DecodeError> {
 		decode(format!(r#"{{"user":{{"id":"2"}},"activities":{activities}}}"#).as_bytes())
@@ -881,6 +936,7 @@ mod tests {
 						user: Id(2),
 						status: None,
 						custom_status: snapshot.custom_status(),
+						status_emoji: snapshot.status_emoji(),
 						activities: snapshot.activities.1,
 						clients,
 					}

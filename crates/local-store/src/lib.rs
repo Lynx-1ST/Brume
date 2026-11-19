@@ -52,6 +52,12 @@ pub struct AppPreferences {
 	pub hide_blocked_messages: bool,
 	/// When the blocked-message filter is on, also hide rows authored by ignored users.
 	pub hide_ignored_messages: bool,
+	/// Send no typing indicator while writing; others' indicators still show.
+	pub hide_own_typing: bool,
+	/// Start new replies with the author ping off; the reply bar still toggles it.
+	pub reply_without_mention: bool,
+	/// Draw only image and GIF embeds under messages, not link, video or bot cards.
+	pub hide_link_previews: bool,
 	/// Request a conversation's page while the pointer rests on it. Off unless the owner turns
 	/// it on: the official client makes no such requests. A saved value is kept as it is.
 	pub preload_on_hover: bool,
@@ -127,6 +133,9 @@ impl Default for AppPreferences {
 			convert_emoticons: false,
 			hide_blocked_messages: false,
 			hide_ignored_messages: false,
+			hide_own_typing: false,
+			reply_without_mention: false,
+			hide_link_previews: false,
 			preload_on_hover: false,
 			auto_idle: true,
 			hide_title_bar: false,
@@ -2267,6 +2276,9 @@ mod tests {
 			saved.keybinds.custom
 		);
 		let mut value = AppPreferences {
+			hide_own_typing: true,
+			reply_without_mention: true,
+			hide_link_previews: true,
 			language: Some("cs".into()),
 			notifications_enabled: true,
 			hide_title_bar: true,

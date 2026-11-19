@@ -5,6 +5,7 @@ use model::Id;
 type Scope = (u64, Id, u64);
 #[derive(Default)]
 pub(super) struct StreamPip {
+	pub zoom: crate::stream_zoom::StreamZoom,
 	scope: Option<Scope>,
 	sources: Vec<StageFocus>,
 	selected: Option<StageFocus>,

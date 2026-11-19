@@ -56,6 +56,7 @@ impl GroupMenu {
 			return;
 		}
 		ui.set_width(224.0);
+		crate::profiles::copy_id_button(ui, "copy-dm-id", channel.id);
 		crate::extensions_ui::context_menu_items(
 			ui,
 			extensions::MenuTarget::Channel {

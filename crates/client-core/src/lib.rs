@@ -1669,6 +1669,7 @@ impl State {
 						status: None,
 						custom_status: None,
 						activities: vec![],
+						status_emoji: None,
 						clients: model::ClientPlatforms::default(),
 						user,
 					}))
@@ -6458,6 +6459,7 @@ mod tests {
 				status: None,
 				custom_status: None,
 				activities: vec![],
+				status_emoji: None,
 				clients: model::ClientPlatforms::default(),
 			}))],
 			total: 250,
@@ -6489,6 +6491,7 @@ mod tests {
 			status: None,
 			custom_status: None,
 			activities: vec![],
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 		}));
 		apply(

@@ -412,6 +412,7 @@ fn prime_activities(state: &mut client_core::State, proxy_artwork: bool) {
 					status: model::Patch::Value("online".into()),
 					custom_status: model::Patch::Absent,
 					activities: model::Patch::Value(activities.clone()),
+					status_emoji: model::Patch::Absent,
 					clients: model::Patch::Absent,
 				})
 				.collect(),
@@ -1082,6 +1083,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 						status: Some(member_presence.clone()),
 						custom_status: Some("Building a quieter place".into()),
 						activities: vec![],
+						status_emoji: None,
 						clients: model::ClientPlatforms {
 							mobile: true,
 							..Default::default()
@@ -1215,6 +1217,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 						status: Some(status.into()),
 						custom_status: None,
 						activities: vec![],
+						status_emoji: None,
 						clients: model::ClientPlatforms::default(),
 					}))
 				};
@@ -1278,6 +1281,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 							.presence_for(user.id)
 							.filter(|_| proxy_artwork)
 							.map_or_else(Vec::new, |presence| presence.activities.clone()),
+						status_emoji: None,
 						clients: model::ClientPlatforms {
 							mobile: true,
 							..Default::default()

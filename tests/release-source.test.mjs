@@ -24,7 +24,7 @@ function fixture() {
       return null;
     }
     if (path.endsWith('/workflows/ci.yml')) return { id: 9 };
-    if (path.includes('/runs?') && path.includes('event=pull_request')) return { workflow_runs: [state.latest] };
+    if (path.includes('/runs?') && /event=(pull_request|workflow_dispatch)/.test(path)) return { workflow_runs: [state.latest] };
     if (path.includes('/jobs?')) return { jobs: state.jobs };
     if (path.endsWith('/pulls?per_page=100')) return [state.pr];
     if (path.endsWith('/pulls/11')) return state.pr;
@@ -103,6 +103,18 @@ test('successful main CI releases without merging; foreign events and stale main
   state.main = merge;
   assert.equal((await check()).ready, false);
   state.run.event = 'schedule';
+  assert.equal((await check()).ready, false);
+  assert.deepEqual(state.writes, []);
+});
+
+test('queued branch workflow_dispatch must meet the same exact-head owner PR checks', async () => {
+  const { state, check } = fixture();
+  state.run.event = 'workflow_dispatch';
+  state.run.head_branch = 'fix/account-profile-decoration';
+  assert.equal((await check()).sha, merge);
+  assert.equal(state.writes[0].body.sha, head);
+  state.pr.head.sha = 'f'.repeat(40);
+  state.writes.length = 0;
   assert.equal((await check()).ready, false);
   assert.deepEqual(state.writes, []);
 });

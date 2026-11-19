@@ -22,8 +22,8 @@ export async function releaseSource(api, { repo, eventName, ref, sha, run, now =
       || !validSha(run.head_sha) || run.status !== 'completed' || run.conclusion !== 'success')
     return stopped('No successful CI from this repository.');
   let source = run.head_sha;
-  if (run.event === 'pull_request') {
-    const { workflow_runs: runs } = await api(`${root}/actions/workflows/ci.yml/runs?head_sha=${source}&event=pull_request&per_page=100`);
+  if (run.event === 'pull_request' || (run.event === 'workflow_dispatch' && run.head_branch !== 'main')) {
+    const { workflow_runs: runs } = await api(`${root}/actions/workflows/ci.yml/runs?head_sha=${source}&event=${run.event}&per_page=100`);
     const latest = runs.filter(item => item.workflow_id === workflow.id && item.head_sha === source)
       .sort((a, b) => b.id - a.id)[0];
     if (latest?.id !== run.id || latest.status !== 'completed' || latest.conclusion !== 'success')

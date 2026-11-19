@@ -151,6 +151,12 @@ Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của ups
 
 ## CI/CD
 
+Đợt PR #12 → #13 chạy tuần tự: chỉ sau khi release của đúng commit merge PR #12 có đủ
+bộ cài EXE, EXE rời, ZIP và checksum được đăng công khai, workflow mới merge main vào
+nhánh decoration, đổi base PR #13 về main và yêu cầu CI. Trong lúc chờ, PR #13 nhắm vào
+nhánh PR #12 và các job CI mới của nó được bỏ qua. Nếu merge nhánh bị xung đột, workflow
+dừng, không force push. CI #13 qua đủ kiểm tra sẽ tự merge và phát hành Windows như thường.
+
 - CI native chỉ dùng runner Windows x64.
 - **Serein Fork CI** chạy kiểm tra một lần trên mỗi thay đổi vào `main`; không build gói release.
 - **Windows Release** tự merge PR do chủ fork tạo sau khi CI của đúng commit mới nhất qua,

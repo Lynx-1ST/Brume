@@ -2020,7 +2020,6 @@ impl Formatted {
 								&[(label.clone(), Style::default())],
 								ui,
 								Some(url),
-								false,
 								render.images,
 								render.demo,
 								render.guilds,
@@ -2047,7 +2046,6 @@ impl Formatted {
 								spans,
 								ui,
 								Some(url),
-								self.jumbo,
 								render.images,
 								render.demo,
 								render.guilds,
@@ -2074,7 +2072,6 @@ impl Formatted {
 							spans,
 							ui,
 							None,
-							self.jumbo,
 							render.images,
 							render.demo,
 							render.guilds,
@@ -2653,7 +2650,6 @@ impl Formatted {
 		spans: &[(String, Style)],
 		ui: &mut egui::Ui,
 		url: Option<&str>,
-		jumbo: bool,
 		images: &mut crate::avatars::Avatars,
 		demo: bool,
 		guilds: &[model::Guild],
@@ -2670,7 +2666,6 @@ impl Formatted {
 		}
 		let size = crate::emoji::inline_size(ui);
 		let link = url.is_some();
-		let mut atlas = None;
 		let body = egui::TextStyle::Body.resolve(ui.style());
 		let mut job = LayoutJob::default();
 		let source: String = spans.iter().map(|(text, _)| text.as_str()).collect();

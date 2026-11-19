@@ -600,7 +600,7 @@ impl SearchUi {
 												}
 												if row.clicked() || (enter && selected) {
 													chosen = Some((
-														candidate.user.name.clone(),
+														filters::label(&candidate.user.name),
 														candidate.user.id,
 													));
 												}
@@ -704,15 +704,16 @@ impl SearchUi {
 												false,
 											);
 											if row.clicked() {
+												let label = filters::label(&candidate.user.name);
 												let query = filters::insert_user_filter(
 													&self.query,
 													"from",
-													&candidate.user.name,
+													&label,
 												);
 												if model::valid_search_query(&query) {
 													self.labels.remember(
 														"user",
-														&candidate.user.name,
+														&label,
 														candidate.user.id,
 													);
 													self.query = query;
@@ -761,15 +762,16 @@ impl SearchUi {
 												false,
 											);
 											if row.clicked() {
+												let label = filters::label(&candidate.user.name);
 												let query = filters::insert_user_filter(
 													&self.query,
 													"mentions",
-													&candidate.user.name,
+													&label,
 												);
 												if model::valid_search_query(&query) {
 													self.labels.remember(
 														"user",
-														&candidate.user.name,
+														&label,
 														candidate.user.id,
 													);
 													self.query = query;

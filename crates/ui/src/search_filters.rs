@@ -248,11 +248,14 @@ pub fn matching_users<'a>(
 	}
 
 	candidates.sort_by(|a, b| {
-		a.rank.cmp(&b.rank).then_with(|| {
-			a.display_name
-				.to_lowercase()
-				.cmp(&b.display_name.to_lowercase())
-		})
+		a.rank
+			.cmp(&b.rank)
+			.then_with(|| {
+				a.display_name
+					.to_lowercase()
+					.cmp(&b.display_name.to_lowercase())
+			})
+			.then_with(|| a.user.id.cmp(&b.user.id))
 	});
 
 	candidates

@@ -653,7 +653,7 @@ pub fn user_row(
 					);
 					if let Some(sub) = subtitle {
 						ui.add(
-							egui::Label::new(design::regular(ui, sub, 11.0).color(colors.muted))
+							egui::Label::new(RichText::new(sub).size(11.0).color(colors.muted))
 								.truncate()
 								.selectable(false),
 						);

@@ -542,7 +542,9 @@ impl SearchUi {
 									"from" => crate::i18n::translate("search-overlays-from")
 										.to_lowercase(),
 									_ => {
-										if crate::i18n::current_locale().starts_with("vi") {
+										if crate::i18n::current().resolved()
+											== crate::i18n::Language::Vietnamese
+										{
 											"để cập".to_owned()
 										} else {
 											"mentions".to_owned()
@@ -723,12 +725,13 @@ impl SearchUi {
 
 										ui.separator();
 										ui.add_space(4.0);
-										let mentions_prefix =
-											if crate::i18n::current_locale().starts_with("vi") {
-												"để cập".to_owned()
-											} else {
-												"mentions".to_owned()
-											};
+										let mentions_prefix = if crate::i18n::current().resolved()
+											== crate::i18n::Language::Vietnamese
+										{
+											"để cập".to_owned()
+										} else {
+											"mentions".to_owned()
+										};
 										ui.horizontal(|ui| {
 											ui.add_space(10.0);
 											ui.label(

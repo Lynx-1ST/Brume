@@ -156,10 +156,10 @@ pub fn users(state: &State) -> Vec<&User> {
 		}
 	}
 	for entry in &state.voice.roster {
-		if let Some(member) = &entry.member {
-			if guild_id.is_none() || Some(entry.guild) == guild_id {
-				users.entry(member.user.id).or_insert(&member.user);
-			}
+		if let Some(member) = &entry.member
+			&& (guild_id.is_none() || Some(entry.guild) == guild_id)
+		{
+			users.entry(member.user.id).or_insert(&member.user);
 		}
 	}
 	for msg in state.timeline.iter().rev() {
@@ -254,12 +254,12 @@ pub fn matching_users<'a>(
 		}
 	}
 	for entry in &state.voice.roster {
-		if let Some(member) = &entry.member {
-			if current_guild.is_none() || Some(entry.guild) == current_guild {
-				users
-					.entry(member.user.id)
-					.or_insert((&member.user, member.nick.as_deref()));
-			}
+		if let Some(member) = &entry.member
+			&& (current_guild.is_none() || Some(entry.guild) == current_guild)
+		{
+			users
+				.entry(member.user.id)
+				.or_insert((&member.user, member.nick.as_deref()));
 		}
 	}
 

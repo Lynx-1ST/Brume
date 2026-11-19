@@ -132,12 +132,12 @@ pub fn users(state: &State) -> Vec<&User> {
 			users.entry(member.user.id).or_insert(&member.user);
 		}
 	}
-	if let Some(list) = &state.members {
-		if guild_id.is_none() || list.guild == guild_id {
-			for slot in list.slots.iter().flatten() {
-				if let model::MemberSlot::Person(member) = slot {
-					users.entry(member.user.id).or_insert(&member.user);
-				}
+	if let Some(list) = &state.members
+		&& (guild_id.is_none() || list.guild == guild_id)
+	{
+		for slot in list.slots.iter().flatten() {
+			if let model::MemberSlot::Person(member) = slot {
+				users.entry(member.user.id).or_insert(&member.user);
 			}
 		}
 	}
@@ -196,14 +196,14 @@ pub fn matching_users<'a>(
 			}
 		}
 	}
-	if let Some(list) = &state.members {
-		if current_guild.is_none() || list.guild == current_guild {
-			for slot in list.slots.iter().flatten() {
-				if let model::MemberSlot::Person(member) = slot {
-					users
-						.entry(member.user.id)
-						.or_insert((&member.user, member.nick.as_deref()));
-				}
+	if let Some(list) = &state.members
+		&& (current_guild.is_none() || list.guild == current_guild)
+	{
+		for slot in list.slots.iter().flatten() {
+			if let model::MemberSlot::Person(member) = slot {
+				users
+					.entry(member.user.id)
+					.or_insert((&member.user, member.nick.as_deref()));
 			}
 		}
 	}
@@ -596,6 +596,7 @@ pub fn channel_row(
 	response
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn user_row(
 	ui: &mut egui::Ui,
 	user: &User,
@@ -751,6 +752,7 @@ fn caption(query: &str, key: &str, names: &[(Id, &str)], placeholder: &str) -> S
 	}
 }
 
+#[allow(clippy::too_many_arguments)]
 fn user_picker(
 	ui: &mut egui::Ui,
 	state: &State,

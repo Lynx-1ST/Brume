@@ -164,6 +164,11 @@ Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của ups
   chế độ nhà phát triển. Không gửi yêu cầu mạng để sao chép.
 - Phục hồi thiết bị âm thanh giữ đúng khoảng thử lại khi giao diện đánh thức worker
   (PR upstream #1065); lỗi thiết bị được hiển thị rõ hơn và dịch sang tiếng Việt.
+- Popup xem trước stream đóng khi mở hồ sơ. Kênh nằm gần đáy cửa sổ chỉ làm popup dịch
+  lên, không tự thu nhỏ ảnh theo khoảng trống bên dưới kênh; thông báo trong ảnh được
+  xuống dòng và cắt trong khung xem trước.
+- Đã ghép upstream `dba98fba`: form đăng nhập native, MFA và QR, kèm lựa chọn đăng nhập
+  qua web. Các nhãn và lỗi form mới có tiếng Việt; đăng nhập thật vẫn chưa được xác minh.
 
 ## CI/CD
 

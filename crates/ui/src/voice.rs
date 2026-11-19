@@ -933,11 +933,11 @@ impl MessagingUi {
 					);
 				});
 				self.voice_participant_menu(&row, state, entry);
-				if entry.participant.streaming {
-					self.stream_preview_popup(ui, &row, state, entry);
-				}
 				if let Some(user) = user {
 					self.profile.person_click(ui, &row, None, user);
+				}
+				if entry.participant.streaming {
+					self.stream_preview_popup(ui, &row, state, entry);
 				}
 			},
 		);
@@ -953,6 +953,12 @@ impl MessagingUi {
 		entry: &RosterEntry,
 	) {
 		let target = (entry.guild, entry.channel, entry.participant.user);
+		if self.profile.open_user().is_some() {
+			self.stream_preview_open = None;
+			self.stream_preview_hover = None;
+			self.stream_preview_request = None;
+			return;
+		}
 		// A large-preview tweak doubles the image; the popup grows around it.
 		let scale: f32 = if crate::interface_tweaks::on(
 			ui.ctx(),
@@ -962,19 +968,21 @@ impl MessagingUi {
 		} else {
 			1.0
 		};
-		// The popup opens beside the row and keeps that anchor. Fit the image to the space
-		// below the row instead of letting a too-tall card flip above it after the first
-		// measurement; the tweak still doubles the image when the window has room.
+		// Size against the whole viewport, then move the card above a low row. The row's
+		// distance from the bottom must never shrink an otherwise full-size preview.
 		let viewport = ui.ctx().content_rect();
-		let fit = ((viewport.right() - row.rect.right() - 8.0 - 24.0) / 300.0)
-			.min((viewport.bottom() - row.rect.top() - 8.0 - 110.0) / 169.0)
-			.max(0.4);
-		let image = egui::vec2(300.0, 169.0)
-			* if scale > 1.0 {
-				scale.min(fit)
-			} else {
-				fit.min(1.0)
-			};
+		let fit = ((viewport.width() - 40.0) / 300.0)
+			.min((viewport.height() - 126.0) / 169.0)
+			.max(0.1);
+		let image = egui::vec2(300.0, 169.0) * scale.min(fit);
+		let card_width = image.x + 24.0;
+		let left = if row.rect.right() + 8.0 + card_width <= viewport.right() - 8.0 {
+			row.rect.right() + 8.0
+		} else if row.rect.left() - 8.0 - card_width >= viewport.left() + 8.0 {
+			row.rect.left() - 8.0 - card_width
+		} else {
+			viewport.left() + 8.0
+		};
 		// Keep the card at a position computed from its known height. A popup area would
 		// otherwise re-clamp after measuring the content, visibly shifting the card after it
 		// first appears. The top is clamped once so the whole card stays on screen.
@@ -1010,7 +1018,7 @@ impl MessagingUi {
 		let shown = open.then(|| {
 			egui::Area::new(egui::Id::unique(("stream-preview", target)))
 				.order(egui::Order::Tooltip)
-				.fixed_pos(egui::pos2(row.rect.right() + 8.0, top))
+				.fixed_pos(egui::pos2(left, top))
 				// The position is already clamped above; disabling the area's own constraint
 				// keeps the card from moving once its measured size is known.
 				.constrain(false)
@@ -1104,15 +1112,19 @@ impl MessagingUi {
 										egui::Spinner::new().color(colors.muted),
 									);
 								} else {
-									ui.painter().text(
-										rect.center(),
-										egui::Align2::CENTER_CENTER,
+									let text = ui.painter().layout(
 										crate::i18n::builtin_text(
 											preview
 												.and_then(|preview| preview.error)
 												.unwrap_or("Preview hidden or unavailable"),
 										),
 										egui::FontId::proportional(13.0),
+										colors.muted,
+										(rect.width() - 24.0).max(1.0),
+									);
+									ui.painter().with_clip_rect(rect).galley(
+										rect.center() - text.size() * 0.5,
+										text,
 										colors.muted,
 									);
 								}
@@ -7361,6 +7373,7 @@ mod tests {
 			state: &State,
 			pointer: egui::Pos2,
 			time: f64,
+			row_y: f32,
 		) {
 			ctx.run_ui(
 				egui::RawInput {
@@ -7374,12 +7387,29 @@ mod tests {
 				},
 				|ui| {
 					ui.set_width(190.0);
-					ui.add_space(300.0);
+					ui.add_space(row_y);
 					messaging.voice_participant(ui, state, &state.voice.roster[0]);
 				},
 			)
 			.drop_without_applying_deltas();
 		}
+		render(
+			&ctx,
+			&mut messaging,
+			&state,
+			egui::pos2(20.0, 37.0),
+			0.0,
+			20.0,
+		);
+		render(
+			&ctx,
+			&mut messaging,
+			&state,
+			egui::pos2(20.0, 37.0),
+			0.01,
+			20.0,
+		);
+		let regular = messaging.stream_preview_hover.expect("preview near top").1;
 		let pointer = egui::pos2(20.0, 317.0);
 		let mut tops = Vec::new();
 		for frame in 0..5 {
@@ -7388,7 +7418,8 @@ mod tests {
 				&mut messaging,
 				&state,
 				pointer,
-				f64::from(frame) * 0.01,
+				0.02 + f64::from(frame) * 0.01,
+				300.0,
 			);
 			tops.push(messaging.stream_preview_hover.map(|(_, rect)| rect.top()));
 		}
@@ -7397,6 +7428,28 @@ mod tests {
 			tops[1..].iter().all(|top| *top == tops[1]),
 			"the card must not move after its first visible frame: {tops:?}"
 		);
+		let low = messaging
+			.stream_preview_hover
+			.expect("preview near bottom")
+			.1;
+		assert_eq!(
+			low.size(),
+			regular.size(),
+			"Scrolling a row down must move, not shrink, its preview"
+		);
+		assert!(
+			low.min.x >= 0.0 && low.min.y >= 0.0 && low.max.x <= 640.0 && low.max.y <= 400.0,
+			"{low:?}"
+		);
+		messaging
+			.profile
+			.command_open(state.user.as_ref().unwrap().clone());
+		render(&ctx, &mut messaging, &state, pointer, 0.1, 300.0);
+		assert!(
+			messaging.stream_preview_hover.is_none() && messaging.stream_preview_open.is_none(),
+			"A profile must dismiss the stream hover card"
+		);
+		assert!(messaging.stream_preview_request.is_none());
 	}
 
 	#[test]

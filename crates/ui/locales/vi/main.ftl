@@ -3,13 +3,13 @@
 language-system = Hệ thống
 language-group = Ngôn ngữ
 language-label = Ngôn ngữ hiển thị
-language-description = Chọn ngôn ngữ hiển thị của Serein. Nội dung tin nhắn Discord không được dịch.
+language-description = Đổi ngôn ngữ giao diện.
 section-user = Cài đặt người dùng
 section-app = Cài đặt ứng dụng
 section-customization = Tùy chỉnh
 page-account = Tài khoản của tôi
 page-profile = Hồ sơ
-page-general = Chung
+page-general = Cài đặt chung
 page-appearance = Giao diện
 page-chat = Trò chuyện
 page-messaging-permissions = Quyền nhắn tin
@@ -20,22 +20,22 @@ page-keybinds = Phím tắt
 page-storage = Dữ liệu và quyền riêng tư
 page-updates = Cập nhật
 page-extensions = Tiện ích mở rộng
-page-themes = Chủ đề
+page-themes = Chủ đề giao diện
 description-account = Tài khoản Discord đã đăng nhập trên thiết bị này.
-description-profile = Chọn cách bạn xuất hiện trên Discord.
-description-general = Khởi động, cửa sổ và đồ họa trên thiết bị này.
+description-profile = Tên, ảnh đại diện và hồ sơ của bạn.
+description-general = Khởi động, cửa sổ và đồ họa.
 description-appearance = Chủ đề, màu sắc, hiệu ứng cửa sổ và bố cục.
-description-chat = Cách hoạt động của tin nhắn, phương tiện, liên kết và thao tác cuộn.
-description-messaging-permissions = Kiểm soát ai có thể liên hệ với bạn và cách lọc tin nhắn.
-description-notifications = Chọn thông báo bạn nhận được và cách chúng xuất hiện.
-description-registered-games = Chia sẻ những gì bạn chơi và sửa hoặc thêm các trò chơi mà Serein phát hiện.
+description-chat = Tin nhắn, nội dung đa phương tiện và thao tác cuộn.
+description-messaging-permissions = Quyền nhận tin nhắn và lời mời kết bạn.
+description-notifications = Âm thanh, thông báo và nội dung xem trước.
+description-registered-games = Phát hiện trò chơi và chia sẻ hoạt động.
 description-voice = Micrô, loa, camera và xử lý âm thanh.
 description-keybinds = Phím tắt cho Serein.
-description-storage = Serein lưu giữ những gì trên thiết bị này.
-description-updates = Luôn cập nhật Serein trên thiết bị này.
-description-extensions = Quản lý plugin cộng đồng.
-description-themes = Chọn một chủ đề cộng đồng.
-theme-maker = Trình tạo chủ đề
+description-storage = Quản lý dữ liệu lưu trên máy.
+description-updates = Phiên bản và cập nhật ứng dụng.
+description-extensions = Quản lý tiện ích mở rộng.
+description-themes = Chọn và cài chủ đề giao diện.
+theme-maker = Tạo chủ đề giao diện
 theme-maker-description = Tùy chỉnh theo ý bạn. Xem trước thay đổi ngay trong cuộc trò chuyện.
 search = Tìm kiếm
 no-settings-found = Không tìm thấy cài đặt nào
@@ -46,32 +46,32 @@ unofficial = Không chính thức · không được Discord chứng thực
 offline-preview = Xem trước ngoại tuyến · thay đổi chỉ có hiệu lực trong phiên này và không được gửi đi.
 general-startup = Khởi động
 general-open-at-startup = Mở Serein khi máy tính khởi động
-general-open-at-startup-description = Serein đăng nhập và kết nối ở chế độ nền.
+general-open-at-startup-description = Tự mở Serein khi đăng nhập Windows.
 general-start-minimized = Khởi động ở chế độ thu nhỏ
-general-start-minimized-description = Khởi động ở chế độ nền để không làm gián đoạn công việc.
+general-start-minimized-description = Thu nhỏ cửa sổ khi khởi động.
 general-startup-unavailable = Tự động khởi động có sẵn trên Windows và macOS.
 general-window = Cửa sổ
 general-hide-decorations = Không có thanh tiêu đề
-general-hide-decorations-description = Đối với trình quản lý cửa sổ xếp kề: xóa mọi thanh tiêu đề và đường viền, bao gồm cả thanh tiêu đề và đường viền của Serein. Di chuyển, thay đổi kích thước và đóng Serein bằng trình quản lý cửa sổ của bạn.
+general-hide-decorations-description = Ẩn thanh tiêu đề và viền cửa sổ. Dùng trình quản lý cửa sổ để di chuyển hoặc đóng ứng dụng.
 general-custom-title-bar = Thanh tiêu đề tùy chỉnh
-general-custom-title-bar-description = Thay thế thanh tiêu đề hệ thống bằng thanh tiêu đề kiểu GTK 4 của riêng Serein.
+general-custom-title-bar-description = Dùng thanh tiêu đề của Serein thay cho thanh tiêu đề hệ thống.
 general-hide-title-bar = Ẩn thanh tiêu đề Serein
-general-hide-title-bar-description = Dùng thanh tiêu đề và các nút cửa sổ của hệ thống.
+general-hide-title-bar-description = Dùng thanh tiêu đề hệ thống.
 general-keep-menu-bar = Giữ Serein trong thanh menu
 general-keep-system-tray = Giữ Serein trong khay hệ thống
-general-menu-bar-description = Serein vẫn chạy trên thanh menu khi bạn đóng cửa sổ. Chọn Thoát trong menu của Serein để thoát ứng dụng.
-general-linux-tray-description = Serein vẫn chạy khi bạn đóng cửa sổ. Dùng khay hệ thống để mở lại, thu nhỏ hoặc thoát ứng dụng.
-general-windows-tray-description = Serein vẫn chạy trong khay hệ thống khi bạn đóng cửa sổ. Chọn Thoát trong menu ở khay hệ thống để thoát ứng dụng.
+general-menu-bar-description = Đóng cửa sổ để ẩn vào thanh menu. Chọn Thoát để đóng ứng dụng.
+general-linux-tray-description = Đóng cửa sổ để ẩn vào khay hệ thống.
+general-windows-tray-description = Đóng cửa sổ để ẩn vào khay hệ thống. Chọn Thoát để đóng ứng dụng.
 general-tray-unavailable = Nền tảng này không hỗ trợ khay hệ thống.
 general-graphics = Đồ họa
 general-render-with = Kết xuất bằng
 general-graphics-api = API đồ họa
-general-graphics-api-description = Có hiệu lực sau khi khởi động lại Serein. Serein sẽ dùng Tự động nếu API đã chọn không thể hiển thị cửa sổ này.
+general-graphics-api-description = Chọn cách dựng giao diện. Có hiệu lực sau khi khởi động lại.
 general-graphics-api-env-override = WGPU_BACKEND đang chọn API cho lần chạy này. Xóa biến môi trường đó để dùng cài đặt này.
 general-gpu-restart = Có hiệu lực khi khởi động lại Serein.
 general-gpu-current-prefix = Đang kết xuất bằng
 general-steady-refresh-rate = Tốc độ làm mới ổn định
-general-steady-refresh-rate-description = Khi cửa sổ Serein đang được chọn, vẽ lại theo tần số quét của màn hình để tránh nhấp nháy trên màn hình có tần số quét biến đổi (VRR, G-SYNC, FreeSync). Tính năng này dùng nhiều điện hơn.
+general-steady-refresh-rate-description = Giảm nhấp nháy trên màn hình G-SYNC/FreeSync khi dùng Serein. Tốn điện hơn.
 steady-refresh-prompt-title = Đã phát hiện thấy màn hình G-SYNC
 steady-refresh-prompt-body = Serein chỉ vẽ lại khi có thay đổi, nên màn hình G-SYNC có thể nhấp nháy khi cửa sổ Serein đang được chọn. Bật tốc độ làm mới ổn định sẽ vẽ lại theo tần số quét của màn hình để tránh hiện tượng này, nhưng dùng nhiều điện hơn. Bạn có muốn bật không?
 steady-refresh-prompt-turn-on = Bật
@@ -3462,13 +3462,13 @@ settings-account-page-email-password-and-security = Email, mật khẩu và bả
 # Context: account_page
 settings-account-page-offline-preview-synthetic-account = Xem trước ngoại tuyến · tài khoản mô phỏng
 # Context: account_page
-settings-account-page-removes-the-saved-login-and-clears-this-account-s-local = Xóa thông tin đăng nhập đã lưu cũng như xóa bộ nhớ đệm cục bộ và bản nháp của tài khoản này.
+settings-account-page-removes-the-saved-login-and-clears-this-account-s-local = Đăng xuất và xóa thông tin đăng nhập, bộ nhớ đệm, bản nháp trên máy.
 # Context: account_page
 settings-account-page-session = Phiên đăng nhập
 # Context: account_page
 settings-account-page-signed-in-with-your-discord-account = Đã đăng nhập bằng tài khoản Discord của bạn
 # Context: activity_settings
-settings-activity-settings-detect-running-games-and-ask-discord-to-share-them-as = Phát hiện các trò chơi đang chạy và yêu cầu Discord chia sẻ chúng dưới dạng hoạt động.
+settings-activity-settings-detect-running-games-and-ask-discord-to-share-them-as = Hiện trò chơi đang chạy trên trạng thái của bạn.
 # Context: activity_settings
 settings-activity-settings-share-game-activity = Chia sẻ hoạt động trò chơi
 # Context: activity_settings
@@ -3490,11 +3490,11 @@ settings-activity-status-unconfirmed = Chỉ xem trước cục bộ. Đang ch�
 # Context: activity_settings
 settings-activity-status-received = Discord đã nhận thông tin trò chơi nhưng chưa hiển thị công khai.
 # Context: activity_settings
-settings-activity-status-listed = Discord đang hiển thị trò chơi của bạn. Cài đặt quyền riêng tư với máy chủ và bạn bè vẫn được áp dụng.
+settings-activity-status-listed = Trò chơi đang được hiển thị theo cài đặt chia sẻ của bạn.
 # Context: activity_settings
-settings-activity-status-hidden = Discord đang ẩn trò chơi của bạn. Kiểm tra mục Trò chơi đã đăng ký và cài đặt chia sẻ hoạt động trong Discord.
+settings-activity-status-hidden = Trò chơi đang bị ẩn. Kiểm tra cài đặt chia sẻ hoạt động trong Discord.
 # Context: activity_settings
-settings-activity-status-missing = Discord chưa hiển thị công khai trò chơi của bạn. Kiểm tra mục Trò chơi đã đăng ký và cài đặt chia sẻ hoạt động của từng máy chủ trong Discord.
+settings-activity-status-missing = Chưa thấy trò chơi trên trạng thái. Kiểm tra mục Trò chơi đã đăng ký trong Discord.
 # Context: activity_settings
 settings-activity-status-sharing-off = Tính năng chia sẻ hoạt động trên toàn tài khoản của Discord đã tắt.
 # Context: activity_settings
@@ -3548,7 +3548,7 @@ settings-activity-click-to-rename = Bấm để đổi tên
 # Context: activity_settings
 settings-activity-add-a-game = Thêm một trò chơi
 # Context: activity_settings
-settings-activity-choose-program = Chọn một chương trình đang chạy. Serein hiển thị nó dưới dạng trò chơi của bạn bất cứ khi nào nó chạy.
+settings-activity-choose-program = Chọn ứng dụng đang chạy để hiển thị như một trò chơi.
 # Context: activity_settings
 settings-activity-search-programs = Tìm kiếm các chương trình đang chạy
 # Context: activity_settings
@@ -3576,9 +3576,9 @@ settings-appearance-settings-primary-color = Màu cơ bản
 # Context: appearance_settings
 settings-appearance-settings-reset = Đặt lại
 # Context: appearance_settings
-settings-appearance-settings-restart-serein-after-changing-this-themes-can-customize-effects-while = Khởi động lại Serein sau khi thay đổi điều này. Chủ đề có thể tùy chỉnh hiệu ứng khi được bật.
+settings-appearance-settings-restart-serein-after-changing-this-themes-can-customize-effects-while = Có hiệu lực sau khi khởi động lại. Hiệu ứng tùy thuộc chủ đề đang dùng.
 # Context: appearance_settings
-settings-appearance-settings-the-active-theme-brings-its-own-accent-it-takes-over = Chủ đề đang dùng có màu nhấn riêng. Màu đó được áp dụng trong thời gian sử dụng chủ đề.
+settings-appearance-settings-the-active-theme-brings-its-own-accent-it-takes-over = Chủ đề đang dùng sẽ thay thế màu nhấn này.
 # Context: appearance_settings
 settings-appearance-settings-theme = Chủ đề
 # Context: appearance_settings
@@ -3602,7 +3602,7 @@ settings-chat-settings-emoji = Biểu tượng cảm xúc
 # Context: chat_settings
 settings-chat-settings-suggest-nitro-emojis = Gợi ý các biểu tượng cảm xúc cần Nitro
 # Context: chat_settings
-settings-chat-settings-suggest-nitro-emojis-description = Hiển thị biểu tượng cảm xúc động và biểu tượng cảm xúc từ máy chủ khác trong gợi ý khi gõ : và bảng chọn, kể cả khi không có Nitro. Khi tắt, chúng bị ẩn khỏi gợi ý và bị khóa trong bảng chọn.
+settings-chat-settings-suggest-nitro-emojis-description = Hiện cả emoji động và emoji từ máy chủ khác khi gõ : hoặc mở bảng chọn.
 # Context: close_control
 settings-close-control-close-settings-esc = Đóng cài đặt (Esc)
 # Context: colour_preset_settings
@@ -3613,11 +3613,11 @@ settings-storage-page-clear-cache = Xóa bộ nhớ đệm
 # Context: storage_page
 settings-storage-page-local-storage = Bộ nhớ cục bộ
 # Context: storage_page
-settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bounded = Tin nhắn và bản nháp được lưu trên thiết bị này trong các tệp có giới hạn dung lượng, riêng cho từng tài khoản. Serein không mã hóa dữ liệu bộ nhớ đệm; token đăng nhập đã lưu được giữ trong kho thông tin xác thực của hệ điều hành.
+settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bounded = Tin nhắn và bản nháp được lưu riêng cho từng tài khoản trên máy, không được mã hóa. Thông tin đăng nhập dùng kho bảo mật của hệ điều hành.
 # Context: storage_page
-settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = Xóa tin nhắn và nội dung đa phương tiện trong bộ nhớ đệm. Bản nháp và thông tin đăng nhập được giữ lại.
+settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = Xóa tin nhắn và hình ảnh lưu trên máy; giữ bản nháp và thông tin đăng nhập.
 # Context: storage_page
-settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein không thu thập dữ liệu đo từ xa hoặc tải lên chẩn đoán. Discord giữ lại dữ liệu phía dịch vụ theo chính sách riêng của mình.
+settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein không tự gửi dữ liệu chẩn đoán. Dữ liệu trên Discord tuân theo chính sách của Discord.
 # Context: storage_page
 settings-storage-page-your-privacy = Quyền riêng tư của bạn
 # Context: cosmetic_settings
@@ -3639,7 +3639,7 @@ settings-cosmetics-frames = Khung hồ sơ
 # Context: cosmetic_settings
 settings-cosmetics-frames-description = Hình trang trí xung quanh thẻ hồ sơ.
 # Context: cosmetic_settings
-settings-cosmetics-hidden-are-not-downloaded = Không tải xuống các mục trang trí đã ẩn. Cài đặt này chỉ thay đổi cách hiển thị trên thiết bị này.
+settings-cosmetics-hidden-are-not-downloaded = Các mục đã ẩn sẽ không được tải xuống.
 # Context: image_cache_settings
 settings-image-cache = Bộ đệm hình ảnh
 # Context: image_cache_settings
@@ -3649,7 +3649,7 @@ settings-image-cache-media-description = Hình đại diện, biểu ngữ, bả
 # Context: image_cache_settings
 settings-image-cache-artwork = Bộ nhớ đệm hình trang trí dùng chung
 # Context: image_cache_settings
-settings-image-cache-artwork-description = Biểu tượng cảm xúc, huy hiệu, thẻ máy chủ, biểu tượng vai trò, trang trí ảnh đại diện và bảng tên được lưu riêng để tệp đa phương tiện lớn không chiếm chỗ của chúng.
+settings-image-cache-artwork-description = Bộ nhớ riêng cho emoji, huy hiệu và các mục trang trí.
 # Context: image_cache_settings
 settings-image-cache-usage = Đã dùng { $used } / { $limit }.
 # Context: image_cache_settings
@@ -3657,11 +3657,11 @@ settings-image-cache-usage-unavailable = Dung lượng sử dụng sẽ hiển t
 # Context: image_cache_settings
 settings-image-cache-clear = Xóa
 # Context: image_cache_settings
-settings-image-cache-clear-description = Xóa ngay các hình ảnh đã tải xuống. Tin nhắn, bản nháp và thông tin đăng nhập được giữ lại.
+settings-image-cache-clear-description = Xóa ảnh đã tải xuống; giữ tin nhắn, bản nháp và thông tin đăng nhập.
 # Context: image_cache_settings
 settings-image-cache-retention = Xóa hình ảnh không sử dụng sau
 # Context: image_cache_settings
-settings-image-cache-retention-description = Hình ảnh được lưu trong bộ nhớ đệm không hiển thị lại trong thời gian dài sẽ bị xóa khỏi đĩa.
+settings-image-cache-retention-description = Xóa ảnh lưu trên máy nếu không dùng lại trong thời gian đã chọn.
 # Context: image_cache_settings
 settings-image-cache-days =
     { $count ->
@@ -4071,15 +4071,15 @@ updates-update-settings-copy = Sao chép
 # Context: update_settings
 updates-update-settings-copy-command = Sao chép lệnh
 # Context: update_settings
-updates-update-settings-copy-system-and-client-environment-details-formatted-for-github-issue = Sao chép chi tiết môi trường hệ thống và máy khách được định dạng cho báo cáo sự cố GitHub.
+updates-update-settings-copy-system-and-client-environment-details-formatted-for-github-issue = Sao chép thông tin phiên bản và hệ thống để báo lỗi.
 # Context: update_settings
-updates-update-settings-could-not-load-or-save-update-preferences-changes-may-not = Không thể tải hoặc lưu tùy chọn cập nhật. Những thay đổi có thể không tồn tại khi khởi động lại.
+updates-update-settings-could-not-load-or-save-update-preferences-changes-may-not = Chưa lưu được cài đặt cập nhật. Hãy thử lại.
 # Context: update_settings
 updates-update-settings-download-update = Tải xuống bản cập nhật
 # Context: update_settings
-updates-update-settings-download-updates-in-the-background-restart-when-you-are-ready = Tải xuống các bản cập nhật trong nền. Khởi động lại khi bạn đã sẵn sàng. Serein vẫn kiểm tra khi khởi động và định kỳ khi tính năng này tắt.
+updates-update-settings-download-updates-in-the-background-restart-when-you-are-ready = Tự tải bản cập nhật trong nền. Khởi động lại để cài đặt.
 # Context: update_settings
-updates-update-settings-early-builds-with-the-newest-changes-nightly-releases-can-be = Bản dựng sớm với những thay đổi mới nhất. Bản phát hành hàng đêm có thể kém tin cậy hơn.
+updates-update-settings-early-builds-with-the-newest-changes-nightly-releases-can-be = Nhận tính năng và bản sửa mới sớm hơn. Có thể gặp lỗi.
 # Context: update_settings
 updates-update-settings-finish-the-current-update-before-checking-again = Hãy hoàn tất bản cập nhật hiện tại trước khi kiểm tra lại.
 # Context: update_settings
@@ -4127,7 +4127,7 @@ updates-update-settings-open-folder = Mở thư mục
 # Context: update_settings
 updates-update-settings-the-log-folder-could-not-be-written = Không thể ghi thư mục nhật ký. Hãy kiểm tra thư mục dữ liệu của Serein và thử lại.
 # Context: update_settings
-updates-update-settings-timings-stages-and-failures-in-one-local-file-no-account-channel-or = Thời gian, giai đoạn và lỗi trong một tệp nhật ký cục bộ. Dữ liệu tài khoản, kênh, tin nhắn và thông tin xác thực không bao giờ được ghi và không có gì được tải lên.
+updates-update-settings-timings-stages-and-failures-in-one-local-file-no-account-channel-or = Lưu nhật ký lỗi trên máy để chẩn đoán. Không ghi nội dung tin nhắn hoặc thông tin đăng nhập.
 # Context: update_log
 updates-update-log = Nhật ký cập nhật
 # Context: update_settings
@@ -4326,7 +4326,7 @@ voice-connection-ping-value = { $millis } ms
 voice-connection-ping-pending = Đang chờ ping đầu tiên…
 voice-connection-average-ping = Ping trung bình: { $value }
 voice-connection-last-ping = Ping cuối cùng: { $value }
-voice-connection-ping-description = Thời gian gửi và nhận phản hồi từ máy chủ báo hiệu thoại.
+voice-connection-ping-description = Độ trễ kết nối đến máy chủ thoại.
 # Context: voice_card_section
 voice-voice-card-section-microphone-unavailable-a-still-connected-choose-another-input-in-audio = Không có micrô · vẫn được kết nối. Chọn đầu vào khác trong cài đặt Âm thanh.
 # Context: voice_channel_button
@@ -4425,7 +4425,7 @@ voice-voice-processing-controls-suppression-strength = Mức khử tiếng ồn
 # Context: voice_settings_content
 voice-voice-settings-content-camera = Camera
 # Context: voice_settings_content
-voice-voice-settings-content-compare-with-the-other-participants-this-code-changes-with-the = So sánh với những người tham gia khác. Mã này thay đổi theo nhóm cuộc gọi được mã hóa.
+voice-voice-settings-content-compare-with-the-other-participants-this-code-changes-with-the = So sánh mã này với người cùng cuộc gọi để xác minh kết nối được mã hóa.
 # Context: voice_settings_content
 voice-voice-settings-content-devices-levels = Thiết bị và mức âm lượng
 # Context: voice_settings_content
@@ -4779,11 +4779,11 @@ screen-macos-system-picker-kind = Bộ chọn nội dung hệ thống
 member-in-voice = Đang trong kênh thoại
 settings-chat-box = Hộp trò chuyện
 settings-convert-emoticons = Tự động chuyển biểu cảm bằng ký tự thành biểu tượng cảm xúc
-settings-convert-emoticons-description = Chuyển biểu cảm đứng riêng như :) thành 🙂 khi gửi hoặc sửa tin nhắn. Giữ nguyên đoạn mã và liên kết.
+settings-convert-emoticons-description = Tự đổi biểu cảm như :) thành 🙂 khi gửi tin nhắn.
 settings-preload-on-hover = Tải trước khi di chuột
-settings-preload-on-hover-description = Tải trước cuộc trò chuyện, hồ sơ hoặc bảng chọn GIF khi di chuột lên để mở nhanh hơn. Dùng cùng yêu cầu như khi mở, tối đa 12 yêu cầu mỗi phút cho từng loại.
+settings-preload-on-hover-description = Tải trước cuộc trò chuyện, hồ sơ và GIF khi di chuột lên để mở nhanh hơn.
 settings-auto-idle = Tự chuyển sang Vắng mặt
-settings-auto-idle-description = Chuyển trạng thái thành Vắng mặt nếu không dùng bàn phím hoặc chuột trong thời gian bên dưới, hoặc ngay khi khóa máy tính. Không áp dụng trong cuộc gọi thoại.
+settings-auto-idle-description = Tự chuyển sang Vắng mặt khi không dùng máy hoặc khóa máy. Không áp dụng trong cuộc gọi.
 settings-idle-after = Chuyển sang Vắng mặt sau
 settings-idle-after-minutes =
     { $count ->
@@ -5078,9 +5078,9 @@ profiles-private-notice = Hồ sơ của { $name } là riêng tư nên một s�
 settings-cosmetics-name-styles = Kiểu tên
 settings-cosmetics-name-styles-description = Phông chữ, màu sắc và hiệu ứng tên hiển thị của Nitro.
 settings-cosmetics-all = Hiện tất cả trang trí hồ sơ
-settings-cosmetics-all-description = Bật tất cả hiệu ứng bên dưới. Khi tắt, tên chuyển sắc cũng chỉ hiển thị bằng một màu.
+settings-cosmetics-all-description = Bật tất cả mục trang trí bên dưới.
 settings-cosmetics-gradient-names = Tên chuyển sắc
-settings-cosmetics-gradient-names-description = Tên vai trò và tên Nitro có hiệu ứng pha nhiều màu. Khi tắt, tên chỉ hiển thị bằng màu đầu tiên.
+settings-cosmetics-gradient-names-description = Hiện nhiều màu trên tên vai trò và tên Nitro.
 settings-cosmetics-clan-tags = Thẻ máy chủ
 settings-cosmetics-clan-tags-description = Thẻ máy chủ hiển thị cạnh tên người dùng.
 main-sign-in-rate-limited-detail = Discord đang tạm giới hạn số lần đăng nhập. Hãy chờ trước khi thử lại. Thử lại quá sớm có thể khiến bạn phải chờ lâu hơn.

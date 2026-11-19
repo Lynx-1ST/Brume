@@ -99,7 +99,7 @@ impl Language {
 			Some("tr") => Self::Turkish,
 			Some("ja") => Self::Japanese,
 			Some("ko") => Self::Korean,
-			Some("vi") => Self::Vietnamese,
+			Some("vi") | Some("vi-VN") => Self::Vietnamese,
 			Some("pl") => Self::Polish,
 			Some("it") => Self::Italian,
 			Some("cs") => Self::Czech,
@@ -472,6 +472,10 @@ mod tests {
 			assert!(!language.text("page-general").is_empty());
 			assert_eq!(Language::from_preference(language.preference()), language);
 		}
+		assert_eq!(
+			Language::from_preference(Some("vi-VN")),
+			Language::Vietnamese
+		);
 		assert_eq!(Language::Czech.text("page-general"), "Obecné");
 		assert_eq!(Language::Japanese.text("page-general"), "一般的な");
 		assert_eq!(Language::ChineseTraditional.text("page-general"), "一般");

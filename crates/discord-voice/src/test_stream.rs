@@ -239,9 +239,18 @@ async fn exchange(rekey_timeout: bool) {
 		.send(Message::Ping(b"mapped".to_vec().into()))
 		.await
 		.unwrap();
-	assert!(
-		matches!(message(&mut view_ws).await, Message::Pong(data) if data.as_ref() == b"mapped")
-	);
+	// The sender announcement also refreshes sink wants. That subscription may
+	// arrive before the Pong; only the matching Pong fences the SSRC mapping.
+	loop {
+		match message(&mut view_ws).await {
+			Message::Pong(data) if data.as_ref() == b"mapped" => break,
+			Message::Text(text) => {
+				let value: Value = serde_json::from_str(&text).unwrap();
+				assert_eq!(value, json!({"op":15,"d":{"any":100}}));
+			}
+			other => panic!("Unexpected frame before stream mapping acknowledgement: {other:?}"),
+		}
+	}
 	// An SFU probe has authenticated transport timing, but no valid DAVE media.
 	// Exercise the actual UDP -> extension -> feedback path without admitting it
 	// to media reconstruction or the primary source's reception report.

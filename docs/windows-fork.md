@@ -120,6 +120,16 @@ Theo yêu cầu chỉ hỗ trợ Windows, đợt này không thay đổi phần 
 
 ## Tự đồng bộ upstream
 
+Đã ghép upstream đến `d201258bf0efb1f082bede9e59fcb43ccfbbcd22`: tìm người dùng trong
+tham số lệnh slash, gợi ý nhắc tên sau `@`, menu sao chép liên kết và giới hạn glyph atlas
+kèm báo cáo bộ nhớ. Các thay đổi riêng của fork về voice, cập nhật Windows và tiếng Việt
+được giữ lại.
+
+Đã đối chiếu [PR #1061](https://github.com/ViceVerse-cz/Serein/pull/1061) của Duong-debug492,
+head `814a261959c40aab4957979b325f1cec6c717158`. Nhận một số nhãn và nhận diện lựa chọn
+`vi-VN`; giữ catalog của fork vì đã bao gồm toàn bộ 2.747 khóa trong PR cùng các chuỗi riêng.
+Các mô tả Cài đặt được biên tập ngắn hơn thay vì chép lại toàn bộ bản dịch.
+
 Workflow **Sync upstream** kiểm tra `ViceVerse-cz/Serein:main` mỗi 6 giờ. Có thể chạy ngay
 bằng **Actions → Sync upstream → Run workflow** trên `main`.
 

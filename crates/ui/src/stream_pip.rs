@@ -139,29 +139,41 @@ impl MessagingUi {
 					egui::pos2(rect.left() + 6.0, rect.bottom() - 30.0),
 					rect.right_bottom() - egui::vec2(6.0, 6.0),
 				);
-				ui.painter()
-					.rect_filled(footer, 6, egui::Color32::from_black_alpha(180));
 				let name_right = viewers
 					.map(|viewers| {
 						pip_viewers(ui, &mut self.avatars, state, channel, rect, viewers).left()
-							- 8.0
+							- 14.0
 					})
 					.unwrap_or(footer.right() - 6.0);
 				let name_rect = egui::Rect::from_min_max(
 					footer.min + egui::vec2(6.0, 0.0),
 					egui::pos2(name_right.max(footer.left() + 6.0), footer.bottom()),
 				);
-				ui.scope_builder(egui::UiBuilder::new().max_rect(name_rect), |ui| {
-					ui.set_clip_rect(ui.clip_rect().intersect(name_rect));
-					ui.add(
-						egui::Label::new(
-							egui::RichText::new(pip_label(state, channel, selected))
-								.size(12.0)
-								.color(egui::Color32::WHITE),
-						)
-						.truncate(),
-					);
-				});
+				ui.scope_builder(
+					egui::UiBuilder::new()
+						.max_rect(name_rect)
+						.layout(egui::Layout::left_to_right(egui::Align::Center)),
+					|ui| {
+						ui.set_clip_rect(ui.clip_rect().intersect(footer));
+						let background = ui.painter().add(egui::Shape::Noop);
+						let label = ui.add(
+							egui::Label::new(
+								egui::RichText::new(pip_label(state, channel, selected))
+									.size(12.0)
+									.color(egui::Color32::WHITE),
+							)
+							.truncate(),
+						);
+						ui.painter().set(
+							background,
+							egui::Shape::rect_filled(
+								label.rect.expand2(egui::vec2(6.0, 3.0)),
+								6,
+								egui::Color32::from_black_alpha(180),
+							),
+						);
+					},
+				);
 				if response.double_clicked() {
 					restore = true;
 				}
@@ -289,6 +301,7 @@ fn pip_viewers(
 			.layout(egui::Layout::right_to_left(egui::Align::Center)),
 	);
 	let fill = egui::Color32::from_black_alpha(170);
+	let background = row.painter().add(egui::Shape::Noop);
 	let size = if rect.width() < 260.0 { 14.0 } else { 18.0 };
 	let response = crate::voice::viewer_row(
 		&mut row,
@@ -300,7 +313,9 @@ fn pip_viewers(
 		fill,
 		egui::Color32::WHITE,
 	);
-	let rect = response.rect;
+	let rect = response.rect.expand2(egui::vec2(4.0, 3.0));
+	row.painter()
+		.set(background, egui::Shape::rect_filled(rect, 6, fill));
 	response.on_hover_text(crate::voice::viewer_names(state, channel, viewers));
 	rect
 }

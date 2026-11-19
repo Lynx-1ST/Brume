@@ -94,6 +94,9 @@ Nhấp vào tài khoản để xem banner, avatar, bio, huy hiệu, tag và ho�
 hồ sơ hiện tại. Popout dùng cùng cơ chế tải ảnh, chủ đề và phần trang trí được app hỗ trợ
 như hồ sơ người dùng; vẫn tuân theo tùy chọn ẩn mỹ phẩm và xác nhận liên kết ngoài.
 Phần thông tin dài cuộn trong khu vực riêng để giữ thao tác trạng thái và đổi tài khoản.
+Khung trang trí chừa khoảng trống cho phần nhô ra ở trên, dưới và hai bên, theo tỷ lệ của
+khung đang dùng. Khung cuộn cùng hồ sơ, được cắt theo vùng cuộn thay vì mép thẻ, và không
+vẽ đè lên các thao tác tài khoản bên dưới. Tắt khung trong cài đặt mỹ phẩm sẽ bỏ khoảng trống này.
 Nếu Discord chưa cung cấp thông tin hoặc tải ảnh lỗi, app giữ nội dung dự phòng.
 
 ## Độ rộng danh sách thành viên

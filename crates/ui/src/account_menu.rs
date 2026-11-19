@@ -28,6 +28,13 @@ fn account_profile(state: &State) -> Option<&model::UserProfile> {
 		.or_else(|| state.own_profile.data.as_ref().filter(global_own))
 }
 
+/// Fit the whole decoration inside the scroll viewport, preserving the frame's authored ratio.
+fn account_frame_layout(width: f32, frame: &model::ProfileFrame) -> (f32, [f32; 3]) {
+	let side = frame.overflow(1.0)[2];
+	let card_width = width / (1.0 + 2.0 * side);
+	(card_width, frame.overflow(card_width))
+}
+
 /// The menu loads the ordinary global profile; editor failures belong to the editor.
 fn account_profile_progress(state: &State) -> (bool, Option<&'static str>) {
 	let view = state.profile.as_ref().filter(|view| {
@@ -275,7 +282,43 @@ impl MessagingUi {
 		ui: &mut egui::Ui,
 		state: &mut State,
 		commands: &mut Vec<Command>,
-	) {
+	) -> egui::Rect {
+		let layout = account_profile(state)
+			.and_then(|profile| profile.frame.as_deref())
+			.filter(|_| self.avatars.cosmetics.frames)
+			.map(|frame| account_frame_layout(ui.available_width(), frame));
+		let Some((width, [top, bottom, side])) = layout else {
+			return self.account_profile_card(ui, state, commands, None);
+		};
+		// The frame scrolls with its card. Its overhang is part of the scroll content,
+		// while the scroll viewport still clips it away from the fixed account actions.
+		let clip = ui.clip_rect();
+		ui.add_space(top);
+		let origin = ui.cursor().left_top() + vec2(side, 0.0);
+		let card = ui
+			.scope_builder(
+				egui::UiBuilder::new().max_rect(egui::Rect::from_min_size(
+					origin,
+					vec2(width, ui.available_height()),
+				)),
+				|ui| {
+					ui.set_width(width);
+					ui.set_max_width(width);
+					self.account_profile_card(ui, state, commands, Some(clip))
+				},
+			)
+			.inner;
+		ui.add_space(bottom);
+		card
+	}
+
+	fn account_profile_card(
+		&mut self,
+		ui: &mut egui::Ui,
+		state: &mut State,
+		commands: &mut Vec<Command>,
+		artwork_clip: Option<egui::Rect>,
+	) -> egui::Rect {
 		let colors = design::palette(ui);
 		let theme = profiles::Theme::new(
 			&colors,
@@ -376,7 +419,7 @@ impl MessagingUi {
 		);
 		ui.painter().set(background, theme.background(rect));
 		if let Some(profile) = account_profile(state) {
-			let clip = ui.clip_rect().intersect(rect);
+			let clip = artwork_clip.unwrap_or_else(|| ui.clip_rect().intersect(rect));
 			profiles::paint_collectibles(
 				ui,
 				&mut self.avatars,
@@ -387,6 +430,7 @@ impl MessagingUi {
 				state.demo,
 			);
 		}
+		rect
 	}
 
 	/// Other accounts remembered on this device, plus a row to remember one more.
@@ -1256,6 +1300,93 @@ mod tests {
 		assert!(output.platform_output.commands.is_empty());
 		output.drop_without_applying_deltas();
 		text
+	}
+
+	#[test]
+	fn account_profile_frame_keeps_its_overhang_and_reserves_space_before_actions() {
+		fn visible_meshes(
+			shape: &egui::Shape,
+			clip: Rect,
+			textures: &[egui::TextureId],
+			bounds: &mut Rect,
+		) {
+			match shape {
+				egui::Shape::Mesh(mesh) if textures.contains(&mesh.texture_id) => {
+					let mut rect = Rect::NOTHING;
+					for vertex in &mesh.vertices {
+						rect.extend_with(vertex.pos);
+					}
+					let visible = rect.intersect(clip);
+					if visible.is_positive() {
+						*bounds = bounds.union(visible);
+					}
+				}
+				egui::Shape::Vec(shapes) => {
+					for shape in shapes {
+						visible_meshes(shape, clip, textures, bounds);
+					}
+				}
+				_ => {}
+			}
+		}
+		for width in [260.0, 340.0] {
+			let ctx = egui::Context::default();
+			design::apply(&ctx);
+			let mut state = test_support::demo_state();
+			let own = state.user.as_ref().unwrap();
+			let mut profile = profiles::synthetic(own, None);
+			profile.effect = None;
+			let frame = profile.frame.as_deref().unwrap().clone();
+			state.own_profile.data = Some(profile);
+			let mut view = MessagingUi::default();
+			view.avatars.cosmetics.frames = true;
+			let mut card = Rect::NOTHING;
+			let mut actions_top = 0.0;
+			let mut left = 0.0;
+			let output = ctx.run_ui(
+				egui::RawInput {
+					screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(640.0, 1200.0))),
+					..Default::default()
+				},
+				|ui| {
+					ui.set_width(width);
+					left = ui.cursor().left();
+					card = view.account_profile_contents(ui, &mut state, &mut vec![]);
+					actions_top = ui.cursor().top();
+				},
+			);
+			let textures: Vec<_> = view
+				.avatars
+				.frame_shapes(&ctx, &frame, card, Rect::EVERYTHING, true, true)
+				.iter()
+				.filter_map(|shape| match shape {
+					egui::Shape::Mesh(mesh) => Some(mesh.texture_id),
+					_ => None,
+				})
+				.collect();
+			assert!(!textures.is_empty());
+			let mut painted = Rect::NOTHING;
+			for shape in &output.shapes {
+				visible_meshes(&shape.shape, shape.clip_rect, &textures, &mut painted);
+			}
+			assert!(
+				painted.top() < card.top() && painted.bottom() > card.bottom(),
+				"top/bottom frame was clipped: {painted:?}, {card:?}"
+			);
+			assert!(
+				painted.left() < card.left() && painted.right() > card.right(),
+				"side frame was clipped: {painted:?}, {card:?}"
+			);
+			assert!(
+				actions_top >= painted.bottom(),
+				"frame overlaps the account actions"
+			);
+			assert!(
+				painted.left() >= left - 0.1 && painted.right() <= left + width + 0.1,
+				"frame escapes the available width: {painted:?}"
+			);
+			output.drop_without_applying_deltas();
+		}
 	}
 	fn click(
 		ctx: &egui::Context,

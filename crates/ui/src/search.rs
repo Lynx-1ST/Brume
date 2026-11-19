@@ -612,8 +612,9 @@ impl SearchUi {
 													== crate::i18n::Language::Vietnamese
 												{
 													"Không có người dùng phù hợp trong máy chủ này."
+														.to_string()
 												} else {
-													"No matching users in this server."
+													"No matching users in this server.".to_string()
 												}
 											} else {
 												crate::i18n::translate_if_key(

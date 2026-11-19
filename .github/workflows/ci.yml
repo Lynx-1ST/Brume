@@ -77,7 +77,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - run: node --test tests/upstream-sync.test.mjs tests/reuse-pr-ci.test.mjs
+      - run: node --test tests/upstream-sync.test.mjs tests/reuse-pr-ci.test.mjs tests/release-source.test.mjs
     needs:
       - verified-source
       - preflight

@@ -143,7 +143,12 @@ Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của ups
 
 - CI native chỉ dùng runner Windows x64.
 - **Serein Fork CI** chạy kiểm tra một lần trên mỗi thay đổi vào `main`; không build gói release.
-- **Windows Release** tự chạy sau khi toàn bộ CI của `main` qua, dùng đúng SHA đã kiểm tra.
+- **Windows Release** tự merge PR do chủ fork tạo sau khi CI của đúng commit mới nhất qua,
+  rồi build và phát hành EXE. Chỉ nhận PR trong `Lynx-1ST/Serein` nhắm vào `main`, không nhận
+  PR từ fork khác. Không còn workflow riêng **Publish approved PR**.
+  Nếu cây mã sau merge giống bản đã kiểm tra, không chạy lại toàn bộ CI; nếu khác, yêu cầu
+  CI cho `main` rồi mới phát hành. Thiếu check, check bị bỏ qua hoặc kết quả quá 24 giờ sẽ dừng.
+  Windows Release cũng tự chạy sau khi toàn bộ CI của `main` qua, dùng đúng SHA đã kiểm tra.
   CI đã cũ hơn `main` hiện tại sẽ không tạo release. Build thủ công/tag vẫn chạy kiểm tra.
   CI và Release giữ cache Rust riêng để lưu được cả dependency debug lẫn bản tối ưu;
   Release dùng lại khóa cache của các bản Windows trước đó.
@@ -151,7 +156,8 @@ Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của ups
   nhập phiên bản SemVer chưa dùng (ví dụ `0.1.1`), hoặc push tag `v0.1.1`.
 - Workflow kiểm tra demo, chạy `cargo xtask check`, đóng gói production có voice và không có demo,
   rồi tải bộ cài, EXE, ZIP và `SHA256SUMS.txt` lên Release.
-- Job build chỉ có quyền đọc; job publish dùng `GITHUB_TOKEN` với `contents: write`.
+- Job chọn nguồn dùng token tích hợp để merge PR và yêu cầu CI khi cần. Job build chỉ có
+  quyền đọc; job publish dùng `GITHUB_TOKEN` với `contents: write`.
   Sync dùng token tích hợp với `contents: write` và `actions: write`; không cần PAT hoặc khóa ký
   macOS trong cấu hình thông thường. Nếu chính sách GitHub chặn merge, workflow báo lỗi thay vì
   tìm cách vượt quyền. Workflow release đa nền tảng của upstream không chạy trong fork.

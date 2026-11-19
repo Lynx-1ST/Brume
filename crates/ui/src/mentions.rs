@@ -441,7 +441,7 @@ pub fn insert(draft: &mut String, pick: Pick, editing: bool, remaining: usize) -
 		limit,
 	)
 }
-fn strip_diacritics(c: char) -> char {
+pub(crate) fn strip_diacritics(c: char) -> char {
 	match c {
 		'à' | 'á' | 'ả' | 'ã' | 'ạ' | 'ă' | 'ằ' | 'ắ' | 'ẳ' | 'ẵ' | 'ặ' | 'â' | 'ầ' | 'ấ' | 'ẩ'
 		| 'ẫ' | 'ậ' => 'a',
@@ -456,7 +456,7 @@ fn strip_diacritics(c: char) -> char {
 	}
 }
 
-fn normalize(s: &str) -> String {
+pub(crate) fn normalize(s: &str) -> String {
 	s.chars()
 		.flat_map(char::to_lowercase)
 		.map(strip_diacritics)
@@ -464,7 +464,7 @@ fn normalize(s: &str) -> String {
 }
 
 /// Rank a name against the typed query: prefix hits first, then word-boundary or squashed hits, then substrings, then snowflakes.
-pub(super) fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
+pub(crate) fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
 	if query.is_empty() {
 		return Some(1);
 	}

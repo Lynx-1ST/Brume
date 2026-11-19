@@ -116,35 +116,146 @@ pub struct Draft {
 
 pub fn users(state: &State) -> Vec<&User> {
 	let mut users = std::collections::BTreeMap::new();
-	for user in state
-		.user
-		.iter()
-		.chain(
-			state
-				.channels
-				.iter()
-				.filter(|c| Some(c.id) == state.selected)
-				.flat_map(|c| &c.recipients),
-		)
-		.chain(state.timeline.iter().map(|m| &m.author))
-		.chain(state.members.iter().flat_map(|list| {
-			list.slots
-				.iter()
-				.flatten()
-				.filter_map(|slot| match slot {
-					model::MemberSlot::Person(m) => Some(m),
-					_ => None,
-				})
-				.map(|member| &member.user)
-		}))
-		.take(1500)
-	{
-		users.entry(user.id).or_insert(user);
-		if users.len() >= 100 {
-			break;
+	let channel_id = state.selected;
+	let guild_id = guild(state);
+
+	if let Some(owner) = &state.user {
+		users.entry(owner.id).or_insert(owner);
+	}
+	if let Some(ch_id) = channel_id {
+		if let Some(ch) = state.channel(ch_id) {
+			for user in &ch.recipients {
+				users.entry(user.id).or_insert(user);
+			}
+		}
+		for member in state.known_members(ch_id) {
+			users.entry(member.user.id).or_insert(&member.user);
+		}
+	}
+	for list in &state.members {
+		if guild_id.is_none() || list.guild == guild_id {
+			for slot in list.slots.iter().flatten() {
+				if let model::MemberSlot::Person(member) = slot {
+					users.entry(member.user.id).or_insert(&member.user);
+				}
+			}
+		}
+	}
+	for msg in state.timeline.iter().rev() {
+		users.entry(msg.author.id).or_insert(&msg.author);
+		for user in &msg.mentions {
+			users.entry(user.id).or_insert(user);
 		}
 	}
 	users.into_values().collect()
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum UserRowIcon {
+	None,
+	Profile,
+	At,
+}
+
+pub struct UserCandidate<'a> {
+	pub user: &'a User,
+	pub display_name: String,
+	pub rank: u8,
+}
+
+pub fn matching_users<'a>(
+	state: &'a State,
+	channel: Option<Id>,
+	query: &str,
+) -> Vec<UserCandidate<'a>> {
+	let mut users: std::collections::BTreeMap<Id, (&'a User, Option<&'a str>)> =
+		std::collections::BTreeMap::new();
+	let channel_id = channel.or(state.selected);
+	let current_guild = guild(state);
+
+	if let Some(owner) = &state.user {
+		users.entry(owner.id).or_insert((owner, None));
+	}
+	if let Some(ch_id) = channel_id {
+		if let Some(ch) = state.channel(ch_id) {
+			for user in &ch.recipients {
+				users.entry(user.id).or_insert((user, None));
+			}
+		}
+		for member in state.known_members(ch_id) {
+			users
+				.entry(member.user.id)
+				.or_insert((&member.user, member.nick.as_deref()));
+		}
+		for msg in state.timeline.iter().rev() {
+			if msg.channel == ch_id {
+				users.entry(msg.author.id).or_insert((&msg.author, None));
+				for user in &msg.mentions {
+					users.entry(user.id).or_insert((user, None));
+				}
+			}
+		}
+	}
+	for list in &state.members {
+		if current_guild.is_none() || list.guild == current_guild {
+			for slot in list.slots.iter().flatten() {
+				if let model::MemberSlot::Person(member) = slot {
+					users
+						.entry(member.user.id)
+						.or_insert((&member.user, member.nick.as_deref()));
+				}
+			}
+		}
+	}
+	if let Some(guild_id) = current_guild {
+		for ch in &state.channels {
+			if ch.guild == Some(guild_id) && Some(ch.id) != channel_id {
+				for member in state.known_members(ch.id) {
+					users
+						.entry(member.user.id)
+						.or_insert((&member.user, member.nick.as_deref()));
+				}
+			}
+		}
+	}
+
+	let query_clean = query.trim();
+	let mut candidates = Vec::new();
+
+	for (user, nick) in users.into_values() {
+		let display_name = nick
+			.filter(|n| !n.is_empty())
+			.map(str::to_owned)
+			.unwrap_or_else(|| state.user_display_name(user).to_owned());
+
+		let rank = if query_clean.is_empty() {
+			Some(0)
+		} else {
+			crate::mentions::rank(query_clean, &display_name, user.id)
+				.into_iter()
+				.chain(crate::mentions::rank(query_clean, &user.name, user.id))
+				.chain(nick.and_then(|n| crate::mentions::rank(query_clean, n, user.id)))
+				.min()
+		};
+
+		if let Some(r) = rank {
+			candidates.push(UserCandidate {
+				user,
+				display_name,
+				rank: r,
+			});
+		}
+	}
+
+	candidates.sort_by(|a, b| {
+		a.rank.cmp(&b.rank).then_with(|| {
+			a.display_name
+				.to_lowercase()
+				.cmp(&b.display_name.to_lowercase())
+		})
+	});
+
+	candidates
 }
 
 /// Server whose channels a search spans; direct messages have none.
@@ -270,10 +381,16 @@ fn user_id(value: &str, state: &State, labels: &Labels) -> Option<Id> {
 	numeric(value)
 		.or_else(|| labels.id("user", value))
 		.or_else(|| {
-			let value = value.to_lowercase();
-			users(state)
-				.into_iter()
-				.find(|user| label(&user.name).to_lowercase() == value)
+			let value_lower = value.to_lowercase();
+			let all_users = users(state);
+			all_users
+				.iter()
+				.find(|user| label(&user.name).to_lowercase() == value_lower)
+				.or_else(|| {
+					all_users
+						.iter()
+						.find(|user| state.user_display_name(user).to_lowercase() == value_lower)
+				})
 				.map(|user| user.id)
 		})
 }
@@ -482,35 +599,71 @@ pub fn channel_row(
 pub fn user_row(
 	ui: &mut egui::Ui,
 	user: &User,
+	display_name: &str,
+	subtitle: Option<&str>,
+	icon: UserRowIcon,
 	avatars: &mut Avatars,
 	demo: bool,
 	selected: bool,
 ) -> egui::Response {
 	let colors = design::palette(ui);
-	let (rect, response) =
-		ui.allocate_exact_size(egui::vec2(ui.available_width(), 36.0), egui::Sense::click());
+	let height = if subtitle.is_some() { 40.0 } else { 34.0 };
+	let (rect, response) = ui.allocate_exact_size(
+		egui::vec2(ui.available_width(), height),
+		egui::Sense::click(),
+	);
 	if selected || response.hovered() || response.has_focus() {
 		ui.painter().rect_filled(rect, 8, colors.raised);
 	}
 	let avatar = ui
 		.scope_builder(
 			egui::UiBuilder::new()
-				.max_rect(rect.shrink2(egui::vec2(8.0, 4.0)))
+				.max_rect(rect.shrink2(egui::vec2(8.0, 3.0)))
 				.layout(egui::Layout::left_to_right(egui::Align::Center)),
 			|ui| {
+				ui.spacing_mut().item_spacing.x = 8.0;
+				match icon {
+					UserRowIcon::Profile => {
+						let (icon_rect, _) =
+							ui.allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::hover());
+						icons::paint(ui.painter(), icons::Icon::Profile, icon_rect, colors.muted);
+					}
+					UserRowIcon::At => {
+						let (icon_rect, _) =
+							ui.allocate_exact_size(egui::vec2(16.0, 16.0), egui::Sense::hover());
+						ui.painter().text(
+							icon_rect.center(),
+							egui::Align2::CENTER_CENTER,
+							"@",
+							egui::FontId::proportional(16.0),
+							colors.muted,
+						);
+					}
+					UserRowIcon::None => {}
+				}
 				let avatar = avatars.show(ui, user, 24.0, demo);
-				ui.add(
-					egui::Label::new(
-						design::semibold(ui, &user.name, 14.0).color(colors.text_strong),
-					)
-					.truncate()
-					.selectable(false),
-				);
+				ui.vertical(|ui| {
+					ui.spacing_mut().item_spacing.y = 1.0;
+					ui.add(
+						egui::Label::new(
+							design::semibold(ui, display_name, 13.0).color(colors.text_strong),
+						)
+						.truncate()
+						.selectable(false),
+					);
+					if let Some(sub) = subtitle {
+						ui.add(
+							egui::Label::new(design::regular(ui, sub, 11.0).color(colors.muted))
+								.truncate()
+								.selectable(false),
+						);
+					}
+				});
 				avatar
 			},
 		)
 		.inner;
-	response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, &user.name));
+	response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, display_name));
 	response.union(avatar)
 }
 
@@ -543,6 +696,36 @@ fn replace(query: &mut String, key: &str, value: &str, multi: bool) {
 	}
 }
 
+pub fn insert_user_filter(query: &str, key: &str, username: &str) -> String {
+	let (mut filters, _text): (Vec<&str>, Vec<&str>) = without_partial(query)
+		.split_whitespace()
+		.partition(|token| {
+			token
+				.split_once(':')
+				.is_some_and(|(k, _)| FILTER_KEYS.contains(&k))
+		});
+	let filter = format!("{key}:{username}");
+	filters.push(&filter);
+	let mut res = filters.join(" ");
+	res.push(' ');
+	res
+}
+
+pub fn insert_channel_filter(query: &str, channel_name: &str) -> String {
+	let (mut filters, _text): (Vec<&str>, Vec<&str>) = without_partial(query)
+		.split_whitespace()
+		.partition(|token| {
+			token
+				.split_once(':')
+				.is_some_and(|(k, _)| FILTER_KEYS.contains(&k))
+		});
+	let filter = format!("in:{channel_name}");
+	filters.push(&filter);
+	let mut res = filters.join(" ");
+	res.push(' ');
+	res
+}
+
 fn heading(ui: &mut egui::Ui, name: &str, help: &str) {
 	design::section(ui, name, Some(help));
 }
@@ -569,6 +752,7 @@ fn caption(query: &str, key: &str, names: &[(Id, &str)], placeholder: &str) -> S
 
 fn user_picker(
 	ui: &mut egui::Ui,
+	state: &State,
 	query: &mut String,
 	key: &str,
 	needle: &mut String,
@@ -597,13 +781,31 @@ fn user_picker(
 					)),
 			);
 			let mut count = 0;
-			for user in users
-				.iter()
-				.filter(|user| user.name.to_lowercase().contains(&needle.to_lowercase()))
-			{
+			for user in users.iter().filter(|user| {
+				if needle.is_empty() {
+					true
+				} else {
+					let display = state.user_display_name(user);
+					crate::mentions::rank(needle, display, user.id).is_some()
+						|| crate::mentions::rank(needle, &user.name, user.id).is_some()
+				}
+			}) {
 				count += 1;
 				let id = user.id.to_string();
-				if user_row(ui, user, avatars, demo, selected(query, key, &id)).clicked() {
+				let display = state.user_display_name(user);
+				let sub = format!("@{}", user.name);
+				if user_row(
+					ui,
+					user,
+					display,
+					Some(&sub),
+					UserRowIcon::None,
+					avatars,
+					demo,
+					selected(query, key, &id),
+				)
+				.clicked()
+				{
 					replace(query, key, &id, true);
 				}
 			}
@@ -771,6 +973,7 @@ impl Draft {
 					heading(ui, "From", "Sent by any of the selected users");
 					user_picker(
 						ui,
+						state,
 						&mut self.query,
 						"from",
 						&mut self.from_search,
@@ -804,6 +1007,7 @@ impl Draft {
 					heading(ui, "Mentions", "Mentions any of the selected users");
 					user_picker(
 						ui,
+						state,
 						&mut self.query,
 						"mentions",
 						&mut self.mentions_search,
@@ -984,5 +1188,131 @@ mod tests {
 		assert_eq!(super::without_partial("cats has:ima"), "cats");
 		assert_eq!(super::without_partial("cats from:Rob"), "cats");
 		assert_eq!(super::Draft::new("has:image").query, "has:image");
+	}
+
+	#[test]
+	fn matching_users_finds_guild_members_by_vietnamese_nickname_and_username() {
+		let mut state = client_core::State::default();
+		let guild_id = model::Id(100);
+		let channel_id = model::Id(200);
+		state.channels.push(model::Channel {
+			id: channel_id,
+			guild: Some(guild_id),
+			parent_id: None,
+			kind: 0,
+			position: 0,
+			name: "chat".into(),
+			user_limit: None,
+			slowmode: 0,
+			recipients: vec![],
+			member_list_id: None,
+			tags: None,
+			message_count: None,
+			icon: None,
+			last_message: None,
+		});
+		state.selected = Some(channel_id);
+
+		let user1 = model::User {
+			id: model::Id(1),
+			name: "igwnz".into(),
+			discriminator: 0,
+			avatar: None,
+			kind: model::AccountKind::User,
+			webhook: false,
+			primary_guild: None,
+			cosmetics: None,
+		};
+		let user2 = model::User {
+			id: model::Id(2),
+			name: "_lyex".into(),
+			discriminator: 0,
+			avatar: None,
+			kind: model::AccountKind::User,
+			webhook: false,
+			primary_guild: None,
+			cosmetics: None,
+		};
+		let user3 = model::User {
+			id: model::Id(3),
+			name: "lynx_1st".into(),
+			discriminator: 0,
+			avatar: None,
+			kind: model::AccountKind::User,
+			webhook: false,
+			primary_guild: None,
+			cosmetics: None,
+		};
+
+		state.members = Some(model::MemberList {
+			guild: Some(guild_id),
+			channel: channel_id,
+			total: 3,
+			online: 3,
+			groups: vec![],
+			slots: vec![
+				Some(model::MemberSlot::Person(model::Member {
+					user: user1.clone(),
+					nick: Some("việc nhà m à?".into()),
+					avatar: None,
+					roles: vec![],
+					joined_at: None,
+					premium_since: None,
+					deaf: false,
+					mute: false,
+					communication_disabled_until: None,
+				})),
+				Some(model::MemberSlot::Person(model::Member {
+					user: user2.clone(),
+					nick: Some("Con vịt biết cười".into()),
+					avatar: None,
+					roles: vec![],
+					joined_at: None,
+					premium_since: None,
+					deaf: false,
+					mute: false,
+					communication_disabled_until: None,
+				})),
+				Some(model::MemberSlot::Person(model::Member {
+					user: user3.clone(),
+					nick: Some("! Lynx".into()),
+					avatar: None,
+					roles: vec![],
+					joined_at: None,
+					premium_since: None,
+					deaf: false,
+					mute: false,
+					communication_disabled_until: None,
+				})),
+			],
+			lazy: false,
+			request: 0,
+		});
+
+		// 1. Search with unaccented Vietnamese "viec" matches "việc nhà m à?"
+		let hits = super::matching_users(&state, Some(channel_id), "viec");
+		assert!(!hits.is_empty());
+		assert_eq!(hits[0].user.name, "igwnz");
+		assert_eq!(hits[0].display_name, "việc nhà m à?");
+
+		// 2. Search with username "igwnz" matches
+		let hits_username = super::matching_users(&state, Some(channel_id), "igwnz");
+		assert!(!hits_username.is_empty());
+		assert_eq!(hits_username[0].user.name, "igwnz");
+
+		// 3. Search with word boundary "@lynx" matches "! Lynx"
+		let hits_lynx = super::matching_users(&state, Some(channel_id), "lynx");
+		assert!(!hits_lynx.is_empty());
+		assert_eq!(hits_lynx[0].user.name, "lynx_1st");
+
+		// 4. Test insert_user_filter
+		assert_eq!(
+			super::insert_user_filter("viec", "from", "igwnz"),
+			"from:igwnz "
+		);
+		assert_eq!(
+			super::insert_user_filter("has:image viec", "mentions", "igwnz"),
+			"has:image mentions:igwnz "
+		);
 	}
 }

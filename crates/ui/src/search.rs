@@ -632,7 +632,7 @@ impl SearchUi {
 									}
 								}
 							} else {
-								let query_clean = self.query.trim();
+								let query_clean = self.query.trim().to_owned();
 								if !query_clean.is_empty() {
 									submit = ui
 										.add_enabled_ui(
@@ -670,7 +670,7 @@ impl SearchUi {
 									}
 
 									let user_candidates =
-										filters::matching_users(state, self.channel, query_clean);
+										filters::matching_users(state, self.channel, &query_clean);
 									if !user_candidates.is_empty() {
 										ui.separator();
 										ui.add_space(4.0);

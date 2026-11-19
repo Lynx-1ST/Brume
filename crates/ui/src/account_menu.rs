@@ -1100,7 +1100,7 @@ impl MessagingUi {
 							.hint_text(crate::i18n::translate(
 								"account-menu-custom-status-editor-what-s-on-your-mind",
 							))
-							.frame(false)
+							.frame(egui::Frame::NONE)
 							.char_limit(128)
 							.desired_width(f32::INFINITY),
 					);

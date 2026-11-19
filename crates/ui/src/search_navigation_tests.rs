@@ -181,6 +181,89 @@ fn click(
 }
 
 #[test]
+fn search_header_filter_click_and_enter_work_in_the_conversation() {
+	let ctx = egui::Context::default();
+	let mut state = state();
+	let mut view = MessagingUi::default();
+	let draw = |view: &mut MessagingUi, state: &mut State, events| {
+		frame(&ctx, view, state, events, false, false)
+	};
+	let tap = |view: &mut MessagingUi, state: &mut State, pos| {
+		for pressed in [true, false] {
+			draw(
+				view,
+				state,
+				vec![
+					egui::Event::PointerMoved(pos),
+					egui::Event::PointerButton {
+						pos,
+						button: egui::PointerButton::Primary,
+						pressed,
+						modifiers: egui::Modifiers::NONE,
+					},
+				],
+			);
+		}
+	};
+	for _ in 0..3 {
+		draw(&mut view, &mut state, vec![]);
+	}
+	let (_, labels) = draw(&mut view, &mut state, vec![]);
+	let pill = labels
+		.iter()
+		.find(|(text, _)| text == "Search")
+		.expect("header search pill")
+		.1
+		.center();
+	tap(&mut view, &mut state, pill);
+	for _ in 0..3 {
+		draw(&mut view, &mut state, vec![]);
+	}
+	// Click the actual popup row, rather than assigning the query directly.
+	let (_, labels) = draw(&mut view, &mut state, vec![]);
+	let from = labels
+		.iter()
+		.find(|(text, _)| text == "From a specific user")
+		.expect("from filter")
+		.1
+		.center();
+	tap(&mut view, &mut state, from);
+	draw(&mut view, &mut state, vec![]);
+	let (commands, _) = draw(
+		&mut view,
+		&mut state,
+		vec![key(egui::Key::Enter, egui::Modifiers::NONE)],
+	);
+	assert!(commands.iter().any(
+		|command| matches!(command, Command::Search { query, .. } if query.starts_with("from:"))
+	));
+	page(&mut state, 1);
+	// The result pane reparents the header. Keyboard focus must survive it.
+	for _ in 0..3 {
+		draw(&mut view, &mut state, vec![]);
+	}
+	assert!(ctx.memory(|memory| memory.has_focus(egui::Id::unique("conversation-search-query"))));
+	draw(
+		&mut view,
+		&mut state,
+		vec![egui::Event::Text("needle".into())],
+	);
+	let (commands, _) = draw(
+		&mut view,
+		&mut state,
+		vec![key(egui::Key::Enter, egui::Modifiers::NONE)],
+	);
+	assert!(commands.iter().any(
+		|command| matches!(command, Command::Search { query, .. } if query.ends_with("needle"))
+	));
+	assert!(
+		!commands
+			.iter()
+			.any(|command| matches!(command, Command::Send { .. }))
+	);
+}
+
+#[test]
 fn conversation_search_shortcut_focuses_from_composer_and_preserves_results() {
 	let ctx = egui::Context::default();
 	let mut state = state();

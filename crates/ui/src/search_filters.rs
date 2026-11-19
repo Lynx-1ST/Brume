@@ -202,6 +202,20 @@ pub fn without_partial(query: &str) -> &str {
 	}
 }
 
+/// Use the typed text as the picked filter's value, keeping completed filters intact.
+pub fn insert_filter(query: &str, key: &str) -> String {
+	let (mut filters, text): (Vec<&str>, Vec<&str>) = without_partial(query)
+		.split_whitespace()
+		.partition(|token| {
+			token
+				.split_once(':')
+				.is_some_and(|(key, _)| FILTER_KEYS.contains(&key))
+		});
+	let filter = format!("{key}:{}", label(&text.join(" ")));
+	filters.push(&filter);
+	filters.join(" ")
+}
+
 /// `has:` values in Discord's order. `forward` is sent as the service's `snapshot`.
 pub const HAS: [&str; 9] = [
 	"image", "video", "link", "file", "embed", "sound", "poll", "sticker", "forward",
@@ -953,6 +967,16 @@ impl Draft {
 
 #[cfg(test)]
 mod tests {
+	#[test]
+	fn picked_filter_uses_typed_value_and_keeps_completed_filters() {
+		assert_eq!(super::insert_filter("rob", "from"), "from:rob");
+		assert_eq!(
+			super::insert_filter("in:general John Smith", "mentions"),
+			"in:general mentions:John_Smith"
+		);
+		assert_eq!(super::insert_filter("ima has:li", "has"), "has:ima");
+	}
+
 	/// "More filters" keeps a finished trailing `has:` and drops one still being typed.
 	#[test]
 	fn a_finished_has_filter_survives_and_a_partial_one_does_not() {

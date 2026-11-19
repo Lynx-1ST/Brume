@@ -5968,3 +5968,82 @@ audio-error-device = Audio output device is unavailable; check the speaker selec
 audio-error-busy = Audio output device is in use by another application
 
 audio-error-format = Audio output device has no usable format
+
+# Native sign-in form (email, password, MFA and QR code).
+native-login-email-or-phone = Email or phone number
+native-login-password = Password
+native-login-forgot-password = Forgot your password?
+native-login-log-in = Log In
+native-login-logging-in = Logging in…
+native-login-need-an-account = Need an account?
+native-login-register = Register
+native-login-or = or
+native-login-back-to-saved-accounts = Back to saved accounts
+native-login-credentials-note = Your password and codes go straight to Discord and are never stored.
+native-login-mfa-title = Two-factor authentication
+native-login-mfa-totp-subtitle = Enter the 6-digit code from your authenticator app
+native-login-mfa-sms-subtitle = Enter the code Discord texted to your phone
+native-login-mfa-backup-subtitle = Enter one of your 8-character backup codes
+native-login-mfa-totp-label = Authentication code
+native-login-mfa-sms-label = SMS code
+native-login-mfa-backup-label = Backup code
+native-login-mfa-six-digits = 6-digit code
+native-login-mfa-eight-characters = 8-character backup code
+native-login-mfa-use-authenticator = Use your authenticator app
+native-login-mfa-use-sms = Receive a code by SMS
+native-login-mfa-use-backup = Use a backup code
+native-login-mfa-resend-sms = Send the code again
+native-login-sms-sent = Discord sent a code to your phone.
+native-login-back-to-login = Go back to login
+native-login-captcha-title = Wait! Are you human?
+native-login-captcha-subtitle = Please confirm you're not a robot
+native-login-captcha-cancel = Cancel
+native-login-qr-title = Log in with QR Code
+native-login-qr-detail = Scan this with the Discord mobile app to log in instantly.
+native-login-qr-expired = This code expired. Refresh it to get a new one.
+native-login-qr-unavailable = The QR code could not be loaded.
+native-login-qr-refresh = Refresh
+native-login-qr-check-your-phone = Check your phone!
+native-login-qr-logging-in-as = Logging in as { $name }
+native-login-qr-confirm-on-phone = Confirm the login in the Discord mobile app.
+native-login-qr-not-me = Not me, start over
+native-login-more-token = Session token
+native-login-more-web = Web login
+native-login-web-detail = Opens Discord's own login page in a temporary window. Use it for a security key or passkey, or if the form above cannot finish your sign-in.
+native-login-web-open = Open Discord's login page
+
+native-login-error-invalid = Login or password is invalid.
+
+native-login-error-location = Approve this login using the link Discord emailed you.
+
+native-login-error-password-reset = Reset your password on Discord, then try again.
+
+native-login-error-code = The authentication code is invalid.
+
+native-login-error-expired = Sign-in expired. Please start again.
+
+native-login-error-captcha = Verification was not accepted. Please start again.
+
+native-login-error-mfa = Use the QR code or web login for this verification method.
+
+native-login-error-action = Finish the account steps on Discord, then sign in again.
+
+native-login-error-unsupported-captcha = Use web login to complete this verification.
+
+native-login-error-restricted = Discord stopped this sign-in. Check the official client.
+
+native-login-error-blocked = Discord blocked this request. Wait before trying again.
+
+native-login-error-network = Could not reach Discord. Check your connection.
+
+native-login-error-route = The network route is not ready. Try again shortly.
+
+native-login-error-protocol = Discord sent an unsupported sign-in response.
+
+native-login-error-rate = Wait { $seconds } seconds before signing in again.
+
+native-login-error-http = Discord returned HTTP { $status } during sign-in.
+
+native-login-error-busy = Sign-in is busy. Try again in a moment.
+
+native-login-error-verification-expired = Verification expired. Start the check again.

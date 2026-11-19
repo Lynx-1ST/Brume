@@ -5990,3 +5990,121 @@ audio-error-device = Không tìm thấy thiết bị phát âm thanh. Hãy kiể
 audio-error-busy = Ứng dụng khác đang sử dụng thiết bị phát âm thanh.
 
 audio-error-format = Thiết bị phát âm thanh không hỗ trợ định dạng phù hợp.
+
+native-login-email-or-phone = Email hoặc số điện thoại
+
+native-login-password = Mật khẩu
+
+native-login-forgot-password = Quên mật khẩu?
+
+native-login-log-in = Đăng nhập
+
+native-login-logging-in = Đang đăng nhập…
+
+native-login-need-an-account = Chưa có tài khoản?
+
+native-login-register = Đăng ký
+
+native-login-or = hoặc
+
+native-login-back-to-saved-accounts = Quay lại danh sách tài khoản
+
+native-login-credentials-note = Mật khẩu và mã xác thực được gửi trực tiếp đến Discord, không lưu trên máy.
+
+native-login-mfa-title = Xác thực hai lớp
+
+native-login-mfa-totp-subtitle = Nhập mã 6 chữ số từ ứng dụng xác thực.
+
+native-login-mfa-sms-subtitle = Nhập mã Discord gửi đến số điện thoại của bạn.
+
+native-login-mfa-backup-subtitle = Nhập một mã dự phòng gồm 8 ký tự.
+
+native-login-mfa-totp-label = Mã xác thực
+
+native-login-mfa-sms-label = Mã SMS
+
+native-login-mfa-backup-label = Mã dự phòng
+
+native-login-mfa-six-digits = Mã gồm 6 chữ số
+
+native-login-mfa-eight-characters = Mã dự phòng gồm 8 ký tự
+
+native-login-mfa-use-authenticator = Dùng ứng dụng xác thực
+
+native-login-mfa-use-sms = Nhận mã qua SMS
+
+native-login-mfa-use-backup = Dùng mã dự phòng
+
+native-login-mfa-resend-sms = Gửi lại mã
+
+native-login-sms-sent = Discord đã gửi mã đến điện thoại của bạn.
+
+native-login-back-to-login = Quay lại đăng nhập
+
+native-login-captcha-title = Xác minh bạn là con người
+
+native-login-captcha-subtitle = Hoàn tất bước xác minh để tiếp tục.
+
+native-login-captcha-cancel = Hủy
+
+native-login-qr-title = Đăng nhập bằng mã QR
+
+native-login-qr-detail = Quét mã bằng ứng dụng Discord trên điện thoại.
+
+native-login-qr-expired = Mã đã hết hạn. Làm mới để lấy mã khác.
+
+native-login-qr-unavailable = Không tải được mã QR.
+
+native-login-qr-refresh = Làm mới
+
+native-login-qr-check-your-phone = Kiểm tra điện thoại của bạn!
+
+native-login-qr-logging-in-as = Đang đăng nhập với tài khoản { $name }
+
+native-login-qr-confirm-on-phone = Xác nhận đăng nhập trong ứng dụng Discord trên điện thoại.
+
+native-login-qr-not-me = Không phải tôi, bắt đầu lại
+
+native-login-more-token = Token phiên đăng nhập
+
+native-login-more-web = Đăng nhập qua web
+
+native-login-web-detail = Mở trang đăng nhập Discord để dùng khóa bảo mật, passkey hoặc hoàn tất bước đăng nhập chưa được hỗ trợ.
+
+native-login-web-open = Mở trang đăng nhập Discord
+
+native-login-error-invalid = Email, số điện thoại hoặc mật khẩu không đúng.
+
+native-login-error-location = Mở liên kết Discord gửi qua email để xác nhận lần đăng nhập này.
+
+native-login-error-password-reset = Đặt lại mật khẩu trên Discord rồi đăng nhập lại.
+
+native-login-error-code = Mã xác thực không đúng.
+
+native-login-error-expired = Phiên đăng nhập đã hết hạn. Vui lòng bắt đầu lại.
+
+native-login-error-captcha = Xác minh chưa được chấp nhận. Vui lòng thử lại từ đầu.
+
+native-login-error-mfa = Hãy dùng mã QR hoặc đăng nhập qua web để xác thực bằng phương thức này.
+
+native-login-error-action = Hoàn tất yêu cầu của tài khoản trên Discord rồi đăng nhập lại.
+
+native-login-error-unsupported-captcha = Hãy đăng nhập qua web để hoàn tất bước xác minh này.
+
+native-login-error-restricted = Discord đã dừng lần đăng nhập này. Hãy kiểm tra tài khoản trong ứng dụng Discord.
+
+native-login-error-blocked = Discord đã chặn yêu cầu này. Hãy chờ trước khi thử lại.
+
+native-login-error-network = Không kết nối được với Discord. Hãy kiểm tra kết nối mạng.
+
+native-login-error-route = Kết nối mạng chưa sẵn sàng. Hãy thử lại sau ít phút.
+
+native-login-error-protocol = Serein chưa xử lý được phản hồi đăng nhập từ Discord.
+
+native-login-error-rate = Chờ { $seconds } giây trước khi đăng nhập lại.
+
+native-login-error-http = Discord trả về lỗi HTTP { $status } khi đăng nhập.
+
+native-login-error-busy = Đang xử lý đăng nhập. Hãy thử lại sau giây lát.
+
+native-login-error-verification-expired = Xác minh đã hết hạn. Vui lòng bắt đầu lại.

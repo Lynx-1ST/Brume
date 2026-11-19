@@ -35,6 +35,7 @@ mod gpu;
 mod gpu_video;
 mod group_icon;
 mod interaction_uploads;
+mod native_login;
 mod notification_runtime;
 mod notification_sounds;
 #[cfg(feature = "demo")]
@@ -1072,6 +1073,7 @@ struct Desktop {
 	extensions: extension_bridge::Bridge,
 	extension_close_pending: bool,
 	login: Option<platform::LoginView>,
+	native: native_login::NativeLogin,
 	captcha: captcha::Captcha,
 	connection: Option<connection::Connection>,
 	state: State,
@@ -2449,6 +2451,8 @@ impl Desktop {
 		let mut sign_in_panels = false;
 		#[cfg_attr(not(feature = "demo"), allow(unused_mut))]
 		let mut sign_in_forget = None;
+		#[cfg_attr(not(feature = "demo"), allow(unused_mut))]
+		let mut native = native_login::NativeLogin::default();
 		#[cfg(feature = "demo")]
 		if demo && std::env::args().any(|arg| arg == "--demo-join-server") {
 			if demo_loading {
@@ -2477,8 +2481,13 @@ impl Desktop {
 			// Fixture-only: render the sign-in screen without a session. `--demo-login` shows the
 			// returning-owner layout with a synthetic roster (the actions stay inert); `=new`
 			// shows the first-run layout, `=panels` the opened disclosures and `=failed` the
-			// attention banner.
-			if !matches!(rest.as_str(), "new" | "panels") {
+			// attention banner. `=mfa`, `=scanned`, `=expired` and `=error` show the native
+			// form in those states.
+			let form = matches!(rest.as_str(), "mfa" | "scanned" | "expired" | "error");
+			if form {
+				native.preview(&rest);
+			}
+			if !form && !matches!(rest.as_str(), "new" | "panels") {
 				messaging.accounts = state
 					.user
 					.as_ref()
@@ -2620,6 +2629,7 @@ impl Desktop {
 			extensions: extension_bridge::Bridge::default(),
 			extension_close_pending: false,
 			login: None,
+			native,
 			captcha: captcha::Captcha::default(),
 			connection: None,
 			state,
@@ -5800,6 +5810,9 @@ impl Desktop {
 					credentials::Operation::Forget,
 				));
 			}
+		}
+		if let Some(secret) = self.native.poll(ctx) {
+			self.connect(secret, true, ctx);
 		}
 		if let Some(login) = &self.login {
 			login.pump();

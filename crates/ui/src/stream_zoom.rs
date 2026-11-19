@@ -63,7 +63,7 @@ impl Viewport {
 		};
 		let response = ui.interact(
 			rect,
-			ui.id().with(("stream-zoom", key)),
+			ui.scope_id().with(("stream-zoom", key)),
 			egui::Sense::drag(),
 		);
 		if response.hovered() {

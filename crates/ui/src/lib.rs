@@ -2547,18 +2547,12 @@ impl MessagingUi {
 					})
 					.or_else(|| state.user.clone());
 				egui::Frame::new()
-					.inner_margin(egui::Margin {
-						left: 12,
-						right: 8,
-						top: 8,
-						bottom: 8,
-					})
+					.inner_margin(egui::Margin::symmetric(8, 6))
 					.show(ui, |ui| {
 						ui.set_width(ui.available_width());
-						ui.set_min_height(52.0);
 						let bar_rect = egui::Rect::from_min_size(
-							ui.cursor().left_top() - egui::vec2(12.0, 8.0),
-							egui::vec2(ui.available_width() + 20.0, 52.0),
+							ui.cursor().left_top() - egui::vec2(8.0, 6.0),
+							egui::vec2(ui.available_width() + 16.0, 44.0),
 						);
 						let bar_hovered = ui.rect_contains_pointer(bar_rect);
 						if let Some(user) = &nameplate_user {
@@ -2566,14 +2560,14 @@ impl MessagingUi {
 								ui,
 								user,
 								bar_rect,
-								0,
+								8,
 								bar_hovered,
 								false,
 								state.demo,
 							);
 						}
 						ui.horizontal(|ui| {
-							ui.spacing_mut().item_spacing.x = 10.0;
+							ui.spacing_mut().item_spacing.x = 8.0;
 							if let Some(user) = &state.user {
 								let avatar = self.avatars.show(ui, user, 32.0, state.demo);
 								if self.own_account_speaking(state) {
@@ -4177,7 +4171,9 @@ impl MessagingUi {
                                     self.slash_commands.composer(ui, state, channel, &self.keybinds)
                                 });
                                 self.mention_lookup.text = query.inner;
-                                self.mention_lookup.sync(ctx, state, channel, 0, commands);
+                                if !(self.search.open && !self.search.pins()) {
+                                    self.mention_lookup.sync(ctx, state, channel, 0, commands);
+                                }
                                 if self.slash_commands.active.is_none() {
                                     ctx.memory_mut(|memory| memory.request_focus(composer_id));
                                 }
@@ -4475,7 +4471,9 @@ impl MessagingUi {
                             }
                         }
                         self.mention_lookup.text = self.mention_menu.member_query().to_owned();
-                        self.mention_lookup.sync(ctx, state, channel, 0, commands);
+                        if !(self.search.open && !self.search.pins()) {
+                            self.mention_lookup.sync(ctx, state, channel, 0, commands);
+                        }
                         if !editing_here && (!new_draft.is_empty() || restore_empty_draft) {
                             state.drafts.insert(channel, new_draft);
                         }

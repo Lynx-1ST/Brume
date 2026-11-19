@@ -2789,6 +2789,7 @@ pub struct Select {
 	width: Option<f32>,
 	height: f32,
 	icon: Option<crate::icons::Icon>,
+	close_behavior: egui::PopupCloseBehavior,
 }
 
 impl Select {
@@ -2799,7 +2800,12 @@ impl Select {
 			width: None,
 			height: 300.0,
 			icon: None,
+			close_behavior: egui::PopupCloseBehavior::CloseOnClick,
 		}
+	}
+	pub fn close_behavior(mut self, close_behavior: egui::PopupCloseBehavior) -> Self {
+		self.close_behavior = close_behavior;
+		self
 	}
 	pub fn selected_text(mut self, text: impl Into<egui::WidgetText>) -> Self {
 		self.text = text.into();
@@ -2895,6 +2901,7 @@ impl Select {
 			);
 		}
 		let inner = egui::Popup::menu(&response)
+			.close_behavior(self.close_behavior)
 			.width(width)
 			.gap(6.0)
 			.frame(

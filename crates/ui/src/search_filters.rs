@@ -141,10 +141,34 @@ pub fn users(state: &State) -> Vec<&User> {
 			}
 		}
 	}
+	if let Some(guild_id) = guild_id {
+		for ch in &state.channels {
+			if ch.guild == Some(guild_id) && Some(ch.id) != channel_id {
+				for member in state.known_members(ch.id) {
+					users.entry(member.user.id).or_insert(&member.user);
+				}
+			}
+		}
+	}
+	for view in &state.member_search {
+		for member in &view.rows {
+			users.entry(member.user.id).or_insert(&member.user);
+		}
+	}
+	for entry in &state.voice.roster {
+		if let Some(member) = &entry.member {
+			if guild_id.is_none() || Some(entry.guild) == guild_id {
+				users.entry(member.user.id).or_insert(&member.user);
+			}
+		}
+	}
 	for msg in state.timeline.iter().rev() {
-		users.entry(msg.author.id).or_insert(&msg.author);
-		for user in &msg.mentions {
-			users.entry(user.id).or_insert(user);
+		let msg_guild = state.channel(msg.channel).and_then(|c| c.guild);
+		if channel_id == Some(msg.channel) || (guild_id.is_some() && msg_guild == guild_id) {
+			users.entry(msg.author.id).or_insert(&msg.author);
+			for user in &msg.mentions {
+				users.entry(user.id).or_insert(user);
+			}
 		}
 	}
 	users.into_values().collect()
@@ -171,7 +195,10 @@ pub fn matching_users<'a>(
 	let mut users: std::collections::BTreeMap<Id, (&'a User, Option<&'a str>)> =
 		std::collections::BTreeMap::new();
 	let channel_id = channel.or(state.selected);
-	let current_guild = guild(state);
+	let current_guild = channel_id
+		.and_then(|id| state.channel(id))
+		.and_then(|channel| channel.guild)
+		.or_else(|| guild(state));
 
 	if let Some(owner) = &state.user {
 		users.entry(owner.id).or_insert((owner, None));
@@ -188,7 +215,8 @@ pub fn matching_users<'a>(
 				.or_insert((&member.user, member.nick.as_deref()));
 		}
 		for msg in state.timeline.iter().rev() {
-			if msg.channel == ch_id {
+			let msg_guild = state.channel(msg.channel).and_then(|c| c.guild);
+			if msg.channel == ch_id || (current_guild.is_some() && msg_guild == current_guild) {
 				users.entry(msg.author.id).or_insert((&msg.author, None));
 				for user in &msg.mentions {
 					users.entry(user.id).or_insert((user, None));
@@ -215,6 +243,22 @@ pub fn matching_users<'a>(
 						.entry(member.user.id)
 						.or_insert((&member.user, member.nick.as_deref()));
 				}
+			}
+		}
+	}
+	for view in &state.member_search {
+		for member in &view.rows {
+			users
+				.entry(member.user.id)
+				.or_insert((&member.user, member.nick.as_deref()));
+		}
+	}
+	for entry in &state.voice.roster {
+		if let Some(member) = &entry.member {
+			if current_guild.is_none() || Some(entry.guild) == current_guild {
+				users
+					.entry(member.user.id)
+					.or_insert((&member.user, member.nick.as_deref()));
 			}
 		}
 	}
@@ -290,7 +334,19 @@ pub fn channels(state: &State) -> Vec<&Channel> {
 
 /// The filter being typed at the end of the query: its start, key and partial value.
 pub fn active_token(query: &str) -> Option<(usize, &'static str, &str)> {
-	for key in ["from", "mentions", "in", "has"] {
+	for (key, canonical) in [
+		("from", "from"),
+		("từ", "from"),
+		("mentions", "mentions"),
+		("đề cập", "mentions"),
+		("để cập", "mentions"),
+		("de cap", "mentions"),
+		("in", "in"),
+		("trong", "in"),
+		("has", "has"),
+		("có", "has"),
+		("co", "has"),
+	] {
 		let prefix = format!("{key}:");
 		if let Some(start) = query.rfind(&prefix) {
 			if start > 0 && !query[..start].ends_with(char::is_whitespace) {
@@ -299,7 +355,7 @@ pub fn active_token(query: &str) -> Option<(usize, &'static str, &str)> {
 			// A trailing space commits the token, like picking a suggestion does.
 			let typed = &query[start + prefix.len()..];
 			if !typed.contains(char::is_whitespace) && typed.parse::<u64>().is_err() {
-				return Some((start, key, typed));
+				return Some((start, canonical, typed));
 			}
 		}
 	}
@@ -429,9 +485,16 @@ pub fn wire(query: &str, state: &State, labels: &Labels) -> Result<String, &'sta
 			tokens.push(token.to_owned());
 			continue;
 		};
-		let next = match key {
+		let normalized_key = match key {
+			"from" | "từ" => "from",
+			"mentions" | "đề cập" | "để cập" | "de cap" => "mentions",
+			"in" | "trong" => "in",
+			"has" | "có" | "co" => "has",
+			other => other,
+		};
+		let next = match normalized_key {
 			"from" | "mentions" => user_id(value, state, labels)
-				.map(|id| format!("{key}:{id}"))
+				.map(|id| format!("{normalized_key}:{id}"))
 				.ok_or("Choose a user from the suggestions.")?,
 			"in" if guild(state).is_some() => channel_id(value, state, labels)
 				.map(|id| format!("in:{id}"))
@@ -439,9 +502,9 @@ pub fn wire(query: &str, state: &State, labels: &Labels) -> Result<String, &'sta
 			"before" | "after" => super::date_id(value)
 				.ok()
 				.flatten()
-				.map(|id| format!("{key}_id:{id}"))
+				.map(|id| format!("{normalized_key}_id:{id}"))
 				.ok_or("Enter dates as YYYY-MM-DD, after January 1, 2015.")?,
-			_ => token.to_owned(),
+			_ => format!("{normalized_key}:{value}"),
 		};
 		changed |= next != token;
 		tokens.push(next);
@@ -547,9 +610,16 @@ pub fn highlight(ui: &egui::Ui, text: &str, wrap_width: f32) -> egui::text::Layo
 
 const FILTER_KEYS: &[&str] = &[
 	"from",
+	"từ",
 	"mentions",
+	"đề cập",
+	"để cập",
+	"de cap",
 	"in",
+	"trong",
 	"has",
+	"có",
+	"co",
 	"before",
 	"after",
 	"before_id",
@@ -767,6 +837,7 @@ fn user_picker(
 	demo: bool,
 ) {
 	crate::design::Select::from_id_salt(key)
+		.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
 		.width(ui.available_width())
 		.selected_text(caption(
 			query,
@@ -831,6 +902,7 @@ fn channel_picker(
 	channels: &[&Channel],
 ) {
 	crate::design::Select::from_id_salt("in")
+		.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
 		.width(ui.available_width())
 		.selected_text(caption(
 			query,
@@ -883,7 +955,11 @@ fn choices(
 	values: &[(&str, &str)],
 	multi: bool,
 ) {
-	crate::design::Select::from_id_salt(key)
+	let mut select = crate::design::Select::from_id_salt(key);
+	if multi {
+		select = select.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside);
+	}
+	select
 		.width(ui.available_width())
 		.selected_text(caption(
 			query,

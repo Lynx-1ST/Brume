@@ -2532,12 +2532,48 @@ impl MessagingUi {
 				let mut identity_hover = None;
 				let mut avatar_rect = None;
 				let mut avatar_focused = false;
+				let nameplate_user = state
+					.user
+					.as_ref()
+					.filter(|u| {
+						u.cosmetics
+							.as_ref()
+							.and_then(|c| c.nameplate.as_ref())
+							.is_some()
+					})
+					.cloned()
+					.or_else(|| {
+						account_menu::account_profile(state).map(|profile| profile.user.clone())
+					})
+					.or_else(|| state.user.clone());
 				egui::Frame::new()
-					.inner_margin(egui::Margin::symmetric(8, 6))
+					.inner_margin(egui::Margin {
+						left: 12,
+						right: 8,
+						top: 8,
+						bottom: 8,
+					})
 					.show(ui, |ui| {
 						ui.set_width(ui.available_width());
+						ui.set_min_height(52.0);
+						let bar_rect = egui::Rect::from_min_size(
+							ui.cursor().left_top() - egui::vec2(12.0, 8.0),
+							egui::vec2(ui.available_width() + 20.0, 52.0),
+						);
+						let bar_hovered = ui.rect_contains_pointer(bar_rect);
+						if let Some(user) = &nameplate_user {
+							self.avatars.paint_nameplate(
+								ui,
+								user,
+								bar_rect,
+								0,
+								bar_hovered,
+								false,
+								state.demo,
+							);
+						}
 						ui.horizontal(|ui| {
-							ui.spacing_mut().item_spacing.x = 8.0;
+							ui.spacing_mut().item_spacing.x = 10.0;
 							if let Some(user) = &state.user {
 								let avatar = self.avatars.show(ui, user, 32.0, state.demo);
 								if self.own_account_speaking(state) {

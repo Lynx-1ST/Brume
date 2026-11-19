@@ -64,6 +64,7 @@ pub struct SearchUi {
 		String,
 		crate::extensions_ui::MessageTarget,
 	)>,
+	pub(crate) member_lookup: crate::member_search::Search,
 }
 
 impl SearchUi {
@@ -158,10 +159,23 @@ impl SearchUi {
 			self.viewing = None;
 			self.filters_open = false;
 			self.filter_draft = None;
+			self.member_lookup.text.clear();
 			if state.search.is_some() {
 				commands.push(state.clear_search());
 			}
 			return;
+		}
+		if !self.pins {
+			let active = filters::active_token(&self.query);
+			let lookup_text = match active {
+				Some((_, "from" | "mentions", typed)) => typed.trim(),
+				None if !self.query.trim().is_empty() => self.query.trim(),
+				_ => "",
+			};
+			self.member_lookup.text = lookup_text.to_owned();
+			if let Some(channel) = self.channel.or(state.selected) {
+				self.member_lookup.sync(ctx, state, channel, 0, commands);
+			}
 		}
 		if state
 			.search
@@ -239,7 +253,9 @@ impl SearchUi {
 					};
 					let output = egui::TextEdit::singleline(&mut self.query)
 						.align(egui::Align2::LEFT_CENTER)
-						.id_salt("conversation-search-query")
+						// The header moves between panels when results/member lists open.
+						.id(egui::Id::unique("conversation-search-query"))
+						.return_key(None)
 						.char_limit(256)
 						.frame(egui::Frame::NONE)
 						.hint_text(RichText::new(hint).color(colors.muted))
@@ -271,9 +287,9 @@ impl SearchUi {
 					// Enter picks the highlighted suggestion while a filter is being typed.
 					submit = allowed
 						&& filters::active_token(&self.query).is_none()
-						&& input.lost_focus()
-						&& ui.input(|i| i.key_pressed(egui::Key::Enter))
-						&& !self.ime_frame;
+						&& input.has_focus()
+						&& !self.ime_frame && ui
+						.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
 					if icons::button(
 						ui,
 						icons::Icon::Close,
@@ -370,6 +386,8 @@ impl SearchUi {
 			let bounds = ctx.content_rect().shrink(8.0);
 			let width = FILTER_WIDTH.min(bounds.width());
 			let popup = egui::Area::new(egui::Id::unique("search-filters"))
+				.kind(egui::UiKind::Popup)
+				.movable(false)
 				.order(egui::Order::Foreground)
 				.fixed_pos(egui::pos2(
 					(anchor.right() - width).max(bounds.left()),
@@ -459,32 +477,36 @@ impl SearchUi {
 							} else if let Some((start, key, typed)) =
 								filters::active_token(&self.query)
 							{
-								let typed = typed.to_lowercase();
-								let users = filters::users(state);
 								let channels = filters::channels(state);
-								// (label, id) per suggestion; users and channels share the list.
-								let matching: Vec<(String, Id)> = if key == "in" {
+								let user_candidates = if matches!(key, "from" | "mentions") {
+									filters::matching_users(state, self.channel, typed)
+								} else {
+									Vec::new()
+								};
+								let typed_norm =
+									crate::mentions::normalize(typed.trim_start_matches('#'));
+								let matching_channels: Vec<&model::Channel> = if key == "in" {
 									channels
 										.iter()
 										.filter(|channel| {
-											filters::label(&channel.name)
-												.to_lowercase()
-												.contains(typed.trim_start_matches('#'))
+											crate::mentions::normalize(&filters::label(
+												&channel.name,
+											))
+											.contains(&typed_norm)
 										})
 										.take(100)
-										.map(|channel| (filters::label(&channel.name), channel.id))
+										.copied()
 										.collect()
 								} else {
-									users
-										.iter()
-										.filter(|user| {
-											filters::label(&user.name)
-												.to_lowercase()
-												.contains(&typed)
-										})
-										.map(|user| (filters::label(&user.name), user.id))
-										.collect()
+									Vec::new()
 								};
+
+								let matching_len = if key == "in" {
+									matching_channels.len()
+								} else {
+									user_candidates.len()
+								};
+
 								ui.label(
 									design::semibold(
 										ui,
@@ -510,45 +532,81 @@ impl SearchUi {
 									self.suggestion_index = self.suggestion_index.saturating_sub(1);
 								}
 								self.suggestion_index =
-									self.suggestion_index.min(matching.len().saturating_sub(1));
+									self.suggestion_index.min(matching_len.saturating_sub(1));
 								let enter = !self.ime_frame
 									&& ctx.input_mut(|i| {
 										i.consume_key(egui::Modifiers::NONE, egui::Key::Enter)
 									});
 								let mut chosen = None;
+								let user_prefix = match key {
+									"from" => crate::i18n::translate("search-overlays-from")
+										.to_lowercase(),
+									_ => {
+										if crate::i18n::current().resolved()
+											== crate::i18n::Language::Vietnamese
+										{
+											"để cập".to_owned()
+										} else {
+											"mentions".to_owned()
+										}
+									}
+								};
 								egui::ScrollArea::vertical()
 									.max_height(260.0)
 									.show(ui, |ui| {
-										for (index, (label, id)) in matching.iter().enumerate() {
-											let selected = index == self.suggestion_index;
-											let row = if key == "in" {
-												let channel = channels
-													.iter()
-													.find(|channel| channel.id == *id);
-												channel.map(|channel| {
-													filters::channel_row(
-														ui, state, channel, selected,
-													)
-												})
-											} else {
-												let user = users.iter().find(|user| user.id == *id);
-												user.map(|user| {
-													filters::user_row(
-														ui, user, avatars, state.demo, selected,
-													)
-												})
-											};
-											let Some(row) = row else {
-												continue;
-											};
-											if selected && (up || down) {
-												row.scroll_to_me(None);
+										if key == "in" {
+											for (index, channel) in
+												matching_channels.iter().enumerate()
+											{
+												let selected = index == self.suggestion_index;
+												let row = filters::channel_row(
+													ui, state, channel, selected,
+												);
+												if selected && (up || down) {
+													row.scroll_to_me(None);
+												}
+												if row.clicked() || (enter && selected) {
+													chosen = Some((
+														filters::label(&channel.name),
+														channel.id,
+													));
+												}
 											}
-											if row.clicked() || (enter && selected) {
-												chosen = Some((label.clone(), *id));
+										} else {
+											for (index, candidate) in
+												user_candidates.iter().take(50).enumerate()
+											{
+												let selected = index == self.suggestion_index;
+												let sub = format!(
+													"{user_prefix}: {}",
+													candidate.user.name
+												);
+												let row = filters::user_row(
+													ui,
+													candidate.user,
+													&candidate.display_name,
+													Some(&sub),
+													if key == "from" {
+														filters::UserRowIcon::Profile
+													} else {
+														filters::UserRowIcon::At
+													},
+													avatars,
+													state.demo,
+													selected,
+												);
+												if selected && (up || down) {
+													row.scroll_to_me(None);
+												}
+												if row.clicked() || (enter && selected) {
+													chosen = Some((
+														filters::label(&candidate.user.name),
+														candidate.user.id,
+													));
+												}
 											}
 										}
-										if matching.is_empty() {
+										if matching_len == 0 {
 											ui.label(crate::i18n::translate_if_key(
 												if key == "in" {
 													"search-overlays-no-matching-channels"
@@ -574,130 +632,265 @@ impl SearchUi {
 									}
 								}
 							} else {
-								submit = ui
-									.add_enabled_ui(
-										state.can_search() && self.wire(state).is_ok(),
-										|ui| {
-											filters::suggestion_row(
-												ui,
-												"search",
-												&format!(
-													"{} {}",
-													crate::i18n::translate(
-														"search-overlays-search-for"
+								let query_clean = self.query.trim().to_owned();
+								if !query_clean.is_empty() {
+									submit = ui
+										.add_enabled_ui(
+											state.can_search() && self.wire(state).is_ok(),
+											|ui| {
+												filters::suggestion_row(
+													ui,
+													"search",
+													&format!(
+														"{} {}",
+														crate::i18n::translate(
+															"search-overlays-search-for"
+														),
+														query_clean
 													),
-													self.query.trim()
-												),
-												"",
-											)
-										},
-									)
-									.inner
-									.clicked();
-								ui.separator();
-								ui.add_space(6.0);
-								ui.horizontal(|ui| {
-									ui.add_space(10.0);
-									ui.label(
-										design::semibold(
-											ui,
-											crate::i18n::translate("search-overlays-filters"),
-											12.0,
+													"",
+												)
+											},
 										)
-										.color(colors.muted),
-									);
-								});
-								let server = filters::guild(state).is_some();
-								for (title, detail, key) in [
-									(
-										"search-open-filters-from-a-specific-user",
-										"search-open-filters-from-user",
-										"from",
-									),
-									(
-										"search-open-filters-in-a-specific-channel",
-										"search-open-filters-in-channel",
-										"in",
-									),
-									(
-										"search-open-filters-includes-a-specific-type-of-data",
-										"search-open-filters-has-link-embed-or-file",
-										"has",
-									),
-									(
-										"search-open-filters-mentions-a-specific-user",
-										"search-open-filters-mentions-user",
-										"mentions",
-									),
-									(
-										"search-open-filters-more-filters",
-										"search-open-filters-dates-author-type-and-more",
-										"",
-									),
-								] {
-									if key == "in" && !server {
-										continue;
-									}
-									let row = filters::suggestion_row(
+										.inner
+										.clicked();
+
+									let add_filter_row = filters::suggestion_row(
 										ui,
-										key,
-										&crate::i18n::translate_if_key(title),
-										&crate::i18n::translate_if_key(detail),
+										"",
+										&crate::i18n::translate_if_key(
+											"search-open-filters-more-filters",
+										),
+										&crate::i18n::translate_if_key(
+											"search-open-filters-dates-author-type-and-more",
+										),
 									);
-									if row.clicked() {
-										if matches!(key, "from" | "mentions" | "in" | "has") {
-											let query = format!("{} {key}:", self.query.trim());
-											if query.len() <= 1024 && query.chars().count() <= 256 {
-												self.query = query.trim_start().to_owned();
-												self.focus = true;
+									if add_filter_row.clicked() {
+										self.open_filters(state);
+									}
+
+									let user_candidates =
+										filters::matching_users(state, self.channel, &query_clean);
+									if !user_candidates.is_empty() {
+										ui.separator();
+										ui.add_space(4.0);
+										let from_prefix =
+											crate::i18n::translate("search-overlays-from")
+												.to_lowercase();
+										ui.horizontal(|ui| {
+											ui.add_space(10.0);
+											ui.label(
+												design::semibold(
+													ui,
+													crate::i18n::translate(
+														"search-overlays-from-user",
+													),
+													12.0,
+												)
+												.color(colors.muted),
+											);
+										});
+										for candidate in user_candidates.iter().take(3) {
+											let sub =
+												format!("{from_prefix}: {}", candidate.user.name);
+											let row = filters::user_row(
+												ui,
+												candidate.user,
+												&candidate.display_name,
+												Some(&sub),
+												filters::UserRowIcon::Profile,
+												avatars,
+												state.demo,
+												false,
+											);
+											if row.clicked() {
+												let label = filters::label(&candidate.user.name);
+												let query = filters::insert_user_filter(
+													&self.query,
+													"from",
+													&label,
+												);
+												if model::valid_search_query(&query) {
+													self.labels.remember(
+														"user",
+														&label,
+														candidate.user.id,
+													);
+													self.query = query;
+													self.filters_open = false;
+													self.focus = true;
+													submit = state.can_search();
+												}
 											}
+										}
+
+										ui.separator();
+										ui.add_space(4.0);
+										let mentions_prefix = if crate::i18n::current().resolved()
+											== crate::i18n::Language::Vietnamese
+										{
+											"để cập".to_owned()
 										} else {
-											self.open_filters(state);
+											"mentions".to_owned()
+										};
+										ui.horizontal(|ui| {
+											ui.add_space(10.0);
+											ui.label(
+												design::semibold(
+													ui,
+													crate::i18n::translate(
+														"search-overlays-mentions-user",
+													),
+													12.0,
+												)
+												.color(colors.muted),
+											);
+										});
+										for candidate in user_candidates.iter().take(3) {
+											let sub = format!(
+												"{mentions_prefix}: {}",
+												candidate.user.name
+											);
+											let row = filters::user_row(
+												ui,
+												candidate.user,
+												&candidate.display_name,
+												Some(&sub),
+												filters::UserRowIcon::At,
+												avatars,
+												state.demo,
+												false,
+											);
+											if row.clicked() {
+												let label = filters::label(&candidate.user.name);
+												let query = filters::insert_user_filter(
+													&self.query,
+													"mentions",
+													&label,
+												);
+												if model::valid_search_query(&query) {
+													self.labels.remember(
+														"user",
+														&label,
+														candidate.user.id,
+													);
+													self.query = query;
+													self.filters_open = false;
+													self.focus = true;
+													submit = state.can_search();
+												}
+											}
 										}
 									}
-								}
-								if !self.history.is_empty() {
-									ui.separator();
-									ui.add_space(4.0);
-									let mut clear = false;
+								} else {
 									ui.horizontal(|ui| {
 										ui.add_space(10.0);
 										ui.label(
 											design::semibold(
 												ui,
-												crate::i18n::translate("search-overlays-history"),
+												crate::i18n::translate("search-overlays-filters"),
 												12.0,
 											)
 											.color(colors.muted),
 										);
-										ui.with_layout(
-											egui::Layout::right_to_left(egui::Align::Center),
-											|ui| {
-												clear = icons::button(
-													ui,
-													icons::Icon::Trash,
-													22.0,
-													&crate::i18n::translate(
-														"search-overlays-clear-history",
-													),
-												)
-												.clicked();
-											},
-										);
 									});
-									for query in self.history.clone() {
-										let label =
-											filters::display(&query, state, &mut self.labels);
-										if filters::suggestion_row(ui, "history", &label, "")
-											.clicked()
-										{
-											repeat = Some(query);
+									let server = filters::guild(state).is_some();
+									for (title, detail, key) in [
+										(
+											"search-open-filters-from-a-specific-user",
+											"search-open-filters-from-user",
+											"from",
+										),
+										(
+											"search-open-filters-in-a-specific-channel",
+											"search-open-filters-in-channel",
+											"in",
+										),
+										(
+											"search-open-filters-includes-a-specific-type-of-data",
+											"search-open-filters-has-link-embed-or-file",
+											"has",
+										),
+										(
+											"search-open-filters-mentions-a-specific-user",
+											"search-open-filters-mentions-user",
+											"mentions",
+										),
+										(
+											"search-open-filters-more-filters",
+											"search-open-filters-dates-author-type-and-more",
+											"",
+										),
+									] {
+										if key == "in" && !server {
+											continue;
+										}
+										let row = filters::suggestion_row(
+											ui,
+											key,
+											&crate::i18n::translate_if_key(title),
+											&crate::i18n::translate_if_key(detail),
+										);
+										if row.clicked() {
+											if matches!(key, "from" | "mentions" | "in" | "has") {
+												let query =
+													filters::insert_filter(&self.query, key);
+												if query.len() <= 1024
+													&& query.chars().count() <= 256
+												{
+													self.query = query;
+													self.focus = true;
+												}
+											} else {
+												self.open_filters(state);
+											}
 										}
 									}
-									if clear {
-										self.history.clear();
-									} else if repeat.is_some() {
-										self.focus = true;
+									if !self.history.is_empty() {
+										ui.separator();
+										ui.add_space(4.0);
+										let mut clear = false;
+										ui.horizontal(|ui| {
+											ui.add_space(10.0);
+											ui.label(
+												design::semibold(
+													ui,
+													crate::i18n::translate(
+														"search-overlays-history",
+													),
+													12.0,
+												)
+												.color(colors.muted),
+											);
+											ui.with_layout(
+												egui::Layout::right_to_left(egui::Align::Center),
+												|ui| {
+													clear = icons::button(
+														ui,
+														icons::Icon::Trash,
+														22.0,
+														&crate::i18n::translate(
+															"search-overlays-clear-history",
+														),
+													)
+													.clicked();
+												},
+											);
+										});
+										for query in self.history.clone() {
+											let label =
+												filters::display(&query, state, &mut self.labels);
+											if filters::suggestion_row(ui, "history", &label, "")
+												.clicked()
+											{
+												repeat = Some(query);
+											}
+										}
+										if clear {
+											self.history.clear();
+										} else if repeat.is_some() {
+											self.focus = true;
+										}
 									}
 								}
 							}

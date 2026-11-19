@@ -11,14 +11,26 @@ pub(super) struct AccountMenu {
 	close: bool,
 	generation: u64,
 	draft: String,
+	draft_emoji: Option<String>,
 	custom_open: bool,
 	/// Chosen while the editor is open; only Apply commits it to a deadline.
 	clear_after: ClearAfter,
 	profile_session: profiles::ProfileSession,
 }
 
+pub(crate) fn split_status_emoji(status: &str) -> (Option<String>, String) {
+	let trimmed = status.trim();
+	for (emoji, _) in crate::emoji_picker::standard() {
+		if let Some(rest) = trimmed.strip_prefix(emoji) {
+			let rest = rest.strip_prefix(' ').unwrap_or(rest);
+			return (Some((*emoji).to_owned()), rest.to_owned());
+		}
+	}
+	(None, trimmed.to_owned())
+}
+
 /// Only global metadata for the currently signed-in identity may enter this menu.
-fn account_profile(state: &State) -> Option<&model::UserProfile> {
+pub(crate) fn account_profile(state: &State) -> Option<&model::UserProfile> {
 	let own = state.user.as_ref()?.id;
 	let global_own =
 		|profile: &&model::UserProfile| profile.user.id == own && profile.guild.is_none();
@@ -26,6 +38,13 @@ fn account_profile(state: &State) -> Option<&model::UserProfile> {
 		.known_profile(own)
 		.filter(global_own)
 		.or_else(|| state.own_profile.data.as_ref().filter(global_own))
+}
+
+/// Fit the whole decoration inside the scroll viewport, preserving the frame's authored ratio.
+fn account_frame_layout(width: f32, frame: &model::ProfileFrame) -> (f32, [f32; 3]) {
+	let side = frame.overflow(1.0)[2];
+	let card_width = width / (1.0 + 2.0 * side);
+	(card_width, frame.overflow(card_width))
 }
 
 /// The menu loads the ordinary global profile; editor failures belong to the editor.
@@ -139,7 +158,9 @@ impl AccountMenu {
 	pub(super) fn preview_editor(&mut self, generation: u64, draft: String) {
 		self.preview(generation);
 		self.clear_after = ClearAfter::Hour;
-		self.draft = draft;
+		let (emoji, text) = split_status_emoji(&draft);
+		self.draft_emoji = emoji;
+		self.draft = text;
 		self.custom_open = true;
 	}
 }
@@ -149,8 +170,8 @@ impl MessagingUi {
 		if !presence.custom_status.is_empty() && !presence.valid() {
 			return;
 		}
-		if self.account_menu.draft == self.own_presence.custom_status {
-			self.account_menu.draft.clone_from(&presence.custom_status);
+		let (emoji, text) = split_status_emoji(&presence.custom_status);
+		if self.account_menu.draft == text && self.account_menu.draft_emoji == emoji {
 			self.account_menu.clear_after = ClearAfter::nearest(presence.expires_at_ms);
 		}
 		self.own_presence_expires = presence.expires_at_ms;
@@ -183,7 +204,9 @@ impl MessagingUi {
 		if anchor.clicked() {
 			self.account_menu.open = !self.account_menu.open;
 			if self.account_menu.open {
-				self.account_menu.draft = self.own_presence.custom_status.clone();
+				let (emoji, text) = split_status_emoji(&self.own_presence.custom_status);
+				self.account_menu.draft_emoji = emoji;
+				self.account_menu.draft = text;
 				self.profile.hide();
 				// Reuse the normal bounded profile read, including optional cosmetics and
 				// badge metadata. This is a read, never the profile-edit command.
@@ -275,7 +298,46 @@ impl MessagingUi {
 		ui: &mut egui::Ui,
 		state: &mut State,
 		commands: &mut Vec<Command>,
-	) {
+	) -> egui::Rect {
+		let layout = account_profile(state)
+			.and_then(|profile| profile.frame.as_deref())
+			.filter(|_| self.avatars.cosmetics.frames)
+			.map(|frame| account_frame_layout(ui.available_width(), frame));
+		let Some((width, [top, bottom, side])) = layout else {
+			return self.account_profile_card(ui, state, commands, None);
+		};
+		// The frame scrolls with its card. Its overhang is part of the scroll content,
+		// while the scroll viewport still clips it away from the fixed account actions.
+		let clip = ui.clip_rect();
+		ui.add_space(top);
+		let origin = ui.cursor().left_top() + vec2(side, 0.0);
+		let card = ui
+			.scope_builder(
+				egui::UiBuilder::new().max_rect(egui::Rect::from_min_size(
+					origin,
+					vec2(width, ui.available_height()),
+				)),
+				|ui| {
+					ui.set_width(width);
+					ui.set_max_width(width);
+					self.account_profile_card(ui, state, commands, Some(clip))
+				},
+			)
+			.inner;
+		let target_bottom = card.bottom() + bottom;
+		if ui.cursor().top() < target_bottom {
+			ui.add_space(target_bottom - ui.cursor().top());
+		}
+		card
+	}
+
+	fn account_profile_card(
+		&mut self,
+		ui: &mut egui::Ui,
+		state: &mut State,
+		commands: &mut Vec<Command>,
+		artwork_clip: Option<egui::Rect>,
+	) -> egui::Rect {
 		let colors = design::palette(ui);
 		let theme = profiles::Theme::new(
 			&colors,
@@ -376,7 +438,7 @@ impl MessagingUi {
 		);
 		ui.painter().set(background, theme.background(rect));
 		if let Some(profile) = account_profile(state) {
-			let clip = ui.clip_rect().intersect(rect);
+			let clip = artwork_clip.unwrap_or_else(|| ui.clip_rect().intersect(rect));
 			profiles::paint_collectibles(
 				ui,
 				&mut self.avatars,
@@ -387,6 +449,7 @@ impl MessagingUi {
 				state.demo,
 			);
 		}
+		rect
 	}
 
 	/// Other accounts remembered on this device, plus a row to remember one more.
@@ -890,15 +953,16 @@ impl MessagingUi {
 	}
 	/// Opens the custom status dialog on the current status, as its pencil does.
 	pub(super) fn open_custom_status_editor(&mut self) {
-		self.account_menu
-			.draft
-			.clone_from(&self.own_presence.custom_status);
+		let (emoji, text) = split_status_emoji(&self.own_presence.custom_status);
+		self.account_menu.draft_emoji = emoji;
+		self.account_menu.draft = text;
 		self.account_menu.clear_after = ClearAfter::nearest(self.own_presence_expires);
 		self.account_menu.custom_open = true;
 	}
 	/// Clears the custom status and its deadline; the presence update follows.
 	pub(super) fn clear_custom_status(&mut self) {
 		self.account_menu.draft.clear();
+		self.account_menu.draft_emoji = None;
 		self.account_menu.clear_after = ClearAfter::Never;
 		self.own_presence_expires = None;
 		self.own_presence.expires_at_ms = None;
@@ -968,7 +1032,7 @@ impl MessagingUi {
 	/// Live preview, bounded field and footer actions, styled like Discord's dialog.
 	fn custom_status_editor(&mut self, ui: &mut egui::Ui, state: &State) {
 		let colors = design::palette(ui);
-		let draft = self.account_menu.draft.trim().to_owned();
+		let (draft, valid, _) = self.custom_status_draft();
 		egui::Frame::new()
 			.fill(colors.base)
 			.corner_radius(8)
@@ -1019,18 +1083,33 @@ impl MessagingUi {
 			});
 		ui.add_space(16.0);
 		let label = dialog::label(ui, "account-menu-custom-status-editor-status-text");
-		dialog::input(
-			ui,
-			egui::TextEdit::singleline(&mut self.account_menu.draft)
-				.align(egui::Align2::LEFT_CENTER)
-				.id_salt(("account-custom-status", state.generation))
-				.hint_text(crate::i18n::translate(
-					"account-menu-custom-status-editor-what-s-on-your-mind",
-				))
-				.char_limit(128),
-		)
-		.labelled_by(label.id);
-		let (_, valid, _) = self.custom_status_draft();
+		let input_frame = egui::Frame::new()
+			.fill(colors.base)
+			.stroke(egui::Stroke::new(1.0, colors.border))
+			.corner_radius(6)
+			.inner_margin(egui::Margin::symmetric(8, 4))
+			.show(ui, |ui| {
+				ui.horizontal(|ui| {
+					ui.spacing_mut().item_spacing.x = 8.0;
+					self.emoji_picker.unicode_button_with(
+						ui,
+						&mut self.account_menu.draft_emoji,
+						true,
+					);
+					ui.add(
+						egui::TextEdit::singleline(&mut self.account_menu.draft)
+							.align(egui::Align2::LEFT_CENTER)
+							.id_salt(("account-custom-status", state.generation))
+							.hint_text(crate::i18n::translate(
+								"account-menu-custom-status-editor-what-s-on-your-mind",
+							))
+							.frame(egui::Frame::NONE)
+							.char_limit(128)
+							.desired_width(f32::INFINITY),
+					);
+				});
+			});
+		input_frame.response.labelled_by(label.id);
 		ui.add_space(4.0);
 		// A bounded row: a bare right-to-left layout here takes the dialog's whole remaining
 		// height and the size never settles.
@@ -1078,7 +1157,13 @@ impl MessagingUi {
 
 	/// Trimmed draft, whether it is publishable, and whether it differs from what is live.
 	fn custom_status_draft(&self) -> (String, bool, bool) {
-		let draft = self.account_menu.draft.trim().to_owned();
+		let text = self.account_menu.draft.trim();
+		let draft = match (&self.account_menu.draft_emoji, text.is_empty()) {
+			(Some(emoji), false) => format!("{emoji} {text}"),
+			(Some(emoji), true) => emoji.clone(),
+			(None, false) => text.to_owned(),
+			(None, true) => String::new(),
+		};
 		let valid = model::OwnPresence {
 			status: self.own_presence.status,
 			custom_status: draft.clone(),
@@ -1106,17 +1191,18 @@ impl MessagingUi {
 			.clicked()
 		{
 			self.own_presence.custom_status = draft.clone();
-			self.account_menu
-				.draft
-				.clone_from(&self.own_presence.custom_status);
+			let (emoji, text) = split_status_emoji(&self.own_presence.custom_status);
+			self.account_menu.draft_emoji = emoji;
+			self.account_menu.draft = text;
 			self.own_presence_expires = (!draft.is_empty())
 				.then(|| self.account_menu.clear_after.deadline())
 				.flatten();
 			self.own_presence.expires_at_ms = self.own_presence_expires;
 			self.own_presence_changed = true;
 		}
-		let clearable =
-			!self.own_presence.custom_status.is_empty() || !self.account_menu.draft.is_empty();
+		let clearable = !self.own_presence.custom_status.is_empty()
+			|| !self.account_menu.draft.is_empty()
+			|| self.account_menu.draft_emoji.is_some();
 		if ui
 			.add_enabled_ui(clearable, |ui| {
 				dialog::action(
@@ -1256,6 +1342,93 @@ mod tests {
 		assert!(output.platform_output.commands.is_empty());
 		output.drop_without_applying_deltas();
 		text
+	}
+
+	#[test]
+	fn account_profile_frame_keeps_its_overhang_and_reserves_space_before_actions() {
+		fn visible_meshes(
+			shape: &egui::Shape,
+			clip: Rect,
+			textures: &[egui::TextureId],
+			bounds: &mut Rect,
+		) {
+			match shape {
+				egui::Shape::Mesh(mesh) if textures.contains(&mesh.texture_id) => {
+					let mut rect = Rect::NOTHING;
+					for vertex in &mesh.vertices {
+						rect.extend_with(vertex.pos);
+					}
+					let visible = rect.intersect(clip);
+					if visible.is_positive() {
+						*bounds = bounds.union(visible);
+					}
+				}
+				egui::Shape::Vec(shapes) => {
+					for shape in shapes {
+						visible_meshes(shape, clip, textures, bounds);
+					}
+				}
+				_ => {}
+			}
+		}
+		for width in [260.0, 340.0] {
+			let ctx = egui::Context::default();
+			design::apply(&ctx);
+			let mut state = test_support::demo_state();
+			let own = state.user.as_ref().unwrap();
+			let mut profile = profiles::synthetic(own, None);
+			profile.effect = None;
+			let frame = profile.frame.as_deref().unwrap().clone();
+			state.own_profile.data = Some(profile);
+			let mut view = MessagingUi::default();
+			view.avatars.cosmetics.frames = true;
+			let mut card = Rect::NOTHING;
+			let mut actions_top = 0.0;
+			let mut left = 0.0;
+			let output = ctx.run_ui(
+				egui::RawInput {
+					screen_rect: Some(Rect::from_min_size(Pos2::ZERO, vec2(640.0, 1200.0))),
+					..Default::default()
+				},
+				|ui| {
+					ui.set_width(width);
+					left = ui.cursor().left();
+					card = view.account_profile_contents(ui, &mut state, &mut vec![]);
+					actions_top = ui.cursor().top();
+				},
+			);
+			let textures: Vec<_> = view
+				.avatars
+				.frame_shapes(&ctx, &frame, card, Rect::EVERYTHING, true, true)
+				.iter()
+				.filter_map(|shape| match shape {
+					egui::Shape::Mesh(mesh) => Some(mesh.texture_id),
+					_ => None,
+				})
+				.collect();
+			assert!(!textures.is_empty());
+			let mut painted = Rect::NOTHING;
+			for shape in &output.shapes {
+				visible_meshes(&shape.shape, shape.clip_rect, &textures, &mut painted);
+			}
+			assert!(
+				painted.top() < card.top() && painted.bottom() > card.bottom(),
+				"top/bottom frame was clipped: {painted:?}, {card:?}"
+			);
+			assert!(
+				painted.left() < card.left() && painted.right() > card.right(),
+				"side frame was clipped: {painted:?}, {card:?}"
+			);
+			assert!(
+				actions_top >= painted.bottom() - 0.1,
+				"frame overlaps the account actions: actions_top={actions_top}, painted={painted:?}"
+			);
+			assert!(
+				painted.left() >= left - 0.1 && painted.right() <= left + width + 0.1,
+				"frame escapes the available width: {painted:?}"
+			);
+			output.drop_without_applying_deltas();
+		}
 	}
 	fn click(
 		ctx: &egui::Context,
@@ -1532,5 +1705,29 @@ mod tests {
 				assert!(view.take_avatar_requests().is_empty());
 			}
 		}
+	}
+
+	#[test]
+	fn custom_status_splits_and_combines_emoji_and_text() {
+		assert_eq!(
+			super::split_status_emoji("😘 Những suy nghĩ khi đi tắm?"),
+			(Some("😘".into()), "Những suy nghĩ khi đi tắm?".into())
+		);
+		assert_eq!(
+			super::split_status_emoji("😘"),
+			(Some("😘".into()), "".into())
+		);
+		assert_eq!(
+			super::split_status_emoji("Just normal status"),
+			(None, "Just normal status".into())
+		);
+
+		let mut view = MessagingUi::default();
+		view.account_menu.draft_emoji = Some("😘".into());
+		view.account_menu.draft = "Taking a shower".into();
+		let (draft, valid, changed) = view.custom_status_draft();
+		assert_eq!(draft, "😘 Taking a shower");
+		assert!(valid);
+		assert!(changed);
 	}
 }

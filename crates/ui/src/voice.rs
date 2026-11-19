@@ -7393,22 +7393,16 @@ mod tests {
 			)
 			.drop_without_applying_deltas();
 		}
-		render(
-			&ctx,
-			&mut messaging,
-			&state,
-			egui::pos2(20.0, 37.0),
-			0.0,
-			20.0,
-		);
-		render(
-			&ctx,
-			&mut messaging,
-			&state,
-			egui::pos2(20.0, 37.0),
-			0.01,
-			20.0,
-		);
+		for frame in 0..5 {
+			render(
+				&ctx,
+				&mut messaging,
+				&state,
+				egui::pos2(20.0, 37.0),
+				f64::from(frame) * 0.01,
+				20.0,
+			);
+		}
 		let regular = messaging.stream_preview_hover.expect("preview near top").1;
 		let pointer = egui::pos2(20.0, 317.0);
 		let mut tops = Vec::new();
@@ -7418,7 +7412,7 @@ mod tests {
 				&mut messaging,
 				&state,
 				pointer,
-				0.02 + f64::from(frame) * 0.01,
+				0.05 + f64::from(frame) * 0.01,
 				300.0,
 			);
 			tops.push(messaging.stream_preview_hover.map(|(_, rect)| rect.top()));

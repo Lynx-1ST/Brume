@@ -56,39 +56,49 @@ impl Viewport {
 		if !rect.is_positive() {
 			return;
 		}
-		let key = match self.source {
-			StageFocus::LocalScreen => (0, 0),
-			StageFocus::Stream(user) => (1, user.0),
-			StageFocus::Participant(user) => (2, user.0),
-		};
-		let response = ui.interact(
-			rect,
-			ui.scope_id().with(("stream-zoom", key)),
-			egui::Sense::drag(),
-		);
-		if response.hovered() {
+		let hovered = ui.rect_contains_pointer(rect);
+		if hovered {
 			let scroll = ui.input_mut(|input| {
 				let scroll = input.smooth_scroll_delta.y;
 				input.smooth_scroll_delta.y = 0.0;
 				scroll
 			});
 			if scroll != 0.0
-				&& let Some(pointer) = response.hover_pos()
+				&& let Some(pointer) = ui.input(|i| i.pointer.hover_pos())
 			{
 				let at = (pointer - rect.min) / rect.size() - egui::vec2(0.5, 0.5);
 				self.zoom_at(at, scroll);
 			}
-		}
-		if response.dragged() {
-			self.center -= response.drag_delta() / rect.size() / self.factor;
-		}
-		if response.hovered()
-			&& ui.input(|input| {
+			if ui.input(|input| {
 				input
 					.pointer
 					.button_double_clicked(egui::PointerButton::Primary)
 			}) {
-			self.factor = 1.0;
+				self.factor = 1.0;
+			}
+			let dragging = self.factor > 1.0
+				&& ui.input(|i| {
+					i.pointer.button_down(egui::PointerButton::Primary)
+						&& i.pointer.interact_pos().is_some_and(|pos| rect.contains(pos))
+				});
+			ui.ctx().set_cursor_icon(if dragging {
+				egui::CursorIcon::Grabbing
+			} else if self.factor > 1.0 {
+				egui::CursorIcon::Grab
+			} else {
+				egui::CursorIcon::ZoomIn
+			});
+		}
+		if self.factor > 1.0 {
+			let dragging = ui.input(|i| {
+				i.pointer.is_decidedly_dragging()
+					&& i.pointer.button_down(egui::PointerButton::Primary)
+					&& i.pointer.press_origin().is_some_and(|pos| rect.contains(pos))
+			});
+			if dragging {
+				let delta = ui.input(|i| i.pointer.delta());
+				self.center -= delta / rect.size() / self.factor;
+			}
 		}
 		let half = 0.5 / self.factor;
 		self.center = self
@@ -101,11 +111,6 @@ impl Viewport {
 		ui.painter()
 			.with_clip_rect(rect)
 			.image(texture, rect, uv, egui::Color32::WHITE);
-		response.on_hover_cursor(if self.factor > 1.0 {
-			egui::CursorIcon::Grab
-		} else {
-			egui::CursorIcon::ZoomIn
-		});
 	}
 }
 

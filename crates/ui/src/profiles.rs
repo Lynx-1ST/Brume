@@ -2540,7 +2540,8 @@ pub(crate) fn role_chips(
 				(*width - 21.0).max(0.0),
 			);
 			let size = vec2(*width, galley.size().y + 6.0);
-			let menu = true;
+			let menu =
+				crate::extensions_ui::has_context_actions(ui.ctx(), extensions::Surface::Role);
 			let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
 			// Keyed by role so an open menu stays on its chip when live updates reorder roles.
 			let id = egui::Id::unique(("profile-role-chip", guild.guild, user, role.id));

@@ -132,7 +132,7 @@ pub fn users(state: &State) -> Vec<&User> {
 			users.entry(member.user.id).or_insert(&member.user);
 		}
 	}
-	for list in &state.members {
+	if let Some(list) = &state.members {
 		if guild_id.is_none() || list.guild == guild_id {
 			for slot in list.slots.iter().flatten() {
 				if let model::MemberSlot::Person(member) = slot {
@@ -196,7 +196,7 @@ pub fn matching_users<'a>(
 			}
 		}
 	}
-	for list in &state.members {
+	if let Some(list) = &state.members {
 		if current_guild.is_none() || list.guild == current_guild {
 			for slot in list.slots.iter().flatten() {
 				if let model::MemberSlot::Person(member) = slot {
@@ -711,6 +711,7 @@ pub fn insert_user_filter(query: &str, key: &str, username: &str) -> String {
 	res
 }
 
+#[allow(dead_code)]
 pub fn insert_channel_filter(query: &str, channel_name: &str) -> String {
 	let (mut filters, _text): (Vec<&str>, Vec<&str>) = without_partial(query)
 		.split_whitespace()
@@ -1218,7 +1219,7 @@ mod tests {
 			name: "igwnz".into(),
 			discriminator: 0,
 			avatar: None,
-			kind: model::AccountKind::User,
+			kind: model::AccountKind::Human,
 			webhook: false,
 			primary_guild: None,
 			cosmetics: None,
@@ -1228,7 +1229,7 @@ mod tests {
 			name: "_lyex".into(),
 			discriminator: 0,
 			avatar: None,
-			kind: model::AccountKind::User,
+			kind: model::AccountKind::Human,
 			webhook: false,
 			primary_guild: None,
 			cosmetics: None,
@@ -1238,7 +1239,7 @@ mod tests {
 			name: "lynx_1st".into(),
 			discriminator: 0,
 			avatar: None,
-			kind: model::AccountKind::User,
+			kind: model::AccountKind::Human,
 			webhook: false,
 			primary_guild: None,
 			cosmetics: None,
@@ -1247,46 +1248,45 @@ mod tests {
 		state.members = Some(model::MemberList {
 			guild: Some(guild_id),
 			channel: channel_id,
-			total: 3,
-			online: 3,
-			groups: vec![],
+			request: 0,
+			start: 0,
 			slots: vec![
 				Some(model::MemberSlot::Person(model::Member {
+					roles: vec![],
 					user: user1.clone(),
 					nick: Some("việc nhà m à?".into()),
-					avatar: None,
-					roles: vec![],
-					joined_at: None,
-					premium_since: None,
-					deaf: false,
-					mute: false,
-					communication_disabled_until: None,
+					status: Some("online".into()),
+					custom_status: None,
+					activities: vec![],
+					status_emoji: None,
+					clients: model::ClientPlatforms::default(),
 				})),
 				Some(model::MemberSlot::Person(model::Member {
+					roles: vec![],
 					user: user2.clone(),
 					nick: Some("Con vịt biết cười".into()),
-					avatar: None,
-					roles: vec![],
-					joined_at: None,
-					premium_since: None,
-					deaf: false,
-					mute: false,
-					communication_disabled_until: None,
+					status: Some("online".into()),
+					custom_status: None,
+					activities: vec![],
+					status_emoji: None,
+					clients: model::ClientPlatforms::default(),
 				})),
 				Some(model::MemberSlot::Person(model::Member {
+					roles: vec![],
 					user: user3.clone(),
 					nick: Some("! Lynx".into()),
-					avatar: None,
-					roles: vec![],
-					joined_at: None,
-					premium_since: None,
-					deaf: false,
-					mute: false,
-					communication_disabled_until: None,
+					status: Some("online".into()),
+					custom_status: None,
+					activities: vec![],
+					status_emoji: None,
+					clients: model::ClientPlatforms::default(),
 				})),
 			],
+			total: 3,
 			lazy: false,
-			request: 0,
+			freshness: model::Freshness::Fresh,
+			groups: vec![],
+			ranges: vec![],
 		});
 
 		// 1. Search with unaccented Vietnamese "viec" matches "việc nhà m à?"

@@ -239,7 +239,9 @@ impl SearchUi {
 					};
 					let output = egui::TextEdit::singleline(&mut self.query)
 						.align(egui::Align2::LEFT_CENTER)
-						.id_salt("conversation-search-query")
+						// The header moves between panels when results/member lists open.
+						.id(egui::Id::unique("conversation-search-query"))
+						.return_key(None)
 						.char_limit(256)
 						.frame(egui::Frame::NONE)
 						.hint_text(RichText::new(hint).color(colors.muted))
@@ -271,9 +273,9 @@ impl SearchUi {
 					// Enter picks the highlighted suggestion while a filter is being typed.
 					submit = allowed
 						&& filters::active_token(&self.query).is_none()
-						&& input.lost_focus()
-						&& ui.input(|i| i.key_pressed(egui::Key::Enter))
-						&& !self.ime_frame;
+						&& input.has_focus()
+						&& !self.ime_frame && ui
+						.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter));
 					if icons::button(
 						ui,
 						icons::Icon::Close,
@@ -370,6 +372,8 @@ impl SearchUi {
 			let bounds = ctx.content_rect().shrink(8.0);
 			let width = FILTER_WIDTH.min(bounds.width());
 			let popup = egui::Area::new(egui::Id::unique("search-filters"))
+				.kind(egui::UiKind::Popup)
+				.movable(false)
 				.order(egui::Order::Foreground)
 				.fixed_pos(egui::pos2(
 					(anchor.right() - width).max(bounds.left()),
@@ -646,9 +650,9 @@ impl SearchUi {
 									);
 									if row.clicked() {
 										if matches!(key, "from" | "mentions" | "in" | "has") {
-											let query = format!("{} {key}:", self.query.trim());
+											let query = filters::insert_filter(&self.query, key);
 											if query.len() <= 1024 && query.chars().count() <= 256 {
-												self.query = query.trim_start().to_owned();
+												self.query = query;
 												self.focus = true;
 											}
 										} else {

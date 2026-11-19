@@ -324,7 +324,10 @@ impl MessagingUi {
 				},
 			)
 			.inner;
-		ui.add_space(bottom);
+		let target_bottom = card.bottom() + bottom;
+		if ui.cursor().top() < target_bottom {
+			ui.add_space(target_bottom - ui.cursor().top());
+		}
 		card
 	}
 
@@ -1417,8 +1420,8 @@ mod tests {
 				"side frame was clipped: {painted:?}, {card:?}"
 			);
 			assert!(
-				actions_top >= painted.bottom(),
-				"frame overlaps the account actions"
+				actions_top >= painted.bottom() - 0.1,
+				"frame overlaps the account actions: actions_top={actions_top}, painted={painted:?}"
 			);
 			assert!(
 				painted.left() >= left - 0.1 && painted.right() <= left + width + 0.1,

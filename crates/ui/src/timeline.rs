@@ -55,14 +55,11 @@ pub struct TimelineView {
 	pub(super) hide_link_previews: bool,
 	pub(super) instant_scrolling: bool,
 	applied_hide_media_links: bool,
-<<<<<<< HEAD
 	pub(super) hide_blocked_messages: bool,
 	pub(super) hide_ignored_messages: bool,
 	applied_hide_blocked_messages: bool,
 	applied_hide_ignored_messages: bool,
-=======
 	applied_hide_link_previews: bool,
->>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 	pub(super) compact_messages: bool,
 	applied_compact_messages: bool,
 	pub(super) gif_favorite: Option<model::Gif>,
@@ -2563,12 +2560,9 @@ impl TimelineView {
 				double_click_reaction: self.double_click_reaction,
 				compact_messages: self.compact_messages,
 				hide_media_links: self.hide_media_links,
-<<<<<<< HEAD
 				hide_blocked_messages: self.hide_blocked_messages,
 				hide_ignored_messages: self.hide_ignored_messages,
-=======
 				hide_link_previews: self.hide_link_previews,
->>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 				instant_scrolling: self.instant_scrolling,
 				suppressed_deleted_highlight: std::mem::take(
 					&mut self.suppressed_deleted_highlight,
@@ -2676,21 +2670,15 @@ impl TimelineView {
 			|| self.font_revision != font_revision
 			|| self.scale != scale
 			|| self.hide_media_links != self.applied_hide_media_links
-<<<<<<< HEAD
+			|| self.hide_link_previews != self.applied_hide_link_previews
 			|| self.hide_blocked_messages != self.applied_hide_blocked_messages
 			|| self.hide_ignored_messages != self.applied_hide_ignored_messages
 			|| self.compact_messages != self.applied_compact_messages;
 		let dimensions_changed = width_changed || content_dimensions_changed;
 		self.applied_hide_media_links = self.hide_media_links;
+		self.applied_hide_link_previews = self.hide_link_previews;
 		self.applied_hide_blocked_messages = self.hide_blocked_messages;
 		self.applied_hide_ignored_messages = self.hide_ignored_messages;
-=======
-			|| self.hide_link_previews != self.applied_hide_link_previews
-			|| self.compact_messages != self.applied_compact_messages;
-		let dimensions_changed = width_changed || content_dimensions_changed;
-		self.applied_hide_media_links = self.hide_media_links;
-		self.applied_hide_link_previews = self.hide_link_previews;
->>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 		self.applied_compact_messages = self.compact_messages;
 		// The extension tweak and the device preference are alternatives for the same filter; a
 		// plugin can only turn blocked rows off, and only the preference widens it to ignored

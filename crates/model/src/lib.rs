@@ -824,6 +824,13 @@ impl ClientPlatforms {
 	}
 }
 
+/// A custom status asset; fixed-size metadata, independent of the status text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StatusEmoji {
+	pub id: Id,
+	pub animated: bool,
+}
+
 /// Complete, bounded presence values for an already-loaded user.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MemberPresence {
@@ -831,6 +838,7 @@ pub struct MemberPresence {
 	pub status: Option<String>,
 	pub custom_status: Option<String>,
 	pub activities: Vec<RichActivity>,
+	pub status_emoji: Option<StatusEmoji>,
 	pub clients: ClientPlatforms,
 }
 
@@ -845,6 +853,7 @@ impl MemberPresence {
 				.custom_status
 				.as_deref()
 				.is_none_or(valid_presence_text)
+			&& self.status_emoji.is_none_or(|emoji| emoji.id.0 != 0)
 			&& self.activities.len() <= MAX_RICH_ACTIVITIES
 			&& self.activities.iter().all(RichActivity::valid)
 	}
@@ -870,6 +879,7 @@ pub struct Member {
 	/// Custom status text with any unicode emoji; bounded, never a rich activity.
 	pub custom_status: Option<String>,
 	pub activities: Vec<RichActivity>,
+	pub status_emoji: Option<StatusEmoji>,
 	pub clients: ClientPlatforms,
 }
 impl Member {
@@ -883,6 +893,7 @@ impl Member {
 				.custom_status
 				.as_deref()
 				.is_none_or(valid_presence_text)
+			&& self.status_emoji.is_none_or(|emoji| emoji.id.0 != 0)
 			&& self.activities.len() <= MAX_RICH_ACTIVITIES
 			&& self.activities.iter().all(RichActivity::valid)
 	}
@@ -901,6 +912,9 @@ impl Member {
 			.is_some_and(|text| !valid_presence_text(text))
 		{
 			self.custom_status = None;
+		}
+		if self.status_emoji.is_some_and(|emoji| emoji.id.0 == 0) {
+			self.status_emoji = None;
 		}
 		self.activities.retain(RichActivity::valid);
 		self.activities.truncate(MAX_RICH_ACTIVITIES);
@@ -1008,6 +1022,7 @@ mod presence_tests {
 			status: None,
 			custom_status: None,
 			activities: vec![activity.clone(); MAX_RICH_ACTIVITIES],
+			status_emoji: None,
 			clients: ClientPlatforms::default(),
 		};
 		assert!(presence.valid());

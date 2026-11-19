@@ -1805,6 +1805,9 @@ impl PresenceDto {
 	pub fn custom_status(&self) -> Option<String> {
 		self.activities.0.clone()
 	}
+	pub fn status_emoji(&self) -> Option<model::StatusEmoji> {
+		self.activities.2
+	}
 	pub fn clients(&self) -> model::ClientPlatforms {
 		self.client_status.platforms()
 	}
@@ -1879,6 +1882,7 @@ impl MemberItem {
 				activities: presence::Activities(
 					previous.custom_status.clone(),
 					previous.activities.clone(),
+					previous.status_emoji,
 				),
 				client_status: presence::ClientStatus::from(previous.clients),
 			});
@@ -1926,6 +1930,10 @@ impl MemberItem {
 						.as_mut()
 						.filter(|p| p.status != "offline")
 						.map_or_else(Vec::new, |p| std::mem::take(&mut p.activities.1)),
+					status_emoji: presence
+						.as_ref()
+						.filter(|p| p.status != "offline")
+						.and_then(PresenceDto::status_emoji),
 					clients: presence
 						.as_ref()
 						.filter(|p| p.status != "offline")

@@ -5914,3 +5914,36 @@ pending-upload-many = 파일 { $count }개 업로드 중
 pending-upload-progress = { $sent } / { $total } · { $percent }%
 
 pending-upload-preparing = 업로드 준비 중 · { $size }
+
+voice-stream-zoom-hint = 스크롤로 확대 · 드래그로 이동 · 두 번 클릭하여 초기화
+voice-stream-zoom-reset = 확대 초기화
+
+copy-user-id = 사용자 ID 복사
+
+copy-server-id = 서버 ID 복사
+
+copy-role-id = 역할 ID 복사
+
+copy-dm-id = DM ID 복사
+
+settings-chat-messaging = 메시지
+
+settings-share-typing = 입력 중 표시
+
+settings-share-typing-description = 대화에서 내 입력 상태를 표시합니다.
+
+settings-mention-replies = 답장하는 사람 멘션
+
+settings-mention-replies-description = 답장을 시작할 때 기본적으로 작성자를 멘션합니다.
+
+settings-link-previews = 링크 미리 보기 표시
+
+settings-link-previews-description = 메시지 아래에 링크 및 임베드 카드를 표시합니다.
+
+audio-error-service = 시스템 오디오 서비스를 사용할 수 없습니다.
+
+audio-error-device = 오디오 출력 장치를 사용할 수 없습니다. 스피커 선택을 확인하세요.
+
+audio-error-busy = 다른 앱이 오디오 출력 장치를 사용 중입니다.
+
+audio-error-format = 오디오 출력 장치에 사용 가능한 형식이 없습니다.

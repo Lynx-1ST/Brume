@@ -1593,6 +1593,7 @@ fn demo_members(
 			},
 			status: Some("idle".into()),
 			custom_status: None,
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 			activities: vec![],
 		},
@@ -1606,6 +1607,7 @@ fn demo_members(
 			},
 			status: Some("online".into()),
 			custom_status: Some("🌙 semifluent in synthetic data".into()),
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 			activities: vec![model::RichActivity {
 				kind: 0,
@@ -1645,6 +1647,7 @@ fn demo_members(
 						roles: vec![],
 						status: None,
 						custom_status: None,
+						status_emoji: None,
 						clients: model::ClientPlatforms::default(),
 						activities: vec![],
 					});
@@ -1860,6 +1863,7 @@ impl Desktop {
 						user: member.user.id,
 						status: member.status,
 						custom_status: member.custom_status,
+						status_emoji: member.status_emoji,
 						clients: member.clients,
 						activities: member.activities,
 					})

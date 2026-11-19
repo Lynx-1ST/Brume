@@ -3,6 +3,12 @@
 
 pub(super) fn key(text: &str) -> Option<&'static str> {
 	match text {
+		"System audio service is unavailable" => Some("audio-error-service"),
+		"Audio output device is unavailable; check the speaker selection" => {
+			Some("audio-error-device")
+		}
+		"Audio output device is in use by another application" => Some("audio-error-busy"),
+		"Audio output device has no usable format" => Some("audio-error-format"),
 		"Stream PiP" => Some("voice-pip-title"),
 		"Open Picture-in-Picture" => Some("voice-pip-open"),
 		"Close Picture-in-Picture" => Some("voice-pip-close"),

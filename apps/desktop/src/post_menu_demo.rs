@@ -280,6 +280,7 @@ pub fn check() {
 			nick: None,
 			status: None,
 			custom_status: None,
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 			activities: Vec::new(),
 		}]),

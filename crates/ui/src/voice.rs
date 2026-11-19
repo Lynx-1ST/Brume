@@ -1646,6 +1646,13 @@ impl MessagingUi {
 		if matches!(tile, Tile::LocalScreen) && has_video {
 			response.context_menu(|ui| {
 				if ui
+					.button(crate::i18n::translate("voice-stream-zoom-reset"))
+					.clicked()
+				{
+					self.stream_pip.zoom.reset(tile.focus());
+					ui.close();
+				}
+				if ui
 					.button(crate::i18n::translate("voice-pip-open"))
 					.clicked()
 				{
@@ -1667,6 +1674,13 @@ impl MessagingUi {
 				egui::Popup::context_menu(&response)
 					.close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
 					.show(|ui| {
+						if ui
+							.button(crate::i18n::translate("voice-stream-zoom-reset"))
+							.clicked()
+						{
+							self.stream_pip.zoom.reset(StageFocus::Stream(*streamer));
+							ui.close();
+						}
 						if ui
 							.button(crate::i18n::translate("voice-pip-open"))
 							.clicked()
@@ -1784,7 +1798,7 @@ impl MessagingUi {
 		None
 	}
 
-	pub(super) fn screen_tile(&self, ui: &mut egui::Ui, rect: egui::Rect, compact: bool) {
+	pub(super) fn screen_tile(&mut self, ui: &mut egui::Ui, rect: egui::Rect, compact: bool) {
 		if self.screen.preview_paused {
 			Self::paint_paused_preview(ui, rect);
 			return;
@@ -1795,10 +1809,9 @@ impl MessagingUi {
 			.as_ref()
 			.map(|texture| {
 				let content = fit_rect(rect, texture.resolution_vec2());
-				ui.put(
-					content,
-					egui::Image::from_texture((texture.id(), content.size())).corner_radius(8),
-				);
+				self.stream_pip
+					.zoom
+					.paint(ui, StageFocus::LocalScreen, content, texture.id());
 				content
 			})
 			.unwrap_or(rect);
@@ -1869,10 +1882,9 @@ impl MessagingUi {
 		let content = match view.and_then(|view| view.texture.as_ref()) {
 			Some(texture) => {
 				let content = fit_rect(rect, texture.size);
-				ui.put(
-					content,
-					egui::Image::from_texture((texture.id, content.size())).corner_radius(8),
-				);
+				self.stream_pip
+					.zoom
+					.paint(ui, StageFocus::Stream(streamer), content, texture.id);
 				content
 			}
 			None => {

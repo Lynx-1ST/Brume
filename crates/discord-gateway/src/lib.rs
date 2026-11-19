@@ -1159,6 +1159,15 @@ impl ActiveMembers {
 			} else {
 				activities
 			},
+			status_emoji: if explicit_unknown || status.as_deref() == Some("offline") {
+				None
+			} else {
+				match update.status_emoji {
+					model::Patch::Absent => previous.status_emoji,
+					model::Patch::Null => None,
+					model::Patch::Value(emoji) => Some(emoji),
+				}
+			},
 			clients: if explicit_unknown || status.as_deref() == Some("offline") {
 				model::ClientPlatforms::default()
 			} else {
@@ -1223,11 +1232,13 @@ impl ActiveMembers {
 			}
 			if !capped
 				&& (row.status != resolved.status
+					|| row.status_emoji != resolved.status_emoji
 					|| row.custom_status != resolved.custom_status
 					|| row.activities != resolved.activities
 					|| row.clients != resolved.clients)
 			{
 				row.status = resolved.status.clone();
+				row.status_emoji = resolved.status_emoji;
 				row.custom_status = resolved.custom_status.clone();
 				row.activities = resolved.activities.clone();
 				row.clients = resolved.clients;
@@ -3647,6 +3658,7 @@ mod member_tests {
 			status: status.map(str::to_owned),
 			custom_status: custom.map(str::to_owned),
 			activities: vec![],
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 		}
 	}
@@ -3670,6 +3682,7 @@ mod member_tests {
 				status: model::Patch::Absent,
 				custom_status: model::Patch::Absent,
 				activities: model::Patch::Absent,
+				status_emoji: model::Patch::Absent,
 				clients: model::Patch::Absent,
 			},
 			Instant::now(),
@@ -3713,6 +3726,7 @@ mod member_tests {
 			status,
 			custom_status: model::Patch::Absent,
 			activities: model::Patch::Absent,
+			status_emoji: model::Patch::Absent,
 			clients: model::Patch::Absent,
 		};
 		for user in 1000..1100 {
@@ -4058,6 +4072,7 @@ mod member_tests {
 				status,
 				custom_status: model::Patch::Absent,
 				activities: model::Patch::Absent,
+				status_emoji: model::Patch::Absent,
 				clients: model::Patch::Absent,
 			};
 			list.presence(
@@ -4173,6 +4188,7 @@ mod member_tests {
 						status: model::Patch::Value("online".into()),
 						custom_status: model::Patch::Value("\u{1f680}".repeat(128)),
 						activities: model::Patch::Absent,
+						status_emoji: model::Patch::Absent,
 						clients: model::Patch::Absent,
 					},
 					now,
@@ -4218,6 +4234,7 @@ mod member_tests {
 				status: model::Patch::Value(status.into()),
 				custom_status: model::Patch::Absent,
 				activities: model::Patch::Absent,
+				status_emoji: model::Patch::Absent,
 				clients: model::Patch::Absent,
 			};
 			list.presence(update("idle"), now);
@@ -4243,6 +4260,7 @@ mod member_tests {
 					status: model::Patch::Null,
 					custom_status: model::Patch::Absent,
 					activities: model::Patch::Absent,
+					status_emoji: model::Patch::Absent,
 					clients: model::Patch::Absent,
 				},
 				now,

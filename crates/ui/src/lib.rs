@@ -134,6 +134,7 @@ mod thumbhash;
 pub use polls::debug_poll_check;
 mod moderation;
 mod stream_pip;
+mod stream_zoom;
 mod timeline;
 #[cfg(test)]
 mod title_bar_tests;
@@ -1892,7 +1893,18 @@ impl MessagingUi {
 								.unwrap_or_else(|| state.user_display_name(&member.user));
 							let (status, custom, activities, clients) =
 								profiles::member_presence(state, member, guild);
-							let subtitle = profiles::subtitle(custom, activities);
+							let emoji = profiles::status_emoji(state, member.user.id, guild);
+							let status_image = emoji.and_then(|emoji| {
+								self.avatars.custom_emoji(
+									ui.ctx(),
+									emoji.id,
+									emoji.animated,
+									14.0,
+									state.demo,
+								)
+							});
+							let subtitle = profiles::subtitle(custom, activities)
+								.or_else(|| emoji.map(|_| String::new()));
 							let in_voice = voice_users.contains(&member.user.id);
 							let voice_label = in_voice.then(|| language.text("member-in-voice"));
 							let online =
@@ -2053,6 +2065,9 @@ impl MessagingUi {
 													in_voice,
 													subtitle.is_some(),
 												);
+												if let Some(image) = status_image {
+													ui.add(image);
+												}
 												if let Some(subtitle) = subtitle {
 													if activities
 														.first()
@@ -5826,12 +5841,9 @@ impl MessagingUi {
 					.show(ui, |ui| {
 						design::paint_chat_background(ui, ui.available_rect_before_wrap());
 						self.timeline.hide_media_links = self.reading_preferences.hide_media_links;
-<<<<<<< HEAD
 						self.timeline.hide_blocked_messages = self.hide_blocked_messages;
 						self.timeline.hide_ignored_messages = self.hide_ignored_messages;
-=======
 						self.timeline.hide_link_previews = self.hide_link_previews;
->>>>>>> b557e4e9 (feat(settings): add typing, reply mention and link preview switches)
 						self.timeline.compact_messages = self.reading_preferences.compact_messages;
 						self.timeline.double_click_reaction = self
 							.reading_preferences
@@ -9368,6 +9380,7 @@ mod composer_tests {
 							.map(str::to_owned),
 							custom_status: None,
 							activities: vec![],
+							status_emoji: None,
 							clients: model::ClientPlatforms::default(),
 						}))
 					})
@@ -9552,6 +9565,7 @@ mod composer_tests {
 							status: Some("online".into()),
 							custom_status: None,
 							activities: vec![],
+							status_emoji: None,
 							clients: model::ClientPlatforms::default(),
 						}))
 					})
@@ -9743,6 +9757,7 @@ mod composer_tests {
 				status: Some("online".into()),
 				custom_status: Some("Initial synthetic status".into()),
 				activities: vec![],
+				status_emoji: None,
 				clients: model::ClientPlatforms::default(),
 			}))],
 		});
@@ -9831,6 +9846,7 @@ mod composer_tests {
 						status: Some("online".into()),
 						custom_status: custom_status.map(str::to_owned),
 						activities: vec![],
+						status_emoji: None,
 						clients: model::ClientPlatforms::default(),
 					}],
 				},
@@ -10573,6 +10589,7 @@ pub fn debug_member_voice_status_check(mut state: State, mut private: State) {
 			status: Some("online".into()),
 			custom_status: Some("Synthetic status".into()),
 			activities: vec![],
+			status_emoji: None,
 			clients: Default::default(),
 		}))],
 		total: 1,
@@ -10601,6 +10618,7 @@ pub fn debug_member_voice_status_check(mut state: State, mut private: State) {
 		status: Some("online".into()),
 		custom_status: Some("Synthetic status".into()),
 		activities: vec![],
+		status_emoji: None,
 		clients: Default::default(),
 	});
 	let check_cards = |view: &mut MessagingUi, state: &mut State, header: bool| {

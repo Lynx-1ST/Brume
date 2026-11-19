@@ -1413,6 +1413,7 @@ mod moderation_tests {
 			status: None,
 			custom_status: None,
 			activities: vec![],
+			status_emoji: None,
 			clients: Default::default(),
 		}))
 	}

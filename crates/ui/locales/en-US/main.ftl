@@ -4786,11 +4786,11 @@ screen-macos-system-picker-kind = System content picker
 member-in-voice = In voice
 settings-chat-messaging = Messaging
 settings-share-typing = Let others see when you're typing
-settings-share-typing-description = Discord shows "typing…" while you write. Others still show here when they type.
+settings-share-typing-description = Show your typing indicator in conversations.
 settings-mention-replies = Mention people you reply to
-settings-mention-replies-description = They get notified of your reply. Switch it for one reply with @ ON on the reply bar.
+settings-mention-replies-description = Mention the author by default when starting a reply.
 settings-link-previews = Show link previews
-settings-link-previews-description = Cards for links, videos and bots under messages. Linked pictures and GIFs still show.
+settings-link-previews-description = Show link and embed cards below messages.
 settings-chat-box = Chat Box
 settings-convert-emoticons = Automatically convert emoticons in your messages to emoji
 settings-convert-emoticons-description = Convert standalone emoticons such as :) to 🙂 when sending or editing messages. Code and links stay unchanged.
@@ -5949,3 +5949,22 @@ pending-upload-many = Uploading { $count } files
 pending-upload-progress = { $sent } of { $total } · { $percent }%
 
 pending-upload-preparing = Preparing upload · { $size }
+
+voice-stream-zoom-hint = Scroll to zoom · Drag to pan · Double-click to reset
+voice-stream-zoom-reset = Reset zoom
+
+copy-user-id = Copy User ID
+
+copy-server-id = Copy Server ID
+
+copy-role-id = Copy Role ID
+
+copy-dm-id = Copy DM ID
+
+audio-error-service = System audio service is unavailable
+
+audio-error-device = Audio output device is unavailable; check the speaker selection
+
+audio-error-busy = Audio output device is in use by another application
+
+audio-error-format = Audio output device has no usable format

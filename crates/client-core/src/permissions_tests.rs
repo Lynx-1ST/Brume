@@ -1483,6 +1483,7 @@ fn member_requests_survive_guild_hydration_and_follow_current_permissions() {
 			start: 0,
 			slots: vec![Some(model::MemberSlot::Person(model::Member {
 				activities: vec![],
+				status_emoji: None,
 				clients: model::ClientPlatforms::default(),
 				roles: vec![],
 				user: user(),
@@ -1574,6 +1575,7 @@ fn member_requests_survive_guild_hydration_and_follow_current_permissions() {
 		let mut state = state();
 		let mut member = model::Member {
 			activities: vec![],
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 			roles: vec![Id(13), Id(12), Id(11), Id(10)],
 			user: user(),

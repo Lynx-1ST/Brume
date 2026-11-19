@@ -5957,3 +5957,36 @@ pending-upload-many = Đang tải lên { $count } tệp
 pending-upload-progress = { $sent } / { $total } · { $percent }%
 
 pending-upload-preparing = Đang chuẩn bị tải lên · { $size }
+
+voice-stream-zoom-hint = Cuộn để phóng to · Kéo để di chuyển · Nhấp đúp để đặt lại
+voice-stream-zoom-reset = Đặt lại thu phóng
+
+copy-user-id = Sao chép ID người dùng
+
+copy-server-id = Sao chép ID máy chủ
+
+copy-role-id = Sao chép ID vai trò
+
+copy-dm-id = Sao chép ID cuộc trò chuyện
+
+settings-chat-messaging = Nhắn tin
+
+settings-share-typing = Hiện trạng thái đang nhập
+
+settings-share-typing-description = Cho người khác biết khi bạn đang soạn tin nhắn.
+
+settings-mention-replies = Nhắc đến người được trả lời
+
+settings-mention-replies-description = Mặc định bật nhắc đến khi trả lời tin nhắn.
+
+settings-link-previews = Hiện bản xem trước liên kết
+
+settings-link-previews-description = Hiện thẻ nội dung bên dưới liên kết.
+
+audio-error-service = Dịch vụ âm thanh chưa sẵn sàng.
+
+audio-error-device = Không tìm thấy thiết bị phát âm thanh. Hãy kiểm tra loa hoặc tai nghe đã chọn.
+
+audio-error-busy = Ứng dụng khác đang sử dụng thiết bị phát âm thanh.
+
+audio-error-format = Thiết bị phát âm thanh không hỗ trợ định dạng phù hợp.

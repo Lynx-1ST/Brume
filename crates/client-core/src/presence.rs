@@ -13,6 +13,7 @@ pub struct Update {
 	pub status: Patch<String>,
 	pub custom_status: Patch<String>,
 	pub activities: Patch<Vec<RichActivity>>,
+	pub status_emoji: Patch<model::StatusEmoji>,
 	pub clients: Patch<ClientPlatforms>,
 }
 impl Update {
@@ -35,6 +36,7 @@ impl Update {
 		{
 			newer.activities = Patch::Null;
 			newer.custom_status = Patch::Null;
+			newer.status_emoji = Patch::Null;
 			newer.clients = Patch::Null;
 		}
 		if !matches!(newer.avatar, Patch::Absent) {
@@ -45,6 +47,9 @@ impl Update {
 		}
 		if !matches!(newer.custom_status, Patch::Absent) {
 			self.custom_status = newer.custom_status;
+		}
+		if !matches!(newer.status_emoji, Patch::Absent) {
+			self.status_emoji = newer.status_emoji;
 		}
 		if !matches!(newer.activities, Patch::Absent) {
 			self.activities = newer.activities;
@@ -80,6 +85,15 @@ impl Update {
 					Patch::Value(activities) => activities.clone(),
 				}
 			},
+			status_emoji: if offline {
+				None
+			} else {
+				match self.status_emoji {
+					Patch::Absent => previous.and_then(|p| p.status_emoji),
+					Patch::Null => None,
+					Patch::Value(emoji) => Some(emoji),
+				}
+			},
 			clients: if offline {
 				ClientPlatforms::default()
 			} else {
@@ -108,6 +122,7 @@ fn online(presence: &MemberPresence) -> bool {
 
 pub fn projected_row_bytes(row: &model::Member, update: &MemberPresence) -> usize {
 	if row.status == update.status
+		&& row.status_emoji == update.status_emoji
 		&& row.custom_status == update.custom_status
 		&& row.activities == update.activities
 		&& row.clients == update.clients
@@ -376,6 +391,7 @@ impl State {
 				let presence = self.direct_presences.iter().find(|p| p.user == row.user.id);
 				if let Some(presence) = presence {
 					if row.status == presence.status
+						&& row.status_emoji == presence.status_emoji
 						&& row.custom_status == presence.custom_status
 						&& row.activities == presence.activities
 						&& row.clients == presence.clients
@@ -393,6 +409,7 @@ impl State {
 						+ activity_bytes(&row.activities);
 				}
 				row.status = presence.and_then(|p| p.status.clone());
+				row.status_emoji = presence.and_then(|p| p.status_emoji);
 				row.custom_status = presence.and_then(|p| p.custom_status.clone());
 				row.activities = presence.map_or_else(Vec::new, |p| p.activities.clone());
 				row.clients = presence.map_or_default(|p| p.clients);
@@ -488,10 +505,12 @@ impl State {
 			}) {
 			if let Some(update) = updates.iter().find(|update| update.user == row.user.id)
 				&& (row.status != update.status
+					|| row.status_emoji != update.status_emoji
 					|| row.custom_status != update.custom_status
 					|| row.activities != update.activities)
 			{
 				row.status = update.status.clone();
+				row.status_emoji = update.status_emoji;
 				row.custom_status = update.custom_status.clone();
 				row.activities = update.activities.clone();
 				changed = true;
@@ -508,6 +527,25 @@ impl State {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	#[test]
+	fn custom_status_emoji_preserves_absence_and_clears_on_removal_or_offline() {
+		let emoji = model::StatusEmoji {
+			id: Id(42),
+			animated: true,
+		};
+		let mut previous = update(2, Some("online"), Some("Reading"));
+		previous.status_emoji = Some(emoji);
+		let mut patch = direct_update(2, Patch::Absent, Patch::Absent);
+		assert_eq!(patch.resolve(Some(&previous)).status_emoji, Some(emoji));
+		patch.status_emoji = Patch::Null;
+		assert_eq!(patch.resolve(Some(&previous)).status_emoji, None);
+		patch.status_emoji = Patch::Value(emoji);
+		patch.status = Patch::Value("offline".into());
+		assert_eq!(patch.resolve(Some(&previous)).status_emoji, None);
+		let mut pending = direct_update(2, Patch::Absent, Patch::Absent);
+		pending.merge(patch);
+		assert!(matches!(pending.status_emoji, Patch::Null));
+	}
 	use crate::{Envelope, Event, auth::AuthState};
 	use model::{Channel, Freshness, Guild, Member, MemberList, MemberPresence, MemberSlot, User};
 
@@ -566,6 +604,7 @@ mod tests {
 						status: Some("online".into()),
 						custom_status: None,
 						activities: vec![],
+						status_emoji: None,
 						clients: ClientPlatforms::default(),
 					})),
 					None,
@@ -604,6 +643,7 @@ mod tests {
 			status: status.map(str::to_owned),
 			custom_status: custom.map(str::to_owned),
 			activities: vec![],
+			status_emoji: None,
 			clients: ClientPlatforms::default(),
 		}
 	}
@@ -908,6 +948,7 @@ mod tests {
 					status: Some(status),
 					custom_status: None,
 					activities: vec![],
+					status_emoji: None,
 					clients: ClientPlatforms::default(),
 				}]
 			},
@@ -919,6 +960,7 @@ mod tests {
 					status: None,
 					custom_status: Some(custom),
 					activities: vec![],
+					status_emoji: None,
 					clients: ClientPlatforms::default(),
 				}]
 			},
@@ -1051,6 +1093,7 @@ mod tests {
 				status: row.status.clone(),
 				custom_status: row.custom_status.clone(),
 				activities: vec![activity],
+				status_emoji: row.status_emoji,
 				clients: row.clients,
 			};
 			let projected = projected_row_bytes(row, &update);
@@ -1254,6 +1297,7 @@ mod tests {
 			status,
 			activities,
 			custom_status: Patch::Absent,
+			status_emoji: model::Patch::Absent,
 			clients: Patch::Absent,
 		}
 	}
@@ -1281,6 +1325,7 @@ mod tests {
 				status: Some("online".into()),
 				custom_status: None,
 				activities: vec![],
+				status_emoji: None,
 				clients: ClientPlatforms::default(),
 			}))],
 			total: 1,
@@ -1299,6 +1344,7 @@ mod tests {
 				status: Patch::Absent,
 				custom_status: Patch::Absent,
 				activities: Patch::Absent,
+				status_emoji: model::Patch::Absent,
 				clients: Patch::Absent,
 			}]),
 		);
@@ -1321,6 +1367,7 @@ mod tests {
 				status: Patch::Absent,
 				custom_status: Patch::Absent,
 				activities: Patch::Absent,
+				status_emoji: model::Patch::Absent,
 				clients: Patch::Absent,
 			}]),
 		);
@@ -1349,6 +1396,7 @@ mod tests {
 				status: Patch::Value("online".into()),
 				custom_status: Patch::Absent,
 				activities: Patch::Absent,
+				status_emoji: model::Patch::Absent,
 				clients: Patch::Value(clients),
 			}]),
 		);

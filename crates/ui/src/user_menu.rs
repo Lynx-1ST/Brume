@@ -246,6 +246,14 @@ pub(super) fn contents(
 			roles_menu(ui, state, guild, user.id, action);
 		}
 	}
+	crate::profiles::copy_id_button(ui, "copy-user-id", user.id);
+	if let Some(channel) = state
+		.channels
+		.iter()
+		.find(|c| c.guild.is_none() && c.kind == 1 && c.recipients.iter().any(|u| u.id == user.id))
+	{
+		crate::profiles::copy_id_button(ui, "copy-dm-id", channel.id);
+	}
 	if user.webhook || state.user.as_ref().is_some_and(|own| own.id == user.id) {
 		return;
 	}

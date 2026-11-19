@@ -313,8 +313,12 @@ impl RolesUi {
 							)
 						});
 						if response.clicked() {
+							// Selecting remains separate from the role's copy context menu.
 							self.switch(Some(role.id), guild);
 						}
+						response.context_menu(|ui| {
+							crate::profiles::copy_id_button(ui, "copy-role-id", role.id)
+						});
 					}
 				});
 		}

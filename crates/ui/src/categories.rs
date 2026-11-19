@@ -1278,11 +1278,28 @@ impl MessagingUi {
 							if !enabled && visible {
 								label.push_str(" · unavailable");
 							}
+							let emoji = channel
+								.recipients
+								.first()
+								.filter(|_| dm_list && channel.kind == 1)
+								.and_then(|user| {
+									crate::profiles::status_emoji(state, user.id, None)
+								});
+							let status_image = emoji.and_then(|emoji| {
+								self.avatars.custom_emoji(
+									ui.ctx(),
+									emoji.id,
+									emoji.animated,
+									14.0,
+									state.demo,
+								)
+							});
 							let subtitle = if dm_list && channel.kind == 1 {
 								channel.recipients.first().and_then(|user| {
 									let (_, custom, activities, _) =
 										crate::profiles::presence(state, user.id, None);
 									crate::profiles::subtitle(custom, activities)
+										.or_else(|| emoji.map(|_| String::new()))
 								})
 							} else {
 								(dm_list && channel.kind == 3).then(|| {
@@ -1359,6 +1376,9 @@ impl MessagingUi {
 												in_voice,
 												subtitle.is_some(),
 											);
+											if let Some(image) = status_image {
+												ui.add(image);
+											}
 											if let Some(subtitle) = subtitle {
 												ui.add(
 													egui::Label::new(
@@ -1765,6 +1785,7 @@ mod tests {
 				status: None,
 				custom_status: None,
 				activities: vec![],
+				status_emoji: None,
 				clients: Default::default(),
 			});
 			entry

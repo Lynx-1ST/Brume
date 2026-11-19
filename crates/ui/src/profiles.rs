@@ -129,6 +129,7 @@ fn status_bubble(
 	theme: &Theme,
 	text: &str,
 	(full, own): (bool, bool),
+	emoji: Option<egui::Image<'static>>,
 ) -> Option<(Rect, Option<Action>)> {
 	let left = avatar.right() + 10.0;
 	let room = banner.right() - PAD - left;
@@ -147,7 +148,8 @@ fn status_bubble(
 		overflow_character: Some('…'),
 	};
 	let galley = ui.painter().layout_job(job);
-	let size = galley.size() + vec2(28.0, 20.0);
+	let emoji_width = if emoji.is_some() { 22.0 } else { 0.0 };
+	let size = galley.size() + vec2(28.0 + emoji_width, 20.0);
 	let bubble = Rect::from_min_size(
 		pos2(left + 8.0, banner.bottom() + 8.0),
 		vec2(size.x.max(48.0), size.y),
@@ -157,7 +159,17 @@ fn status_bubble(
 	let painter = ui.painter();
 	painter.circle(pos2(left + 1.0, bubble.top() - 1.0), 4.0, fill, stroke);
 	painter.rect(bubble, 14, fill, stroke, egui::StrokeKind::Inside);
-	painter.galley(bubble.min + vec2(14.0, 10.0), galley, theme.text);
+	if let Some(emoji) = emoji {
+		emoji.paint_at(
+			ui,
+			Rect::from_min_size(bubble.min + vec2(10.0, 8.0), Vec2::splat(18.0)),
+		);
+	}
+	painter.galley(
+		bubble.min + vec2(14.0 + emoji_width, 10.0),
+		galley,
+		theme.text,
+	);
 	let id = egui::Id::unique(("profile-status-bubble", full));
 	ui.interact(bubble, id, egui::Sense::hover())
 		.on_hover_text(text);
@@ -953,7 +965,58 @@ pub(crate) fn known_username(state: &State, user: Id) -> Option<String> {
 				.map(|(_, name, _)| name.clone())
 		})
 }
-/// Copies the account username, disabled until one is known.
+/// Copies an explicit identity without requiring a network request or developer mode.
+pub(crate) fn copy_id_button(ui: &mut egui::Ui, label: &str, id: Id) {
+	if id.0 != 0 && ui.button(crate::i18n::translate(label)).clicked() {
+		ui.ctx().copy_text(id.to_string());
+		ui.close();
+	}
+}
+
+pub(crate) fn status_emoji(
+	state: &State,
+	user: Id,
+	guild: Option<Id>,
+) -> Option<model::StatusEmoji> {
+	if let Some(list) = state.members.as_ref().filter(|list| {
+		guild.is_some()
+			&& list.guild == guild
+			&& list.freshness != model::Freshness::Unavailable
+			&& (state.demo || state.can_view(list.channel))
+	}) && let Some(member) = list.slots.iter().flatten().find_map(|slot| match slot {
+		model::MemberSlot::Person(member) if member.user.id == user => Some(member),
+		_ => None,
+	}) {
+		return member
+			.status
+			.as_deref()
+			.filter(|status| *status != "offline")
+			.and(member.status_emoji);
+	}
+	state
+		.presence_for(user)
+		.filter(|p| p.status.as_deref().is_some_and(|s| s != "offline"))
+		.and_then(|p| p.status_emoji)
+}
+
+pub(crate) fn paint_status_emoji(
+	ui: &mut egui::Ui,
+	avatars: &mut Avatars,
+	state: &State,
+	user: Id,
+	guild: Option<Id>,
+) {
+	if let Some(emoji) = status_emoji(state, user, guild) {
+		if let Some(image) =
+			avatars.custom_emoji(ui.ctx(), emoji.id, emoji.animated, 14.0, state.demo)
+		{
+			ui.add(image);
+		} else {
+			ui.allocate_space(Vec2::splat(14.0));
+		}
+	}
+}
+
 pub(crate) fn copy_username_button(ui: &mut egui::Ui, state: &State, user: &User) {
 	let username = known_username(state, user.id);
 	if ui
@@ -1146,6 +1209,10 @@ fn more_menu(
 	ui.set_min_width(200.0);
 	ui.spacing_mut().button_padding = vec2(8.0, 6.0);
 	let own_profile = state.user.as_ref().is_some_and(|own| own.id == user.id);
+	copy_id_button(ui, "copy-user-id", user.id);
+	if let Some(channel) = dm_channel {
+		copy_id_button(ui, "copy-dm-id", channel);
+	}
 	// The footer owns message composition, so the menu does not repeat it.
 	if user.webhook
 		&& ui
@@ -2473,8 +2540,7 @@ pub(crate) fn role_chips(
 				(*width - 21.0).max(0.0),
 			);
 			let size = vec2(*width, galley.size().y + 6.0);
-			let menu =
-				crate::extensions_ui::has_context_actions(ui.ctx(), extensions::Surface::Role);
+			let menu = true;
 			let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
 			// Keyed by role so an open menu stays on its chip when live updates reorder roles.
 			let id = egui::Id::unique(("profile-role-chip", guild.guild, user, role.id));
@@ -2533,7 +2599,10 @@ pub(crate) fn role_chips(
 					name: target_name,
 					color: role.color & 0xff_ffff,
 				};
-				popup.show(|ui| crate::extensions_ui::context_menu_entries(ui, &target));
+				popup.show(|ui| {
+					copy_id_button(ui, "copy-role-id", role.id);
+					crate::extensions_ui::context_menu_entries(ui, &target);
+				});
 			}
 		}
 		let hidden = roles.len() - visible;
@@ -3995,17 +4064,21 @@ fn card_view(
 		}
 		// Discord shows the custom status as a thought bubble beside the avatar.
 		let own = state.user.as_ref().is_some_and(|own| own.id == user.id);
+		let emoji = status_emoji(state, user.id, guild).and_then(|emoji| {
+			avatars.custom_emoji(ui.ctx(), emoji.id, emoji.animated, 18.0, state.demo)
+		});
 		let thought = if own {
 			(!session.own_status.trim().is_empty()).then(|| session.own_status.clone())
 		} else {
 			custom
 				.filter(|text| !text.trim().is_empty())
 				.map(str::to_owned)
-		};
+		}
+		.or_else(|| emoji.as_ref().map(|_| String::new()));
 		let mut header_bottom = avatar_rect.bottom();
 		if let Some(text) = thought.as_deref()
 			&& let Some((bubble, picked)) =
-				status_bubble(ui, avatar_rect, banner, &theme, text, (full, own))
+				status_bubble(ui, avatar_rect, banner, &theme, text, (full, own), emoji)
 		{
 			header_bottom = header_bottom.max(bubble.bottom());
 			if picked.is_some() {
@@ -5988,6 +6061,7 @@ mod tests {
 				status: Some("idle".into()),
 				custom_status: Some("Server status".into()),
 				activities: vec![],
+				status_emoji: None,
 				clients: model::ClientPlatforms::default(),
 			}))],
 		});
@@ -5996,6 +6070,7 @@ mod tests {
 			status: Some("online".into()),
 			custom_status: Some("Direct status".into()),
 			activities: vec![],
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 		});
 		assert_eq!(
@@ -6072,6 +6147,7 @@ mod tests {
 						status: Some("online".into()),
 						custom_status: cached.map(str::to_owned),
 						activities: vec![],
+						status_emoji: None,
 						clients: model::ClientPlatforms::default(),
 					}))],
 				});

@@ -1942,6 +1942,7 @@ mod tests {
 			nick: None,
 			status: Some("online".into()),
 			custom_status: None,
+			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
 			activities: Vec::new(),
 		};

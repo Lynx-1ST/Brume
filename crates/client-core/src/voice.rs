@@ -101,11 +101,7 @@ pub struct RosterEntry {
 }
 impl RosterEntry {
 	pub fn bytes(&self) -> usize {
-		size_of::<Self>()
-			+ self
-				.member
-				.as_ref()
-				.map_or(0, |m| m.bytes())
+		size_of::<Self>() + self.member.as_ref().map_or(0, |m| m.bytes())
 	}
 }
 

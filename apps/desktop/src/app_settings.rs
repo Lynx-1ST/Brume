@@ -59,6 +59,7 @@ impl Settings {
 			hide_own_typing: ui.hide_own_typing,
 			reply_without_mention: ui.reply_without_mention,
 			hide_link_previews: ui.hide_link_previews,
+			hide_chat_server_tags: ui.hide_chat_server_tags,
 			preload_on_hover: ui.preload_on_hover,
 			auto_idle: ui.auto_idle,
 			hide_title_bar: ui.hide_title_bar,
@@ -121,6 +122,7 @@ impl Settings {
 		ui.hide_own_typing = value.hide_own_typing;
 		ui.reply_without_mention = value.reply_without_mention;
 		ui.hide_link_previews = value.hide_link_previews;
+		ui.hide_chat_server_tags = value.hide_chat_server_tags;
 		ui.preload_on_hover = value.preload_on_hover;
 		ui.auto_idle = value.auto_idle;
 		ui.hide_title_bar = value.hide_title_bar;

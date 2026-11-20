@@ -264,6 +264,8 @@ pub fn matching_users<'a>(
 	}
 
 	let query_clean = query.trim();
+	// Normalized once here: every candidate below ranks up to four names against it.
+	let query_norm = crate::mentions::normalize(query_clean);
 	let mut candidates = Vec::new();
 
 	for (user, nick) in users.into_values() {
@@ -272,16 +274,29 @@ pub fn matching_users<'a>(
 			.map(str::to_owned)
 			.unwrap_or_else(|| state.user_display_name(user).to_owned());
 
-		let rank = if query_clean.is_empty() {
-			Some(0)
-		} else {
-			crate::mentions::rank(query_clean, &display_name, user.id)
-				.into_iter()
-				.chain(crate::mentions::rank(query_clean, &user.name, user.id))
-				.chain(crate::mentions::rank(query_clean, user.username(), user.id))
-				.chain(nick.and_then(|n| crate::mentions::rank(query_clean, n, user.id)))
-				.min()
-		};
+		let rank =
+			if query_clean.is_empty() {
+				Some(0)
+			} else {
+				crate::mentions::rank_with(&query_norm, query_clean, &display_name, user.id)
+					.into_iter()
+					.chain(crate::mentions::rank_with(
+						&query_norm,
+						query_clean,
+						&user.name,
+						user.id,
+					))
+					.chain(crate::mentions::rank_with(
+						&query_norm,
+						query_clean,
+						user.username(),
+						user.id,
+					))
+					.chain(nick.and_then(|n| {
+						crate::mentions::rank_with(&query_norm, query_clean, n, user.id)
+					}))
+					.min()
+			};
 
 		if let Some(r) = rank {
 			candidates.push(UserCandidate {
@@ -292,16 +307,8 @@ pub fn matching_users<'a>(
 		}
 	}
 
-	candidates.sort_by(|a, b| {
-		a.rank
-			.cmp(&b.rank)
-			.then_with(|| {
-				a.display_name
-					.to_lowercase()
-					.cmp(&b.display_name.to_lowercase())
-			})
-			.then_with(|| a.user.id.cmp(&b.user.id))
-	});
+	// Cached keys: comparing with `to_lowercase()` allocated two strings per comparison.
+	candidates.sort_by_cached_key(|c| (c.rank, c.display_name.to_lowercase(), c.user.id));
 
 	candidates
 }
@@ -869,14 +876,22 @@ fn user_picker(
 					)),
 			);
 			let mut count = 0;
+			// Normalized once here: this filter re-runs for every user on every frame.
+			let needle_norm = crate::mentions::normalize(needle);
 			for user in users.iter().filter(|user| {
 				if needle.is_empty() {
 					true
 				} else {
 					let display = state.user_display_name(user);
-					crate::mentions::rank(needle, display, user.id).is_some()
-						|| crate::mentions::rank(needle, &user.name, user.id).is_some()
-						|| crate::mentions::rank(needle, user.username(), user.id).is_some()
+					crate::mentions::rank_with(&needle_norm, needle, display, user.id).is_some()
+						|| crate::mentions::rank_with(&needle_norm, needle, &user.name, user.id)
+							.is_some() || crate::mentions::rank_with(
+						&needle_norm,
+						needle,
+						user.username(),
+						user.id,
+					)
+					.is_some()
 				}
 			}) {
 				count += 1;

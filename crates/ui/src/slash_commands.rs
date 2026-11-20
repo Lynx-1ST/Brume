@@ -1513,6 +1513,8 @@ impl UserPicker {
 		// The arrow can browse known users even when a numeric ID is already entered.
 		let query = if valid_id { "" } else { typed };
 		let local_query = query.to_lowercase();
+		// Normalized once here: every candidate below ranks several names against it.
+		let local_query_norm = mentions::normalize(&local_query);
 		let remote = mentions::searched_members(state, channel, Some(query));
 		let source = mentions::MentionSource { state, channel };
 		// Remote rows join after the bounded local list so late results cannot evict a local match.
@@ -1542,10 +1544,13 @@ impl UserPicker {
 				let rank = [
 					label.strip_prefix('@').unwrap_or(&label),
 					&user.name,
+					user.username(),
 					state.user_display_name(&user),
 				]
 				.into_iter()
-				.filter_map(|name| mentions::rank(&local_query, name, user.id))
+				.filter_map(|name| {
+					mentions::rank_with(&local_query_norm, &local_query, name, user.id)
+				})
 				.min()
 				.or_else(|| member.map(|_| 2))?;
 				Some((rank, label, user))
@@ -2160,6 +2165,62 @@ mod tests {
 		assert!(ctx.memory(|memory| memory.has_focus(id)));
 		assert!(frame(&mut picker, &mut value, key(egui::Key::Enter)));
 		assert_eq!(value, expected);
+	}
+
+	#[test]
+	fn slash_user_search_matches_the_username_handle() {
+		let ctx = egui::Context::default();
+		let mut state = test_support::demo_state();
+		let channel = state.selected.unwrap();
+		let mut handle = state.user.clone().unwrap();
+		handle.id = Id(8500);
+		handle.name = "công chúa phòng trọ 2a9".into();
+		handle.username = Some("igwnz".into());
+		let expected = handle.id.to_string();
+		state
+			.channels
+			.iter_mut()
+			.find(|c| c.id == channel)
+			.unwrap()
+			.recipients = vec![handle];
+		let mut picker = UserPicker::default();
+		let mut value = "igwnz".to_string();
+		let id = egui::Id::unique("slash-user-handle-test");
+		let bindings = model::Keybinds::default();
+		ctx.memory_mut(|memory| memory.request_focus(id));
+		let frame = |picker: &mut UserPicker, value: &mut String, events| {
+			ctx.run_ui(
+				egui::RawInput {
+					events,
+					..Default::default()
+				},
+				|ui| {
+					ui.add_space(310.0);
+					picker.show(ui, value, &state, channel, id, &bindings, PickerTarget::Id);
+				},
+			)
+			.drop_without_applying_deltas();
+			ctx.input_mut(|input| input.keys_down.clear());
+		};
+
+		frame(&mut picker, &mut value, vec![]);
+		for key in [egui::Key::ArrowDown, egui::Key::Enter] {
+			frame(
+				&mut picker,
+				&mut value,
+				vec![egui::Event::Key {
+					key,
+					physical_key: None,
+					pressed: true,
+					repeat: false,
+					modifiers: egui::Modifiers::NONE,
+				}],
+			);
+		}
+		assert_eq!(
+			value, expected,
+			"the typed username handle must offer its user, not only their display name"
+		);
 	}
 
 	#[test]

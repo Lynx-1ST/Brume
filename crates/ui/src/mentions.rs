@@ -237,12 +237,18 @@ fn recent_user_ranks(
 		.take(256)
 		.map(|user| (user.id, u64::MAX))
 		.collect();
+	// Newest first, so the first write for a user is their most recent message. Stop as soon as
+	// every rank is resolved instead of walking the rest of the cached channel history.
+	let mut unresolved = ranks.len();
 	for message in state
 		.timeline
 		.iter()
 		.rev()
 		.filter(|message| message.channel == channel)
 	{
+		if unresolved == 0 {
+			break;
+		}
 		for user in
 			std::iter::once(message.author.id).chain(message.mentions.iter().map(|user| user.id))
 		{
@@ -250,6 +256,7 @@ fn recent_user_ranks(
 				&& *rank == u64::MAX
 			{
 				*rank = u64::MAX - message.id.0;
+				unresolved -= 1;
 			}
 		}
 	}
@@ -463,15 +470,16 @@ pub(crate) fn normalize(s: &str) -> String {
 		.collect()
 }
 
-/// Rank a name against the typed query: prefix hits first, then word-boundary or squashed hits, then substrings, then snowflakes.
-pub(crate) fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
+/// Rank a name against the typed query: prefix hits first, then word-boundary or squashed hits,
+/// then substrings, then snowflakes. `query_norm` is `normalize(query)`, which every caller ranking
+/// a list of names hoists out of its loop instead of rebuilding it once per name.
+pub(crate) fn rank_with(query_norm: &str, query: &str, name: &str, id: Id) -> Option<u8> {
 	if query.is_empty() {
 		return Some(1);
 	}
-	let query_norm = normalize(query);
 	let name_norm = normalize(name);
 
-	if name_norm.starts_with(&query_norm) {
+	if name_norm.starts_with(query_norm) {
 		return Some(0);
 	}
 
@@ -483,7 +491,7 @@ pub(crate) fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
 			)
 	}) {
 		let word = word.trim();
-		if !word.is_empty() && word.starts_with(&query_norm) {
+		if !word.is_empty() && word.starts_with(query_norm) {
 			return Some(0);
 		}
 	}
@@ -498,11 +506,11 @@ pub(crate) fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
 				)
 		})
 		.collect();
-	if squashed_name.starts_with(&query_norm) {
+	if squashed_name.starts_with(query_norm) {
 		return Some(0);
 	}
 
-	if name_norm.contains(&query_norm) || squashed_name.contains(&query_norm) {
+	if name_norm.contains(query_norm) || squashed_name.contains(query_norm) {
 		return Some(1);
 	}
 
@@ -608,6 +616,8 @@ impl Menu {
 		self.query = query.into();
 		self.kind = Some(kind);
 		let query = query.to_lowercase();
+		// Normalized once here: every candidate below ranks several names against it.
+		let query_norm = normalize(&query);
 		let guild = state
 			.channels
 			.iter()
@@ -617,7 +627,7 @@ impl Menu {
 			Kind::Game => {
 				let mut out = Vec::with_capacity(EMOJI_LIMIT);
 				for game in state.game_mentions.games() {
-					if let Some(rank) = rank(&query, &game.name, Id(0)) {
+					if let Some(rank) = rank_with(&query_norm, &query, &game.name, Id(0)) {
 						push_emoji(&mut out, (rank, 0, game.id.0), || {
 							Candidate::Game(game.clone())
 						});
@@ -639,11 +649,15 @@ impl Menu {
 						let display_name = state.user_display_name(user);
 						let member_nick =
 							member(state, channel, user.id).and_then(|m| m.nick.as_deref());
-						let r = rank(&query, name, user.id)
+						let r = rank_with(&query_norm, &query, name, user.id)
 							.into_iter()
-							.chain(rank(&query, &user.name, user.id))
-							.chain(rank(&query, display_name, user.id))
-							.chain(member_nick.and_then(|nick| rank(&query, nick, user.id)))
+							.chain(rank_with(&query_norm, &query, &user.name, user.id))
+							.chain(rank_with(&query_norm, &query, user.username(), user.id))
+							.chain(rank_with(&query_norm, &query, display_name, user.id))
+							.chain(
+								member_nick
+									.and_then(|nick| rank_with(&query_norm, &query, nick, user.id)),
+							)
 							.min()
 							.or_else(|| {
 								let search = &state.member_search[0];
@@ -667,7 +681,7 @@ impl Menu {
 					.iter()
 					.filter(|role| Some(role.id) != guild)
 				{
-					if let Some(rank) = rank(&query, &role.name, role.id) {
+					if let Some(rank) = rank_with(&query_norm, &query, &role.name, role.id) {
 						ranked.push((
 							(rank, 1, role.id.0),
 							Candidate::Role {
@@ -679,7 +693,7 @@ impl Menu {
 				}
 				if state.permission(channel, model::permissions::MENTION_EVERYONE) == Some(true) {
 					for name in ["everyone", "here"] {
-						if let Some(rank) = rank(&query, name, Id(0)) {
+						if let Some(rank) = rank_with(&query_norm, &query, name, Id(0)) {
 							ranked.push(((rank, 0, 0), Candidate::Mass { name }));
 						}
 					}
@@ -693,7 +707,7 @@ impl Menu {
 				for (name, candidate) in [("time", Candidate::Time), ("silent", Candidate::Silent)]
 				{
 					if (name != "silent" || (!self.editing && self.range.start == 0))
-						&& let Some(rank) = rank(&query, name, Id(0))
+						&& let Some(rank) = rank_with(&query_norm, &query, name, Id(0))
 					{
 						ranked.push(((rank, if query == name { 0 } else { 2 }, 0), candidate));
 					}
@@ -709,7 +723,7 @@ impl Menu {
 						&& matches!(c.kind, 0 | 5 | 10..=12 | 15 | 16)
 				})
 				.filter_map(|c| {
-					rank(&query, &c.name, c.id).map(|r| {
+					rank_with(&query_norm, &query, &c.name, c.id).map(|r| {
 						(
 							(r, 0, 0),
 							Candidate::Channel {
@@ -723,9 +737,11 @@ impl Menu {
 			Kind::Emoji => {
 				let mut out = Vec::with_capacity(EMOJI_LIMIT);
 				for guild in &state.guilds {
-					let source_match = rank(&query, &guild.name, Id(0)).map(|_| 2);
+					let source_match =
+						rank_with(&query_norm, &query, &guild.name, Id(0)).map(|_| 2);
 					for emoji in guild.emojis.iter().flatten() {
-						if let Some(rank) = rank(&query, &emoji.name, Id(0)).or(source_match)
+						if let Some(rank) =
+							rank_with(&query_norm, &query, &emoji.name, Id(0)).or(source_match)
 							&& emoji.valid() && (state.can_send(channel)
 							|| state
 								.custom_emoji_unavailable_reason(channel, guild.id, emoji)
@@ -751,7 +767,7 @@ impl Menu {
 					let rank = crate::emoji_picker::discord_names()[index]
 						.2
 						.split(',')
-						.filter_map(|alias| rank(&query, alias, Id(0)))
+						.filter_map(|alias| rank_with(&query_norm, &query, alias, Id(0)))
 						.min();
 					if let Some(rank) = rank {
 						push_emoji(&mut out, (rank, 1, index as u64), || Candidate::Unicode {
@@ -1159,6 +1175,11 @@ mod tests {
 	use super::*;
 	use model::Channel;
 
+	/// The pre-`rank_with` signature, kept for the ranking assertions below.
+	fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
+		rank_with(&normalize(query), query, name, id)
+	}
+
 	#[test]
 	fn mention_matching_supports_word_boundaries_squashed_and_vietnamese_diacritics() {
 		// Word-boundary prefix on nicknames with symbols like "! Lynx"
@@ -1183,6 +1204,23 @@ mod tests {
 		assert_eq!(rank("phong", "công chúa phòng trọ 2a9", Id(0)), Some(0));
 		assert_eq!(rank("tro", "công chúa phòng trọ 2a9", Id(0)), Some(0));
 		assert_eq!(rank("2a9", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+	}
+
+	#[test]
+	fn mention_suggestions_match_the_username_handle_and_the_display_name() {
+		let state = test_support::demo_state();
+		let channel = state.selected.unwrap();
+		let mut member = user(40101, "công chúa phòng trọ 2a9");
+		member.username = Some("igwnz".into());
+		let mut menu = Menu::default();
+		for draft in ["@igwnz", "@igw", "@công", "@congchua"] {
+			menu.refresh(&state, channel, draft, Some(draft.len()), &[member.clone()]);
+			assert_eq!(
+				menu.candidates.first().map(|candidate| candidate.id()),
+				Some(member.id),
+				"{draft} must offer the member whose handle is igwnz"
+			);
+		}
 	}
 
 	#[test]

@@ -2002,7 +2002,7 @@ mod tests {
 			assert!(state.voice.roster.is_empty());
 			crate::tests::grant_permissions(&mut state);
 			let mut oversized = entry(2, 20);
-			oversized.member = Some(Member {
+			oversized.member = Some(Box::new(Member {
 				roles: vec![],
 				user: User {
 					primary_guild: None,
@@ -2021,7 +2021,7 @@ mod tests {
 				activities: vec![],
 				status_emoji: None,
 				clients: model::ClientPlatforms::default(),
-			});
+			}));
 			state.apply_voice(Event::Snapshot {
 				guild: None,
 				partial: false,

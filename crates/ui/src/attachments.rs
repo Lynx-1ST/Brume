@@ -1874,6 +1874,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			},
 			content: String::new(),
 			author_nick: None,

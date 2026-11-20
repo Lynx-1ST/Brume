@@ -119,8 +119,14 @@ pub struct User {
 	/// Service-supplied avatar decoration and nameplate; display-only, never persisted.
 	#[serde(default, skip)]
 	pub cosmetics: Option<Box<Cosmetics>>,
+	/// Real username/handle (e.g. "igwnz"), distinct from display name.
+	#[serde(default)]
+	pub username: Option<String>,
 }
 impl User {
+	pub fn username(&self) -> &str {
+		self.username.as_deref().unwrap_or(&self.name)
+	}
 	pub fn account_label(&self) -> Option<&'static str> {
 		match (self.kind, self.webhook) {
 			(AccountKind::App, _) => Some("APP"),
@@ -133,6 +139,7 @@ impl User {
 	pub fn heap_bytes(&self) -> usize {
 		self.name.capacity()
 			+ self.avatar.as_ref().map_or(0, String::capacity)
+			+ self.username.as_ref().map_or(0, String::capacity)
 			+ self.primary_guild.as_ref().map_or(0, |guild| {
 				std::mem::size_of::<ClanTag>()
 					+ guild.tag.capacity()
@@ -269,6 +276,7 @@ impl SavedAccount {
 			discriminator: self.discriminator,
 			primary_guild: None,
 			cosmetics: None,
+			username: Some(self.name.clone()),
 		}
 	}
 	pub fn heap_bytes(&self) -> usize {
@@ -1153,6 +1161,7 @@ mod roster_identity_tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		}
 	}
 

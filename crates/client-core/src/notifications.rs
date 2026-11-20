@@ -1213,6 +1213,7 @@ mod tests {
 		let owner = User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(2),
 			name: "Synthetic".into(),
 			avatar: None,
@@ -1624,6 +1625,7 @@ mod tests {
 		let owner = User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(2),
 			name: "Synthetic".into(),
 			avatar: None,

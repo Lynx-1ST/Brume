@@ -1084,6 +1084,7 @@ mod invite_tests {
 			user: Some(model::User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(1),
 				name: "Synthetic".into(),
 				avatar: None,
@@ -1240,6 +1241,7 @@ mod sticker_tests {
 		model::User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(id),
 			name: name.into(),
 			avatar: None,

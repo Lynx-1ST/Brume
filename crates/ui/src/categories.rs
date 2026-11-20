@@ -2300,6 +2300,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			guilds: vec![model::Guild {
 				banner: None,
@@ -2470,6 +2471,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			guilds: vec![model::Guild {
 				banner: None,

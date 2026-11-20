@@ -253,6 +253,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			channels: vec![Channel {
 				user_limit: None,
@@ -278,6 +279,7 @@ mod tests {
 						discriminator: 0,
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 					},
 					User {
 						id: Id(2),
@@ -288,6 +290,7 @@ mod tests {
 						discriminator: 0,
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 					},
 					User {
 						id: Id(3),
@@ -298,6 +301,7 @@ mod tests {
 						discriminator: 0,
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 					},
 				],
 			}],

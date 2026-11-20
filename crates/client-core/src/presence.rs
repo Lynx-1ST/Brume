@@ -553,6 +553,7 @@ mod tests {
 		let user = User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(2),
 			name: "Synthetic".into(),
 			avatar: None,
@@ -727,6 +728,7 @@ mod tests {
 				user: User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(999),
 					name: "Different account".into(),
 					avatar: None,
@@ -1320,6 +1322,7 @@ mod tests {
 					webhook: false,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 				},
 				nick: None,
 				status: Some("online".into()),

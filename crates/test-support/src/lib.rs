@@ -223,6 +223,7 @@ pub fn message(id: u64, channel: Id) -> Message {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}]
 		} else {
 			Vec::new()
@@ -322,6 +323,7 @@ pub fn demo_state() -> State {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(1),
 				name: "You (synthetic)".into(),
 			},
@@ -434,6 +436,7 @@ pub fn demo_state() -> State {
 						discriminator: 0,
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 					}],
 					last_message: None,
 					icon: None,
@@ -459,6 +462,7 @@ pub fn demo_state() -> State {
 						discriminator: 0,
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 					}],
 					last_message: Some(Id(900)),
 					icon: None,
@@ -486,6 +490,7 @@ pub fn demo_state() -> State {
 							discriminator: 0,
 							primary_guild: None,
 							cosmetics: None,
+							username: None,
 						},
 					],
 					last_message: None,
@@ -687,6 +692,7 @@ pub fn demo_state() -> State {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					webhook: false,
 					kind: Default::default(),
 				},
@@ -701,6 +707,7 @@ pub fn demo_state() -> State {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					webhook: false,
 					kind: Default::default(),
 				},
@@ -741,6 +748,7 @@ pub fn demo_state() -> State {
 						discriminator: 0,
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 					},
 					format!("{}.synthetic", name.to_lowercase()),
 				)
@@ -836,6 +844,7 @@ pub fn voice_demo_state() -> State {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			},
 			nick: None,
 			status: None,
@@ -1195,6 +1204,7 @@ pub fn chat_demo_state() -> State {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}];
 		}
 		if i == 8 {
@@ -1377,6 +1387,7 @@ pub fn system_demo_state() -> State {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		}];
 		state.timeline.insert(m, false, false).unwrap();
 	}
@@ -1454,6 +1465,7 @@ pub fn friends_demo_state() -> State {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 				},
 				"blocked.synthetic".into(),
 				false,
@@ -1468,6 +1480,7 @@ pub fn friends_demo_state() -> State {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 				},
 				"ignored.synthetic".into(),
 				true,
@@ -1485,6 +1498,7 @@ pub fn friends_demo_state() -> State {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					webhook: false,
 					kind: Default::default(),
 				},
@@ -1499,6 +1513,7 @@ pub fn friends_demo_state() -> State {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					webhook: false,
 					kind: Default::default(),
 				},

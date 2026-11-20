@@ -117,6 +117,7 @@ impl Snapshot {
 							discriminator: 0,
 							primary_guild: None,
 							cosmetics: None,
+							username: None,
 							webhook: false,
 							kind: Default::default(),
 						},

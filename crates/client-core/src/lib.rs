@@ -5980,6 +5980,7 @@ mod tests {
 					user: User {
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 						id: Id(1),
 						name: "Synthetic".into(),
 						avatar: None,
@@ -6342,6 +6343,7 @@ mod tests {
 			author: User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(2),
 				name: "Synthetic".into(),
 				avatar: None,
@@ -6422,6 +6424,7 @@ mod tests {
 				user: User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(3),
 					name: "Other".into(),
 					avatar: None,
@@ -6642,6 +6645,7 @@ mod tests {
 			let user = || User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(2),
 				name: "Synthetic".into(),
 				avatar: None,
@@ -6773,6 +6777,7 @@ mod tests {
 					user: User {
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 						id: Id(2),
 						name: "Synthetic".into(),
 						avatar: None,

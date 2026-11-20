@@ -339,6 +339,7 @@ mod tests {
 			author: User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(9),
 				name: "Synthetic".into(),
 				avatar: None,

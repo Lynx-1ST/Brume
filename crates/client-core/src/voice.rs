@@ -1496,6 +1496,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			guilds: vec![model::Guild {
 				banner: None,
@@ -1846,6 +1847,7 @@ mod tests {
 				user: Some(User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Owner".into(),
 					avatar: None,
@@ -2010,6 +2012,7 @@ mod tests {
 				user: User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(2),
 					name: "x".repeat(MAX_ROSTER_BYTES),
 					avatar: None,
@@ -2129,6 +2132,7 @@ mod tests {
 				user: Some(User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Owner".into(),
 					avatar: None,
@@ -2277,6 +2281,7 @@ mod tests {
 			user: Some(User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(1),
 				name: "Owner".into(),
 				avatar: None,
@@ -2297,6 +2302,7 @@ mod tests {
 				recipients: vec![User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(3),
 					name: "Peer".into(),
 					avatar: None,
@@ -2570,6 +2576,7 @@ mod tests {
 				user: Some(User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Owner".into(),
 					avatar: None,
@@ -2590,6 +2597,7 @@ mod tests {
 					recipients: vec![User {
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 						id: Id(3),
 						name: "Peer".into(),
 						avatar: None,

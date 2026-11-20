@@ -1432,6 +1432,7 @@ impl State {
 									discriminator: 0,
 									primary_guild: None,
 									cosmetics: None,
+									username: None,
 									webhook: false,
 									kind: Default::default(),
 								},
@@ -2941,6 +2942,7 @@ mod tests {
 		let user = |id| model::User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(id),
 			name: "Synthetic".into(),
 			avatar: None,

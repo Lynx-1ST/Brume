@@ -2527,6 +2527,7 @@ mod tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		};
 		let (pictured, plain) = (user(1, Some(hash)), user(2, None));
 		let guild = model::Guild {

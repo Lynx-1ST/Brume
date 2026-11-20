@@ -167,7 +167,8 @@ impl UserDto {
 			id: self.id,
 			name: self
 				.global_name
-				.unwrap_or(self.username)
+				.as_ref()
+				.unwrap_or(&self.username)
 				.chars()
 				.take(128)
 				.collect(),
@@ -181,6 +182,7 @@ impl UserDto {
 				.unwrap_or(0),
 			primary_guild,
 			cosmetics,
+			username: Some(self.username),
 		}
 	}
 }

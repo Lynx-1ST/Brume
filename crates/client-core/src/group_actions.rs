@@ -440,6 +440,7 @@ mod tests {
 				user: model::User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Synthetic".into(),
 					avatar: None,

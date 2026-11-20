@@ -577,10 +577,7 @@ impl SearchUi {
 												user_candidates.iter().take(50).enumerate()
 											{
 												let selected = index == self.suggestion_index;
-												let sub = format!(
-													"{user_prefix}: {}",
-													candidate.user.name
-												);
+												let sub = format!("@{}", candidate.user.username());
 												let row = filters::user_row(
 													ui,
 													candidate.user,
@@ -600,27 +597,31 @@ impl SearchUi {
 												}
 												if row.clicked() || (enter && selected) {
 													chosen = Some((
-														filters::label(&candidate.user.name),
+														filters::label(candidate.user.username()),
 														candidate.user.id,
 													));
 												}
 											}
 										}
 										if matching_len == 0 {
-											let no_users = if filters::guild(state).is_some() {
-												if crate::i18n::current().resolved()
-													== crate::i18n::Language::Vietnamese
+											let no_users =
+												if filters::guild_for_channel(state, self.channel)
+													.is_some()
 												{
-													"Không có người dùng phù hợp trong máy chủ này."
+													if crate::i18n::current().resolved()
+														== crate::i18n::Language::Vietnamese
+													{
+														"Không có người dùng phù hợp trong máy chủ này."
 														.to_string()
+													} else {
+														"No matching users in this server."
+															.to_string()
+													}
 												} else {
-													"No matching users in this server.".to_string()
-												}
-											} else {
-												crate::i18n::translate_if_key(
-													"search-overlays-no-matching-users-in-this-conversation",
-												)
-											};
+													crate::i18n::translate_if_key(
+														"search-overlays-no-matching-users-in-this-conversation",
+													)
+												};
 											ui.label(if key == "in" {
 												crate::i18n::translate_if_key(
 													"search-overlays-no-matching-channels",
@@ -692,9 +693,6 @@ impl SearchUi {
 									if !user_candidates.is_empty() {
 										ui.separator();
 										ui.add_space(4.0);
-										let from_prefix =
-											crate::i18n::translate("search-overlays-from")
-												.to_lowercase();
 										ui.horizontal(|ui| {
 											ui.add_space(10.0);
 											ui.label(
@@ -709,8 +707,7 @@ impl SearchUi {
 											);
 										});
 										for candidate in user_candidates.iter().take(3) {
-											let sub =
-												format!("{from_prefix}: {}", candidate.user.name);
+											let sub = format!("@{}", candidate.user.username());
 											let row = filters::user_row(
 												ui,
 												candidate.user,
@@ -722,7 +719,8 @@ impl SearchUi {
 												false,
 											);
 											if row.clicked() {
-												let label = filters::label(&candidate.user.name);
+												let label =
+													filters::label(candidate.user.username());
 												let query = filters::insert_user_filter(
 													&self.query,
 													"from",
@@ -744,13 +742,6 @@ impl SearchUi {
 
 										ui.separator();
 										ui.add_space(4.0);
-										let mentions_prefix = if crate::i18n::current().resolved()
-											== crate::i18n::Language::Vietnamese
-										{
-											"để cập".to_owned()
-										} else {
-											"mentions".to_owned()
-										};
 										ui.horizontal(|ui| {
 											ui.add_space(10.0);
 											ui.label(
@@ -765,10 +756,7 @@ impl SearchUi {
 											);
 										});
 										for candidate in user_candidates.iter().take(3) {
-											let sub = format!(
-												"{mentions_prefix}: {}",
-												candidate.user.name
-											);
+											let sub = format!("@{}", candidate.user.username());
 											let row = filters::user_row(
 												ui,
 												candidate.user,
@@ -780,7 +768,8 @@ impl SearchUi {
 												false,
 											);
 											if row.clicked() {
-												let label = filters::label(&candidate.user.name);
+												let label =
+													filters::label(candidate.user.username());
 												let query = filters::insert_user_filter(
 													&self.query,
 													"mentions",
@@ -2761,6 +2750,7 @@ mod tests {
 							discriminator: 0,
 							primary_guild: None,
 							cosmetics: None,
+							username: None,
 						},
 						mentions: vec![],
 						excerpt: "Synthetic pinned message".into(),
@@ -3055,6 +3045,7 @@ mod tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		};
 		let state = State {
 			demo: true,

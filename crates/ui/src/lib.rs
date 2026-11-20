@@ -7327,6 +7327,7 @@ mod composer_tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		};
 		let mut state = State {
 			selected: Some(Id(10)),
@@ -9400,6 +9401,7 @@ mod composer_tests {
 								discriminator: 0,
 								primary_guild: None,
 								cosmetics: None,
+								username: None,
 							},
 							nick: None,
 							roles: vec![],
@@ -9553,6 +9555,7 @@ mod composer_tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			channels: vec![model::Channel {
 				user_limit: None,
@@ -9593,6 +9596,7 @@ mod composer_tests {
 								discriminator: 0,
 								primary_guild: None,
 								cosmetics: None,
+								username: None,
 							},
 							nick: None,
 							roles: vec![],
@@ -9956,6 +9960,7 @@ mod composer_tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			};
 			let mut state = State {
 				demo: true,

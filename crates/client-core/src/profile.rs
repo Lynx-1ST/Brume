@@ -709,6 +709,7 @@ mod tests {
 			user: model::User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(1),
 				name: name.into(),
 				avatar: None,
@@ -1368,6 +1369,7 @@ mod tests {
 					user: model::User {
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 						id: user,
 						name: "Synthetic".into(),
 						avatar: None,
@@ -1578,6 +1580,7 @@ mod tests {
 					user: model::User {
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 						id: user,
 						name: "Synthetic".into(),
 						avatar: None,

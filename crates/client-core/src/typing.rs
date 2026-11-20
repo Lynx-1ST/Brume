@@ -265,6 +265,7 @@ mod tests {
 			user: Some(User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(1),
 				name: "Owner".into(),
 				avatar: None,
@@ -314,6 +315,7 @@ mod tests {
 			author: User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(user),
 				name: "Synthetic".into(),
 				avatar: None,

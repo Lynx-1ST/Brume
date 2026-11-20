@@ -648,6 +648,7 @@ mod tests {
 							discriminator: 0,
 							primary_guild: None,
 							cosmetics: None,
+							username: None,
 						},
 						guilds: vec![],
 						channels: vec![],

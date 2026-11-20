@@ -6122,3 +6122,7 @@ native-login-error-http = Discord trả về lỗi HTTP { $status } khi đăng n
 native-login-error-busy = Đang xử lý đăng nhập. Hãy thử lại sau giây lát.
 
 native-login-error-verification-expired = Xác minh đã hết hạn. Vui lòng bắt đầu lại.
+
+## crates/ui/src/interface_ui.rs
+# Context: interface_tree
+interface-ui-empty = Plugin này chưa có gì để hiển thị.

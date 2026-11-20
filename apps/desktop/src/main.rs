@@ -27,6 +27,7 @@ mod extension_events;
 mod extension_forum_data;
 mod extension_member_details;
 mod extension_message_content;
+mod extension_start_screen;
 mod extensions;
 mod font_import;
 mod game_activity;
@@ -1071,6 +1072,8 @@ struct Desktop {
 	proxy_auth: proxy_auth::Authentication,
 	api_proxy: tokio::sync::watch::Sender<Option<discord_api::proxy::ApiProxy>>,
 	extensions: extension_bridge::Bridge,
+	/// Plugin start-screen playback; its textures exist only while that screen shows.
+	start_screen: ui::StartScreenView,
 	extension_close_pending: bool,
 	login: Option<platform::LoginView>,
 	native: native_login::NativeLogin,
@@ -1119,6 +1122,8 @@ struct Desktop {
 	window_minimum: Option<winit::dpi::PhysicalSize<u32>>,
 	/// A sampled placement waiting to remain unchanged for the rest interval.
 	geometry_rest: app_settings::GeometryRest,
+	/// The user's own placement while a plugin start screen or interface layout sizes the window.
+	plugin_size: app_settings::PluginWindowSize,
 	#[cfg(feature = "demo")]
 	rendering_demo: Option<rendering_demo::RenderingDemo>,
 	avatars: Option<avatars::AvatarWorker>,
@@ -1152,6 +1157,10 @@ struct Desktop {
 	gsync: std::sync::Arc<std::sync::atomic::AtomicBool>,
 	tray: Option<platform::tray::Tray>,
 	hotkeys: platform::hotkeys::Hotkeys,
+	/// When a released push-to-talk key stops transmitting, after the release delay.
+	ptt_release: Option<std::time::Instant>,
+	/// Push-to-talk chords last frame, so rebinding ends the key hold instead of lingering.
+	ptt_chords: (bool, Vec<model::KeyChord>),
 	/// Linux desktop light/dark preference; winit reports it everywhere else.
 	system_theme: platform::system_theme::SystemTheme,
 	tray_error: Option<&'static str>,
@@ -1175,6 +1184,9 @@ struct Desktop {
 	/// Written under the account's own entry on every READY, including a launch restore, so
 	/// the switcher can always get back to an account it lists.
 	pending_account_save: Option<Arc<SessionSecret>>,
+	/// Whether this launch already restarted a session with a token Discord issued in READY.
+	/// Once is enough: a service that kept replacing tokens must not loop the login.
+	token_refreshed: bool,
 	/// Where the opt-in diagnostic log belongs, resolved once so a Settings change needs no lookup.
 	log_directory: Option<std::path::PathBuf>,
 	/// Whether the first frame has reported the start-up install's result to the settings page.
@@ -2584,7 +2596,7 @@ impl Desktop {
 			move || ctx.request_repaint()
 		});
 		if !demo {
-			hotkeys.sync(&messaging.keybinds, &runtime);
+			hotkeys.sync(&messaging.keybinds, messaging.voice_push_to_talk, &runtime);
 		}
 		let system_theme = platform::system_theme::SystemTheme::watch(&runtime, {
 			let ctx = cc.egui_ctx.clone();
@@ -2617,10 +2629,12 @@ impl Desktop {
 		}
 		// The GPU surface and X11 visual are selected at startup. Opaque launches
 		// keep the same native/compositor path as builds without window effects.
-		// KWin hiding runs its D-Bus worker on the application runtime.
+		// KWin hiding and the session monitor run their D-Bus workers on the application runtime.
 		let tray_window = {
 			let _runtime = runtime.enter();
-			tray_window::State::default()
+			let mut tray_window = tray_window::State::default();
+			tray_window.watch_session(&cc.egui_ctx);
+			tray_window
 		};
 		#[cfg(target_os = "macos")]
 		let app_menu = {
@@ -2637,6 +2651,7 @@ impl Desktop {
 			proxy_auth: proxy_auth::Authentication::default(),
 			api_proxy: tokio::sync::watch::channel(None).0,
 			extensions: extension_bridge::Bridge::default(),
+			start_screen: ui::StartScreenView::default(),
 			extension_close_pending: false,
 			login: None,
 			native,
@@ -2689,6 +2704,7 @@ impl Desktop {
 			memory_diagnostics: MemoryDiagnostics::from_env(),
 			window_minimum: None,
 			geometry_rest: app_settings::GeometryRest::default(),
+			plugin_size: app_settings::PluginWindowSize::default(),
 			#[cfg(feature = "demo")]
 			rendering_demo: (demo && std::env::args().any(|arg| arg == "--demo-rendering"))
 				.then(rendering_demo::RenderingDemo::default),
@@ -2729,6 +2745,8 @@ impl Desktop {
 			app_menu,
 			instance: Default::default(),
 			hotkeys,
+			ptt_release: None,
+			ptt_chords: (true, Vec::new()),
 			system_theme,
 			tray_error: None,
 			#[cfg(feature = "demo")]
@@ -2740,6 +2758,7 @@ impl Desktop {
 			variant_changed: false,
 			pending_save: None,
 			pending_account_save: None,
+			token_refreshed: false,
 			log_directory: local_store::data_dir().ok().map(|root| root.join("logs")),
 			log_verified: false,
 			log_open_refused: false,
@@ -5467,8 +5486,16 @@ impl Desktop {
 		let mut persist_timeline = false;
 		let mut full_window = false;
 		let mut changed_messages = std::collections::BTreeSet::new();
+		let mut refreshed_token = None;
 		for mut event in events {
 			if event.generation != self.state.generation {
+				continue;
+			}
+			if let Event::TokenRefreshed(secret) = &event.event {
+				if !self.token_refreshed {
+					refreshed_token =
+						SessionSecret::from_owner_input(secret.expose().to_owned()).ok();
+				}
 				continue;
 			}
 			let user_action_notice = user_action_notice(&event.event);
@@ -5822,6 +5849,12 @@ impl Desktop {
 				));
 			}
 		}
+		// Discord replaced the login token (unofficial). Restart the session with the new one,
+		// as after a sign-in, so every request uses it and it replaces the saved login.
+		if let Some(secret) = refreshed_token {
+			self.token_refreshed = true;
+			self.connect(secret, true, ctx);
+		}
 		if let Some(secret) = self.native.poll(ctx) {
 			self.connect(secret, true, ctx);
 		}
@@ -5941,7 +5974,10 @@ impl Desktop {
 	}
 	fn refresh_monitor(&mut self) -> Option<Duration> {
 		let monitor = self.window.current_monitor()?;
-		app_settings::update_window_minimum(&self.window, &monitor, &mut self.window_minimum);
+		// A plugin window size keeps its own minimum until the user's placement returns.
+		if !self.plugin_size.active() {
+			app_settings::update_window_minimum(&self.window, &monitor, &mut self.window_minimum);
+		}
 		let millihertz = monitor.refresh_rate_millihertz()?;
 		(1_000..=1_000_000)
 			.contains(&millihertz)
@@ -6008,7 +6044,10 @@ impl eframe::App for Desktop {
 	fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
 		// Before the pass begins, so the whole frame resolves System to the same theme.
 		self.sync_system_theme(ctx);
-		if self.maximize_after_show && self.window.is_visible() == Some(true) {
+		if self.maximize_after_show
+			&& self.window.is_visible() == Some(true)
+			&& !self.plugin_size.active()
+		{
 			self.maximize_after_show = false;
 			self.window.set_maximized(true);
 		}
@@ -6020,6 +6059,7 @@ impl eframe::App for Desktop {
 			&& !self.state.demo
 			&& self.app_settings.loaded
 			&& !self.maximize_after_show
+			&& !self.plugin_size.active()
 			&& let Some(viewport) = raw_input.viewports.get(&raw_input.viewport_id)
 			&& viewport.minimized != Some(true)
 			&& viewport.fullscreen != Some(true)
@@ -6079,6 +6119,15 @@ impl eframe::App for Desktop {
 				self.monitor_period = self.refresh_monitor();
 			}
 		}
+		// The client identity says whether the app is in use: focused, or in a connected call.
+		discord_gateway::set_activity(
+			raw_input.focused,
+			self.state
+				.voice
+				.active
+				.as_ref()
+				.is_some_and(|call| matches!(call.phase, client_core::voice::Phase::Connected)),
+		);
 		if let Some(period) = self.frame_period() {
 			raw_input.predicted_dt = period.as_secs_f32();
 		}
@@ -6188,7 +6237,16 @@ impl eframe::App for Desktop {
 			.as_ref()
 			.is_some_and(|connection| *connection.afk.borrow());
 		self.sync_fonts(ctx);
-		self.hotkeys.sync(&self.messaging.keybinds, &self.runtime);
+		// Raw focus follows the window even while it is hidden and runs no UI pass.
+		self.hotkeys.set_activity(
+			ctx.input(|input| input.raw.focused),
+			self.state.voice.active.is_some(),
+		);
+		self.hotkeys.sync(
+			&self.messaging.keybinds,
+			self.messaging.voice_push_to_talk,
+			&self.runtime,
+		);
 		self.messaging.global_keybind_status = self.hotkeys.status();
 		let voice_toggles = self.hotkeys.take_toggle_pending()
 			| self
@@ -6320,8 +6378,16 @@ impl eframe::App for Desktop {
 		#[cfg(target_os = "macos")]
 		self.app_menu(ctx);
 		// Like Discord, Ctrl+Q exits even when closing the window only hides it to the tray.
+		// Windows reports AltGr as Ctrl+Alt, so AltGr+Q (@ on many layouts) must not quit.
 		#[cfg(not(target_os = "macos"))]
-		if ctx.input_mut(|input| input.consume_key(egui::Modifiers::COMMAND, egui::Key::Q)) {
+		if ctx.input_mut(|input| {
+			let quit = input.events.iter().position(|event| {
+				matches!(event, egui::Event::Key {
+					key: egui::Key::Q, pressed: true, repeat: false, modifiers, ..
+				} if modifiers.command && !modifiers.alt)
+			});
+			quit.map(|index| input.events.remove(index)).is_some()
+		}) {
 			self.tray_window.quit(ctx);
 		}
 		let window_visible = self.window.is_visible();
@@ -6425,9 +6491,41 @@ impl eframe::App for Desktop {
 				}
 			}
 		}
-		self.messaging.voice_ptt_active = self.messaging.voice_push_to_talk
-			&& self.state.voice.active.is_some()
-			&& (self.messaging.push_to_talk_down(ctx) || self.hotkeys.push_to_talk_down());
+		let talking = self.messaging.voice_push_to_talk && self.state.voice.active.is_some();
+		let held =
+			talking && (self.messaging.push_to_talk_down(ctx) || self.hotkeys.push_to_talk_down());
+		let now = std::time::Instant::now();
+		let chords: Vec<_> = self
+			.messaging
+			.keybinds
+			.chords(model::KeybindAction::PushToTalk)
+			.cloned()
+			.collect();
+		let global = self.messaging.keybinds.global_enabled;
+		let rebound = std::mem::replace(&mut self.ptt_chords, (global, chords)) != self.ptt_chords;
+		// Rebinding, or typing in the composer over a keyboard hold, cancels it; only a real
+		// release lingers. A mouse hold is not typing.
+		let mouse_hold = self
+			.ptt_chords
+			.1
+			.iter()
+			.any(|chord| model::keybinds::is_mouse_button(&chord.key));
+		let cancelled = rebound
+			|| (!mouse_hold
+				&& ctx.input(|input| input.raw.focused)
+				&& ctx.egui_wants_keyboard_input());
+		if held || cancelled {
+			self.ptt_release = None;
+		} else if self.messaging.voice_ptt_active && self.ptt_release.is_none() {
+			self.ptt_release = Some(now + self.messaging.keybinds.push_to_talk_release());
+		}
+		// Like Discord, transmission lingers for the release delay so a word is not clipped.
+		let lingering = talking && self.ptt_release.is_some_and(|until| until > now);
+		match self.ptt_release {
+			Some(until) if lingering => ctx.request_repaint_after(until - now),
+			_ => self.ptt_release = None,
+		}
+		self.messaging.voice_ptt_active = held || lingering;
 		self.notification_runtime.ptt(
 			self.messaging.voice_push_to_talk,
 			!self.fixture_only
@@ -6770,6 +6868,8 @@ impl eframe::App for Desktop {
 			ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
 			self.confirming_close = true;
 		}
+		// The window size the interface layout shown this frame asks for.
+		let mut interface_size = None;
 		if self.login.is_some() {
 			let p = ui::design::palette(ui);
 			egui::Panel::top("login-header")
@@ -6861,6 +6961,7 @@ impl eframe::App for Desktop {
 				self.messaging.notification_sound_status = "Could not save device notification settings. Changes apply only until restart.";
 			}
 			let mut commands = self.messaging.show(ui, &mut self.state);
+			interface_size = self.messaging.plugin_interface_size();
 			self.extensions.cancel_stale_message_events(&self.state);
 			self.choose_interaction_files(&ctx);
 			if let Some(command) = self.captcha.sync(
@@ -7345,6 +7446,22 @@ impl eframe::App for Desktop {
 		} else {
 			self.sign_in_screen(ui);
 		}
+		// A start screen's window size while it shows, otherwise the interface layout's.
+		let requested = self
+			.start_screen
+			.window()
+			.map(|window| (window.width, window.height))
+			.or_else(|| interface_size.map(|size| (size.width, size.height)))
+			.map(|(width, height)| {
+				winit::dpi::LogicalSize::new(u32::from(width), u32::from(height))
+			});
+		self.start_screen.retire();
+		self.plugin_size.sync(
+			&self.window,
+			requested,
+			&mut self.window_minimum,
+			self.app_settings.current.window_geometry,
+		);
 		// Outside the signed-in branch so leaving an account still restores the window mode.
 		let video = self.messaging.video().take_fullscreen_request();
 		let voice = self.messaging.take_voice_fullscreen_request();

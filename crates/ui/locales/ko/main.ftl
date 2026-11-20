@@ -6039,3 +6039,7 @@ native-login-token-detail = 이미 가지고 있는 세션 토큰을 붙여 넣�
 native-login-about-risk = Serein 같은 비공식 클라이언트는 Discord 계정을 위험하게 할 수 있습니다.
 
 native-login-about-storage = 메시지와 임시 저장본은 이 기기에 캐시됩니다. 로그인 정보는 OS 자격 증명 저장소에 보관됩니다.
+
+## crates/ui/src/interface_ui.rs
+# Context: interface_tree
+interface-ui-empty = 이 플러그인은 아직 표시할 항목이 없습니다.

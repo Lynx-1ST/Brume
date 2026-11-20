@@ -943,6 +943,7 @@ impl Member {
 	}
 }
 #[derive(Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum MemberSlot {
 	Person(Member),
 	/// Gateway group id: role snowflake, "online", or "offline".

@@ -511,7 +511,9 @@ impl MessagingUi {
 				return None;
 			}
 			let shown = shown_participant(state, entry);
-			let member = entry.member.as_ref().or_else(|| {
+			// `as_deref`, not `as_ref`: this fork boxes the entry's member to keep a roster
+			// entry within MAX_ROSTER_BYTES, and the index hands out plain references.
+			let member = entry.member.as_deref().or_else(|| {
 				index
 					.get_or_insert_with(|| MemberIndex::build(state))
 					.get(entry.guild, entry.participant.user)

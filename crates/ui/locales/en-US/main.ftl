@@ -6045,3 +6045,7 @@ native-login-error-http = Discord returned HTTP { $status } during sign-in.
 native-login-error-busy = Sign-in is busy. Try again in a moment.
 
 native-login-error-verification-expired = Verification expired. Start the check again.
+
+## crates/ui/src/interface_ui.rs
+# Context: interface_tree
+interface-ui-empty = This plugin has nothing to show yet.

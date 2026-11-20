@@ -720,6 +720,9 @@ pub enum Event {
 		challenge: Box<captcha::Challenge>,
 	},
 	Failure(auth::Failure),
+	/// The service replaced this login's token in READY (unofficial). The application
+	/// continues, and saves the login, with the new one; the state itself keeps no token.
+	TokenRefreshed(std::sync::Arc<auth::SessionSecret>),
 	Disconnected,
 	Resumed,
 	Resync,
@@ -1132,7 +1135,7 @@ impl Default for State {
 	}
 }
 /// Channels the conversation pane can present: text, voice, and forum containers.
-fn navigable(channel: &Channel) -> bool {
+pub fn navigable(channel: &Channel) -> bool {
 	channel.supports_text()
 		|| channel.kind == 2
 		|| (channel.guild.is_some() && matches!(channel.kind, 15 | 16))
@@ -4128,6 +4131,7 @@ impl State {
 				self.failure_detail = Some(detail);
 				Ok(())
 			}
+			Event::TokenRefreshed(_) => Ok(()),
 			Event::Disconnected => {
 				self.release_message_challenge(
 					"Verification ended by disconnect; retry the message",

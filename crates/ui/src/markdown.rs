@@ -2612,6 +2612,7 @@ impl Formatted {
 							kind: Default::default(),
 							discriminator: 0,
 							primary_guild: None,
+							username: None,
 						});
 					render.profile.person_click(ui, &hit, None, &user);
 				}

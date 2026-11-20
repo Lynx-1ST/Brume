@@ -1013,6 +1013,7 @@ mod tests {
 		User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: model::Id(1),
 			name: "Synthetic user".into(),
 			avatar: None,

@@ -129,6 +129,7 @@ pub fn message(id: u64, channel: Id) -> Message {
 				"Robin (synthetic)"
 			}
 			.into(),
+			username: None,
 		},
 		content,
 		edited: false,

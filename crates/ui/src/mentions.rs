@@ -642,6 +642,7 @@ impl Menu {
 						let r = rank(&query, name, user.id)
 							.into_iter()
 							.chain(rank(&query, &user.name, user.id))
+							.chain(rank(&query, user.username(), user.id))
 							.chain(rank(&query, display_name, user.id))
 							.chain(member_nick.and_then(|nick| rank(&query, nick, user.id)))
 							.min()
@@ -1183,6 +1184,23 @@ mod tests {
 		assert_eq!(rank("phong", "công chúa phòng trọ 2a9", Id(0)), Some(0));
 		assert_eq!(rank("tro", "công chúa phòng trọ 2a9", Id(0)), Some(0));
 		assert_eq!(rank("2a9", "công chúa phòng trọ 2a9", Id(0)), Some(0));
+	}
+
+	#[test]
+	fn mention_suggestions_match_the_username_handle_and_the_display_name() {
+		let state = test_support::demo_state();
+		let channel = state.selected.unwrap();
+		let mut member = user(40101, "công chúa phòng trọ 2a9");
+		member.username = Some("igwnz".into());
+		let mut menu = Menu::default();
+		for draft in ["@igwnz", "@igw", "@công", "@congchua"] {
+			menu.refresh(&state, channel, draft, Some(draft.len()), &[member.clone()]);
+			assert_eq!(
+				menu.candidates.first().map(|candidate| candidate.id()),
+				Some(member.id),
+				"{draft} must offer the member whose handle is igwnz"
+			);
+		}
 	}
 
 	#[test]

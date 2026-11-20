@@ -1488,8 +1488,9 @@ mod tests {
 			.is_none(),
 			"roster needs the voice grant"
 		);
-		// A nickname with control characters is cleaned, an empty one is left out and a long
-		// one is bounded, so one bad name never invalidates the whole snapshot.
+		// A nickname with control characters is cleaned, an empty one falls back to the
+		// display name and a long one is bounded, so one bad name never invalidates the
+		// whole snapshot.
 		let mut state = state;
 		let long = "é".repeat(200);
 		for (user, nick) in [(4, "Ash\u{0}\u{1b}"), (5, ""), (3, long.as_str())] {
@@ -1507,7 +1508,11 @@ mod tests {
 		let row = |user: &str| roster.iter().find(|row| row.user_id == user).unwrap();
 		assert_eq!(roster.len(), 5, "every entry still listed");
 		assert_eq!(row("4").name.as_deref(), Some("Ash"));
-		assert_eq!(row("5").name, None, "an empty nickname is left out");
+		assert_eq!(
+			row("5").name.as_deref(),
+			Some("Wren"),
+			"an empty nickname shows the display name, not a blank row"
+		);
 		let bounded = row("3").name.as_deref().unwrap();
 		assert!(bounded.len() <= 128 && long.starts_with(bounded));
 		// A channel whose view is denied keeps its people out of the roster, like the

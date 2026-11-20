@@ -6727,6 +6727,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			},
 			content: "Synthetic text with enough words to wrap in a narrow viewport.".into(),
 			edited: false,
@@ -7616,6 +7617,7 @@ mod tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		}];
 		let preview = text(&message, &mut formatted);
 		assert!(
@@ -8402,6 +8404,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			guilds: [1, 2]
 				.into_iter()
@@ -10281,6 +10284,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			},
 			content: "<#4> ".repeat(12),
 			author_nick: None,
@@ -10345,6 +10349,7 @@ mod tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		});
 		state.guilds.push(model::Guild {
 			banner: None,
@@ -10462,6 +10467,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			},
 			content: "||old revealed content||".into(),
 			edited: false,
@@ -10564,6 +10570,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			},
 			content: "Ordinary text".into(),
 			edited: false,

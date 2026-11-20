@@ -1058,6 +1058,7 @@ mod navigation_tests {
 			author: User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(9),
 				name: "Synthetic".into(),
 				avatar: None,
@@ -1997,6 +1998,7 @@ mod navigation_tests {
 		incoming.author = model::User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(999),
 			name: "Recipient".into(),
 			avatar: None,

@@ -242,7 +242,7 @@ impl Calls {
 				guild: guild.id,
 				channel,
 				participant,
-				member,
+				member: member.map(Box::new),
 			};
 			if bytes + entry.bytes() > voice::MAX_ROSTER_BYTES {
 				continue;

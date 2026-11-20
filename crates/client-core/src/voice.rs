@@ -97,16 +97,11 @@ pub struct RosterEntry {
 	pub guild: Id,
 	pub channel: Id,
 	pub participant: Participant,
-	pub member: Option<Member>,
+	pub member: Option<Box<Member>>,
 }
 impl RosterEntry {
 	pub fn bytes(&self) -> usize {
-		// The member is stored inline, so only its heap counts beyond `Self`.
-		size_of::<Self>()
-			+ self
-				.member
-				.as_ref()
-				.map_or(0, |m| m.bytes() - size_of::<Member>())
+		size_of::<Self>() + self.member.as_ref().map_or(0, |m| m.bytes())
 	}
 }
 
@@ -1124,7 +1119,7 @@ impl ClientState {
 							guild,
 							channel,
 							participant,
-							member: member.map(|member| *member).or(previous),
+							member: member.or(previous),
 						});
 					}
 				}
@@ -1336,7 +1331,7 @@ impl ClientState {
 		};
 		let previous = self.voice.roster[index]
 			.member
-			.as_ref()
+			.as_deref()
 			.map_or(0, Member::bytes);
 		let bytes = self
 			.voice
@@ -1349,7 +1344,7 @@ impl ClientState {
 			.saturating_add(member.bytes())
 			<= MAX_ROSTER_BYTES
 		{
-			self.voice.roster[index].member = Some(member.clone());
+			self.voice.roster[index].member = Some(Box::new(member.clone()));
 		}
 	}
 
@@ -1496,6 +1491,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			guilds: vec![model::Guild {
 				banner: None,
@@ -1846,6 +1842,7 @@ mod tests {
 				user: Some(User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Owner".into(),
 					avatar: None,
@@ -2005,11 +2002,12 @@ mod tests {
 			assert!(state.voice.roster.is_empty());
 			crate::tests::grant_permissions(&mut state);
 			let mut oversized = entry(2, 20);
-			oversized.member = Some(Member {
+			oversized.member = Some(Box::new(Member {
 				roles: vec![],
 				user: User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(2),
 					name: "x".repeat(MAX_ROSTER_BYTES),
 					avatar: None,
@@ -2023,7 +2021,7 @@ mod tests {
 				activities: vec![],
 				status_emoji: None,
 				clients: model::ClientPlatforms::default(),
-			});
+			}));
 			state.apply_voice(Event::Snapshot {
 				guild: None,
 				partial: false,
@@ -2129,6 +2127,7 @@ mod tests {
 				user: Some(User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Owner".into(),
 					avatar: None,
@@ -2277,6 +2276,7 @@ mod tests {
 			user: Some(User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(1),
 				name: "Owner".into(),
 				avatar: None,
@@ -2297,6 +2297,7 @@ mod tests {
 				recipients: vec![User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(3),
 					name: "Peer".into(),
 					avatar: None,
@@ -2570,6 +2571,7 @@ mod tests {
 				user: Some(User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Owner".into(),
 					avatar: None,
@@ -2590,6 +2592,7 @@ mod tests {
 					recipients: vec![User {
 						primary_guild: None,
 						cosmetics: None,
+						username: None,
 						id: Id(3),
 						name: "Peer".into(),
 						avatar: None,

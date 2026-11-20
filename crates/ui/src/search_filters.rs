@@ -278,6 +278,7 @@ pub fn matching_users<'a>(
 			crate::mentions::rank(query_clean, &display_name, user.id)
 				.into_iter()
 				.chain(crate::mentions::rank(query_clean, &user.name, user.id))
+				.chain(crate::mentions::rank(query_clean, user.username(), user.id))
 				.chain(nick.and_then(|n| crate::mentions::rank(query_clean, n, user.id)))
 				.min()
 		};
@@ -307,8 +308,13 @@ pub fn matching_users<'a>(
 
 /// Server whose channels a search spans; direct messages have none.
 pub fn guild(state: &State) -> Option<Id> {
-	state
-		.selected
+	guild_for_channel(state, None)
+}
+
+/// Server whose channels a search spans for a given channel or the current selection.
+pub fn guild_for_channel(state: &State, channel: Option<Id>) -> Option<Id> {
+	channel
+		.or(state.selected)
 		.and_then(|id| state.channel(id))
 		.and_then(|channel| channel.guild)
 }
@@ -444,7 +450,12 @@ fn user_id(value: &str, state: &State, labels: &Labels) -> Option<Id> {
 			let all_users = users(state);
 			all_users
 				.iter()
-				.find(|user| label(&user.name).to_lowercase() == value_lower)
+				.find(|user| user.username().to_lowercase() == value_lower)
+				.or_else(|| {
+					all_users
+						.iter()
+						.find(|user| label(&user.name).to_lowercase() == value_lower)
+				})
 				.or_else(|| {
 					all_users
 						.iter()
@@ -844,7 +855,7 @@ fn user_picker(
 			key,
 			&users
 				.iter()
-				.map(|user| (user.id, user.name.as_str()))
+				.map(|user| (user.id, user.username()))
 				.collect::<Vec<_>>(),
 			&crate::i18n::translate("search-filters-user-picker-choose-a-user"),
 		))
@@ -865,12 +876,13 @@ fn user_picker(
 					let display = state.user_display_name(user);
 					crate::mentions::rank(needle, display, user.id).is_some()
 						|| crate::mentions::rank(needle, &user.name, user.id).is_some()
+						|| crate::mentions::rank(needle, user.username(), user.id).is_some()
 				}
 			}) {
 				count += 1;
 				let id = user.id.to_string();
 				let display = state.user_display_name(user);
-				let sub = format!("@{}", user.name);
+				let sub = format!("@{}", user.username());
 				if user_row(
 					ui,
 					user,
@@ -1297,13 +1309,14 @@ mod tests {
 
 		let user1 = model::User {
 			id: model::Id(1),
-			name: "igwnz".into(),
+			name: "việc nhà m à?".into(),
 			discriminator: 0,
 			avatar: None,
 			kind: model::AccountKind::Human,
 			webhook: false,
 			primary_guild: None,
 			cosmetics: None,
+			username: Some("igwnz".into()),
 		};
 		let user2 = model::User {
 			id: model::Id(2),
@@ -1314,6 +1327,7 @@ mod tests {
 			webhook: false,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		};
 		let user3 = model::User {
 			id: model::Id(3),
@@ -1324,6 +1338,7 @@ mod tests {
 			webhook: false,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		};
 
 		state.members = Some(model::MemberList {
@@ -1335,7 +1350,7 @@ mod tests {
 				Some(model::MemberSlot::Person(model::Member {
 					roles: vec![],
 					user: user1.clone(),
-					nick: Some("việc nhà m à?".into()),
+					nick: None,
 					status: Some("online".into()),
 					custom_status: None,
 					activities: vec![],
@@ -1370,16 +1385,17 @@ mod tests {
 			ranges: vec![],
 		});
 
-		// 1. Search with unaccented Vietnamese "viec" matches "việc nhà m à?"
+		// 1. Search with unaccented Vietnamese "viec" matches global name "việc nhà m à?"
 		let hits = super::matching_users(&state, Some(channel_id), "viec");
 		assert!(!hits.is_empty());
-		assert_eq!(hits[0].user.name, "igwnz");
+		assert_eq!(hits[0].user.username(), "igwnz");
 		assert_eq!(hits[0].display_name, "việc nhà m à?");
 
-		// 2. Search with username "igwnz" matches
+		// 2. Search with username "igwnz" matches even when display name is Vietnamese
 		let hits_username = super::matching_users(&state, Some(channel_id), "igwnz");
 		assert!(!hits_username.is_empty());
-		assert_eq!(hits_username[0].user.name, "igwnz");
+		assert_eq!(hits_username[0].user.username(), "igwnz");
+		assert_eq!(hits_username[0].display_name, "việc nhà m à?");
 
 		// 3. Search with word boundary "@lynx" matches "! Lynx"
 		let hits_lynx = super::matching_users(&state, Some(channel_id), "lynx");
@@ -1394,6 +1410,16 @@ mod tests {
 		assert_eq!(
 			super::insert_user_filter("has:image viec", "mentions", "igwnz"),
 			"has:image mentions:igwnz "
+		);
+
+		// 5. Test user_id and wire by username
+		assert_eq!(
+			super::user_id("igwnz", &state, &super::Labels::default()),
+			Some(model::Id(1))
+		);
+		assert_eq!(
+			super::wire("from:igwnz", &state, &super::Labels::default()).unwrap(),
+			"from:1"
 		);
 	}
 }

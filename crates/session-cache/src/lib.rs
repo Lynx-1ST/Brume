@@ -1359,6 +1359,7 @@ mod tests {
 			author: model::User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				avatar: None,
 				webhook: false,
 				kind: Default::default(),

@@ -275,6 +275,7 @@ pub fn check() {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			},
 			roles: vec![Id(101)],
 			nick: None,

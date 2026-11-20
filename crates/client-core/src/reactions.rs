@@ -690,6 +690,7 @@ mod tests {
 		let user = |id| User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(id),
 			name: format!("User {id}"),
 			avatar: None,
@@ -1286,6 +1287,7 @@ mod tests {
 		let user = User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(2),
 			name: "Synthetic".into(),
 			avatar: None,

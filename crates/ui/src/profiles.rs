@@ -5224,6 +5224,7 @@ pub fn synthetic(user: &User, guild: Option<Id>) -> model::UserProfile {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 				}]
 			})
 			.unwrap_or_default(),

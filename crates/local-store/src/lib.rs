@@ -1401,6 +1401,7 @@ impl LocalStore {
 				author: User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: parse(row.get(1)?)?,
 					name: row.get(2)?,
 					avatar: row.get(7)?,
@@ -3394,6 +3395,7 @@ mod tests {
 		messages[0].mentions = vec![User {
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 			id: Id(5),
 			name: "Mentioned user".into(),
 			avatar: None,
@@ -3600,6 +3602,7 @@ mod tests {
 				author: User {
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 					id: Id(1),
 					name: "Synthetic".into(),
 					avatar: Some("0123456789abcdef0123456789abcdef".into()),

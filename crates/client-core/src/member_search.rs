@@ -89,7 +89,7 @@ impl State {
 			.roster
 			.iter()
 			.find(|entry| Some(entry.guild) == guild && entry.participant.user == user)
-			.and_then(|entry| entry.member.as_ref())
+			.and_then(|entry| entry.member.as_deref())
 			.or_else(|| {
 				self.known_members(channel)
 					.find(|member| member.user.id == user)
@@ -101,7 +101,7 @@ impl State {
 			.roster
 			.iter()
 			.find(|entry| entry.guild == guild && entry.participant.user == user)
-			.and_then(|entry| entry.member.as_ref())
+			.and_then(|entry| entry.member.as_deref())
 			.or_else(|| {
 				self.channels
 					.iter()

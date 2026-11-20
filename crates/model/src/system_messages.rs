@@ -413,6 +413,7 @@ mod tests {
 			author: User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(3),
 				name: "Robin".into(),
 				avatar: None,
@@ -423,6 +424,7 @@ mod tests {
 			mentions: vec![User {
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 				id: Id(4),
 				name: "Casey".into(),
 				avatar: None,

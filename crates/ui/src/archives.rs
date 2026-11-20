@@ -529,6 +529,7 @@ mod tests {
 					discriminator: 0,
 					primary_guild: None,
 					cosmetics: None,
+					username: None,
 				}),
 				auth: client_core::auth::AuthState::Authenticated,
 				gateway_connected: true,

@@ -3150,6 +3150,7 @@ mod tests {
 			webhook: false,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		};
 		let mut state = State {
 			user: Some(owner.clone()),

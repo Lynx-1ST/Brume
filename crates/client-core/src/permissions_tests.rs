@@ -397,6 +397,7 @@ fn user() -> User {
 	User {
 		primary_guild: None,
 		cosmetics: None,
+		username: None,
 		id: Id(2),
 		name: "Synthetic member".into(),
 		avatar: None,

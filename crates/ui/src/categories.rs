@@ -1778,7 +1778,7 @@ mod tests {
 			let mut entry = seed.clone();
 			entry.participant.user = Id(id);
 			entry.participant.streaming = streaming;
-			entry.member = Some(model::Member {
+			entry.member = Some(Box::new(model::Member {
 				user: test_support::message(1, Id(99)).author,
 				nick: Some(nick.into()),
 				roles: vec![],
@@ -1787,7 +1787,7 @@ mod tests {
 				activities: vec![],
 				status_emoji: None,
 				clients: Default::default(),
-			});
+			}));
 			entry
 		})
 		.collect();
@@ -2300,6 +2300,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			guilds: vec![model::Guild {
 				banner: None,
@@ -2470,6 +2471,7 @@ mod tests {
 				discriminator: 0,
 				primary_guild: None,
 				cosmetics: None,
+				username: None,
 			}),
 			guilds: vec![model::Guild {
 				banner: None,

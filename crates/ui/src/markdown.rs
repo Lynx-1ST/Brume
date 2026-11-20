@@ -1886,6 +1886,7 @@ impl Formatted {
 								discriminator: 0,
 								primary_guild: None,
 								cosmetics: None,
+								username: None,
 							});
 							render.profile.person_click(ui, &response, None, &opened);
 						}
@@ -2611,6 +2612,7 @@ impl Formatted {
 							kind: Default::default(),
 							discriminator: 0,
 							primary_guild: None,
+							username: None,
 						});
 					render.profile.person_click(ui, &hit, None, &user);
 				}
@@ -5687,6 +5689,7 @@ mod tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		}];
 		for key in [egui::Key::Tab, egui::Key::Enter] {
 			let mut output = ctx.run_ui(
@@ -6876,6 +6879,7 @@ mod tests {
 			name: "Synthetic Robin".into(),
 			avatar: None,
 			cosmetics: None,
+			username: None,
 			webhook: false,
 			kind: Default::default(),
 			discriminator: 0,

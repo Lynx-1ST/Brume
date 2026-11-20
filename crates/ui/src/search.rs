@@ -538,19 +538,6 @@ impl SearchUi {
 										i.consume_key(egui::Modifiers::NONE, egui::Key::Enter)
 									});
 								let mut chosen = None;
-								let user_prefix = match key {
-									"from" => crate::i18n::translate("search-overlays-from")
-										.to_lowercase(),
-									_ => {
-										if crate::i18n::current().resolved()
-											== crate::i18n::Language::Vietnamese
-										{
-											"để cập".to_owned()
-										} else {
-											"mentions".to_owned()
-										}
-									}
-								};
 								egui::ScrollArea::vertical()
 									.max_height(260.0)
 									.show(ui, |ui| {

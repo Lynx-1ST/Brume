@@ -58,6 +58,8 @@ pub struct AppPreferences {
 	pub reply_without_mention: bool,
 	/// Draw only image and GIF embeds under messages, not link, video or bot cards.
 	pub hide_link_previews: bool,
+	/// Leave server tags out of message headers; older preferences keep them shown.
+	pub hide_chat_server_tags: bool,
 	/// Request a conversation's page while the pointer rests on it. Off unless the owner turns
 	/// it on: the official client makes no such requests. A saved value is kept as it is.
 	pub preload_on_hover: bool,
@@ -136,6 +138,7 @@ impl Default for AppPreferences {
 			hide_own_typing: false,
 			reply_without_mention: false,
 			hide_link_previews: false,
+			hide_chat_server_tags: false,
 			preload_on_hover: false,
 			auto_idle: true,
 			hide_title_bar: false,
@@ -2221,6 +2224,8 @@ mod tests {
 		assert!(legacy.voice_processing.is_none());
 		assert!(legacy.voice_noise_suppression);
 		assert!(!legacy.hide_blocked_messages && !legacy.hide_ignored_messages);
+		// Preferences saved before the chat switch existed keep server tags in messages.
+		assert!(!legacy.hide_chat_server_tags);
 		assert!(!legacy.setup_done);
 		// Existing serialized bindings omit the newly optional diagnostics shortcut.
 		let mut old_bindings = serde_json::to_value(model::Keybinds::default()).unwrap();

@@ -10537,7 +10537,7 @@ pub fn debug_member_voice_status_check(mut state: State, mut private: State) {
 		.find(|channel| channel.guild == Some(entry.guild) && channel.kind == 0)
 		.unwrap()
 		.id;
-	let mut member = entry.member.clone().unwrap();
+	let mut member = *entry.member.clone().unwrap();
 	member.custom_status = Some("Synthetic status".into());
 	state.selected = Some(text_channel);
 	state.gateway_connected = true;

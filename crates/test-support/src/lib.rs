@@ -834,7 +834,7 @@ pub fn voice_demo_state() -> State {
 			video: false,
 			streaming: false,
 		},
-		member: Some(Member {
+		member: Some(Box::new(Member {
 			roles: vec![],
 			user: User {
 				id: Id(id),
@@ -853,7 +853,7 @@ pub fn voice_demo_state() -> State {
 			activities: vec![],
 			status_emoji: None,
 			clients: model::ClientPlatforms::default(),
-		}),
+		})),
 	})
 	.collect();
 	// Fern streams in the fixture so the LIVE pill and watch action render offline.

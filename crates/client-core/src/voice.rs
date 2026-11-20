@@ -97,16 +97,15 @@ pub struct RosterEntry {
 	pub guild: Id,
 	pub channel: Id,
 	pub participant: Participant,
-	pub member: Option<Member>,
+	pub member: Option<Box<Member>>,
 }
 impl RosterEntry {
 	pub fn bytes(&self) -> usize {
-		// The member is stored inline, so only its heap counts beyond `Self`.
 		size_of::<Self>()
 			+ self
 				.member
 				.as_ref()
-				.map_or(0, |m| m.bytes() - size_of::<Member>())
+				.map_or(0, |m| m.bytes())
 	}
 }
 
@@ -1124,7 +1123,7 @@ impl ClientState {
 							guild,
 							channel,
 							participant,
-							member: member.map(|member| *member).or(previous),
+							member: member.or(previous),
 						});
 					}
 				}
@@ -1336,7 +1335,7 @@ impl ClientState {
 		};
 		let previous = self.voice.roster[index]
 			.member
-			.as_ref()
+			.as_deref()
 			.map_or(0, Member::bytes);
 		let bytes = self
 			.voice
@@ -1349,7 +1348,7 @@ impl ClientState {
 			.saturating_add(member.bytes())
 			<= MAX_ROSTER_BYTES
 		{
-			self.voice.roster[index].member = Some(member.clone());
+			self.voice.roster[index].member = Some(Box::new(member.clone()));
 		}
 	}
 

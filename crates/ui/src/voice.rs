@@ -5511,7 +5511,7 @@ pub(crate) fn resolve_member<'a>(
 	// Voice identities are refreshed by member updates and survive channel/guild navigation.
 	let member = entry
 		.member
-		.as_ref()
+		.as_deref()
 		.or_else(|| state.known_member(entry.channel, entry.participant.user));
 	let user = member
 		.map(|m| &m.user)

@@ -470,12 +470,9 @@ pub(crate) fn normalize(s: &str) -> String {
 		.collect()
 }
 
-/// Rank a name against the typed query: prefix hits first, then word-boundary or squashed hits, then substrings, then snowflakes.
-pub(crate) fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
-	rank_with(&normalize(query), query, name, id)
-}
-
-/// `rank` with the query normalized once by the caller; ranking a list re-normalized it per name.
+/// Rank a name against the typed query: prefix hits first, then word-boundary or squashed hits,
+/// then substrings, then snowflakes. `query_norm` is `normalize(query)`, which every caller ranking
+/// a list of names hoists out of its loop instead of rebuilding it once per name.
 pub(crate) fn rank_with(query_norm: &str, query: &str, name: &str, id: Id) -> Option<u8> {
 	if query.is_empty() {
 		return Some(1);
@@ -1177,6 +1174,11 @@ fn row(
 mod tests {
 	use super::*;
 	use model::Channel;
+
+	/// The pre-`rank_with` signature, kept for the ranking assertions below.
+	fn rank(query: &str, name: &str, id: Id) -> Option<u8> {
+		rank_with(&normalize(query), query, name, id)
+	}
 
 	#[test]
 	fn mention_matching_supports_word_boundaries_squashed_and_vietnamese_diacritics() {

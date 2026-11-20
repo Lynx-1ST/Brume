@@ -1513,6 +1513,8 @@ impl UserPicker {
 		// The arrow can browse known users even when a numeric ID is already entered.
 		let query = if valid_id { "" } else { typed };
 		let local_query = query.to_lowercase();
+		// Normalized once here: every candidate below ranks several names against it.
+		let local_query_norm = mentions::normalize(&local_query);
 		let remote = mentions::searched_members(state, channel, Some(query));
 		let source = mentions::MentionSource { state, channel };
 		// Remote rows join after the bounded local list so late results cannot evict a local match.
@@ -1542,10 +1544,13 @@ impl UserPicker {
 				let rank = [
 					label.strip_prefix('@').unwrap_or(&label),
 					&user.name,
+					user.username(),
 					state.user_display_name(&user),
 				]
 				.into_iter()
-				.filter_map(|name| mentions::rank(&local_query, name, user.id))
+				.filter_map(|name| {
+					mentions::rank_with(&local_query_norm, &local_query, name, user.id)
+				})
 				.min()
 				.or_else(|| member.map(|_| 2))?;
 				Some((rank, label, user))

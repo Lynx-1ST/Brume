@@ -876,14 +876,22 @@ fn user_picker(
 					)),
 			);
 			let mut count = 0;
+			// Normalized once here: this filter re-runs for every user on every frame.
+			let needle_norm = crate::mentions::normalize(needle);
 			for user in users.iter().filter(|user| {
 				if needle.is_empty() {
 					true
 				} else {
 					let display = state.user_display_name(user);
-					crate::mentions::rank(needle, display, user.id).is_some()
-						|| crate::mentions::rank(needle, &user.name, user.id).is_some()
-						|| crate::mentions::rank(needle, user.username(), user.id).is_some()
+					crate::mentions::rank_with(&needle_norm, needle, display, user.id).is_some()
+						|| crate::mentions::rank_with(&needle_norm, needle, &user.name, user.id)
+							.is_some() || crate::mentions::rank_with(
+						&needle_norm,
+						needle,
+						user.username(),
+						user.id,
+					)
+					.is_some()
 				}
 			}) {
 				count += 1;

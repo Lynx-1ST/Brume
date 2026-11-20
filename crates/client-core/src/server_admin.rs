@@ -990,7 +990,7 @@ impl State {
 						deafened: participant.deafened,
 						video: participant.video,
 						streaming: participant.streaming,
-						member: entry.member.map(Box::new),
+						member: entry.member.clone(),
 						request: None,
 						session: None,
 						negotiation_revision: None,

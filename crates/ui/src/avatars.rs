@@ -3658,6 +3658,8 @@ mod tests {
 	fn an_animation_drawn_small_skips_the_upload_nothing_would_draw() {
 		let ctx = egui::Context::default();
 		let mut avatars = Avatars::default();
+		// `accept_animation` drops frames outright while animation is off, which it is by default.
+		avatars.set_animation(true);
 		let key = "effect-d-test";
 		avatars.request(key.into());
 		avatars.take_requests();
@@ -3675,6 +3677,10 @@ mod tests {
 			})
 			.collect();
 		avatars.accept_animation(key.into(), frames);
+		assert!(
+			avatars.animations.contains_key(key),
+			"the frames were accepted, so a later failure is about the upload, not the setup"
+		);
 		let square =
 			|edge: f32| egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(edge, edge));
 		assert!(

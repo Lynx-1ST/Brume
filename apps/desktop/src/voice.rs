@@ -59,8 +59,11 @@ fn end_negotiation(channel: Id, request: u64, established: bool) -> voice::Comma
 
 const DEVICE_OPEN_TIMEOUT: Duration = Duration::from_secs(20);
 
-/// One timestamp per call, with no audio retained. Only near-digital silence counts: this
-/// warns about a silent input, rather than guessing whether the user intended to speak.
+/// One timestamp per call, with no audio retained. Only near-digital silence counts, and only
+/// on the raw device level: noise suppression, the sensitivity threshold and the voice activity
+/// detector all silence the processed signal on purpose, so measuring after them would warn
+/// about a working microphone in a quiet room. This warns that nothing is arriving from the
+/// device, rather than guessing whether the user intended to speak.
 #[derive(Default)]
 struct NoInputWarning(Option<Instant>);
 impl NoInputWarning {
@@ -1328,7 +1331,7 @@ impl Voice {
 				&& !ui.voice_microphone_unavailable;
 			ui.voice_no_input_detected =
 				live.no_input
-					.poll(Instant::now(), monitor_input, live.audio.preview_level_db());
+					.poll(Instant::now(), monitor_input, live.audio.device_level_db());
 			if monitor_input {
 				ctx.request_repaint_after(Duration::from_secs(1));
 			}

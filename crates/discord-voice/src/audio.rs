@@ -76,6 +76,9 @@ pub struct Gate {
 	output_gain: AtomicU16,
 	echo_reset: AtomicBool,
 	preview_level: AtomicU16,
+	/// The level of the microphone frame as the device delivered it, before suppression, gain
+	/// and the activity gate. Only this answers "is anything arriving at all".
+	device_level: AtomicU16,
 	processing_ready: AtomicBool,
 	/// Automatic noise suppression moved from DeepFilterNet to RNNoise.
 	suppression_fell_back: AtomicBool,
@@ -104,6 +107,7 @@ impl Default for Gate {
 			output_gain: AtomicU16::new(100),
 			echo_reset: AtomicBool::new(false),
 			preview_level: AtomicU16::new(0),
+			device_level: AtomicU16::new(0),
 			processing_ready: AtomicBool::new(true),
 			suppression_fell_back: AtomicBool::new(false),
 			diagnostics: crate::diagnostics::enabled(),
@@ -191,6 +195,16 @@ impl Audio {
 			return -100.0;
 		}
 		f32::from(self.gate.preview_level.load(Ordering::Relaxed)) - 100.0
+	}
+
+	/// The raw microphone level, which noise suppression, the sensitivity threshold and the
+	/// voice activity detector cannot pull down. Silence here means the device itself is
+	/// delivering nothing, which is the only thing worth warning about.
+	pub fn device_level_db(&self) -> f32 {
+		if !self.gate.capture() {
+			return -100.0;
+		}
+		f32::from(self.gate.device_level.load(Ordering::Relaxed)) - 100.0
 	}
 	fn start_inner(
 		settings: Devices,
@@ -406,6 +420,10 @@ impl Audio {
 							break;
 						};
 						if worker_gate.capture() {
+							worker_gate.device_level.store(
+								(crate::activity::level_db(&frame) + 100.0) as u16,
+								Ordering::Relaxed,
+							);
 							let start = metrics.start();
 							let result = echo.capture(&mut frame, start.is_some());
 							metrics.finish(Stage::EchoCapture, start);

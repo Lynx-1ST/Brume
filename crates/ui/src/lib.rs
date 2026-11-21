@@ -5347,6 +5347,8 @@ impl MessagingUi {
 			state.selected,
 		);
 		self.avatars.cosmetics = self.cosmetics;
+		self.avatars
+			.set_texture_budget(self.image_cache.texture_limit());
 		name_styles::set_enabled(self.cosmetics.name_styles);
 		role_names::set_gradients(!self.cosmetics.solid_names);
 		let cosmetics_refresh = state.set_profile_cosmetics(self.cosmetics);

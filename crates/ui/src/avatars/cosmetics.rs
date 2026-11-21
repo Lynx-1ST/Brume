@@ -226,7 +226,8 @@ impl Avatars {
 				if let Some((used, _)) = self.textures.get_mut(&animated) {
 					*used = Instant::now();
 				}
-				if let Some(frame) = self.advance_animation(ui.ctx(), &animated, true) {
+				// Nameplates paint the frame at its own size, so it needs its upload.
+				if let (_, Some(frame)) = self.advance_animation(ui.ctx(), &animated, true, true) {
 					texture = Some(frame);
 				}
 			} else if !self.no_animations.contains(&animated) {
@@ -386,7 +387,8 @@ impl Avatars {
 					} else {
 						local.min(total - 1)
 					};
-					animation.seek(ui.ctx(), Duration::from_millis(local))
+					// Profile effect layers paint at their own size, so they need the upload.
+					animation.seek(ui.ctx(), Duration::from_millis(local), true)
 				}
 				_ => {
 					// Idle frames were released; decode them again from the disk cache.

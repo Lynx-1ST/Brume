@@ -35,13 +35,10 @@ struct Animation {
 
 // Emoji artwork has its own working set so media cannot evict it.
 const EMOJI_TEXTURES: usize = 1024;
-const EMOJI_TEXTURE_BYTES: usize = 16 * 1024 * 1024;
 const TEXTURES: usize = 512;
-const TEXTURE_BYTES: usize = 64 * 1024 * 1024;
 const IDLE_TEXTURES: Duration = Duration::from_secs(60);
 const SOURCE_EDGE: usize = 128;
 const SOURCE_BYTES: usize = 48 * 1024 * 1024;
-const FIT_BYTES: usize = 16 * 1024 * 1024;
 const FITS_PER_IMAGE: usize = 4;
 /// Longest edge for string-keyed artwork: stickers, picker previews, banners and activity art.
 pub const EMBED_EDGE: u32 = 512;
@@ -76,6 +73,9 @@ pub(crate) struct Avatars {
 	pub animate_gifs: bool,
 	/// Hidden cosmetics are neither painted nor requested.
 	pub cosmetics: model::CosmeticPreferences,
+	/// Video memory these caches may hold, chosen in Settings › Storage. Lowering it evicts
+	/// down to the new budget on the next frame rather than waiting for artwork to go idle.
+	texture_budget: model::TextureLimit,
 	avatar_animation: bool,
 	/// `--demo-loading`: synthetic artwork is withheld, so demo images stay in their loading state.
 	#[cfg(any(test, feature = "demo"))]
@@ -112,16 +112,35 @@ pub(crate) struct Avatars {
 }
 
 impl Animation {
-	fn advance(&mut self, ctx: &egui::Context) -> Option<TextureHandle> {
+	fn advance(&mut self, ctx: &egui::Context, upload: bool) -> Option<TextureHandle> {
 		let total_nanos = self.total.as_nanos();
 		if total_nanos == 0 {
 			return None;
 		}
 		let elapsed_nanos = (self.started.elapsed().as_nanos() % total_nanos) as u64;
-		self.seek(ctx, Duration::from_nanos(elapsed_nanos))
+		self.seek(ctx, Duration::from_nanos(elapsed_nanos), upload)
+	}
+	/// Uploads the current frame when a skipped upload turns out to be needed after all, so a
+	/// painter that expected a downscaled copy and found none still shows the right frame.
+	fn ensure_texture(&mut self, ctx: &egui::Context) -> Option<TextureHandle> {
+		if self.texture.is_none() {
+			let image = self.frames.get(self.frame)?.1.clone();
+			self.texture =
+				Some(ctx.load_texture("service-animation", image, egui::TextureOptions::LINEAR));
+		}
+		self.texture.clone()
 	}
 	/// Shows the frame at `elapsed` into the clip, which must be shorter than `total`.
-	fn seek(&mut self, ctx: &egui::Context, mut elapsed: Duration) -> Option<TextureHandle> {
+	///
+	/// `upload` false means the caller paints a downscaled copy of this frame, so the full-size
+	/// one would be uploaded and never drawn. Dropping the handle instead of leaving it stale
+	/// keeps [`Self::ensure_texture`] honest if the caller changes its mind.
+	fn seek(
+		&mut self,
+		ctx: &egui::Context,
+		mut elapsed: Duration,
+		upload: bool,
+	) -> Option<TextureHandle> {
 		let now = Instant::now();
 		self.played = now;
 		let mut target_index = self.frames.len().saturating_sub(1);
@@ -140,15 +159,19 @@ impl Animation {
 				ctx.request_repaint_after(self.next_upload - now);
 				return self.texture.clone();
 			}
-			let image = &self.frames[target_index].1;
-			if let Some(texture) = &mut self.texture {
-				texture.set(image.clone(), egui::TextureOptions::LINEAR);
+			if upload {
+				let image = &self.frames[target_index].1;
+				if let Some(texture) = &mut self.texture {
+					texture.set(image.clone(), egui::TextureOptions::LINEAR);
+				} else {
+					self.texture = Some(ctx.load_texture(
+						"service-animation",
+						image.clone(),
+						egui::TextureOptions::LINEAR,
+					));
+				}
 			} else {
-				self.texture = Some(ctx.load_texture(
-					"service-animation",
-					image.clone(),
-					egui::TextureOptions::LINEAR,
-				));
+				self.texture = None;
 			}
 			self.frame = target_index;
 			self.next_upload = now + ANIMATION_INTERVAL;
@@ -405,6 +428,53 @@ impl Avatars {
 			viewer,
 		]
 	}
+	/// Applies a texture budget chosen in Settings › Storage. A smaller one takes effect at once:
+	/// waiting for artwork to go idle would leave the video memory held for up to a minute after
+	/// the owner asked for it back, which is the whole point of lowering it.
+	pub(crate) fn set_texture_budget(&mut self, budget: model::TextureLimit) {
+		if self.texture_budget == budget {
+			return;
+		}
+		self.texture_budget = budget;
+		for (textures, bytes, byte_limit) in [
+			(&mut self.textures, &mut self.bytes, budget.artwork),
+			(
+				&mut self.emoji_textures,
+				&mut self.emoji_bytes,
+				budget.emoji,
+			),
+		] {
+			while *bytes > byte_limit {
+				let Some(oldest) = textures
+					.iter()
+					.min_by_key(|(_, (age, _))| *age)
+					.map(|(key, _)| key.clone())
+				else {
+					break;
+				};
+				if let Some((_, texture)) = textures.remove(&oldest) {
+					*bytes = bytes.saturating_sub(texture.byte_size());
+				}
+				self.animations.remove(&oldest);
+				self.released.remove(&oldest);
+				self.wanted.remove(&oldest);
+				if let Some(image) = self.sources.remove(&oldest) {
+					self.source_bytes = self.source_bytes.saturating_sub(image.pixels().len() * 4);
+				}
+				if let Some(fits) = self.fits.remove(&oldest) {
+					for fit in fits {
+						self.fit_bytes = self.fit_bytes.saturating_sub(fit.texture.byte_size());
+					}
+				}
+				self.revision += 1;
+			}
+		}
+		if self.fit_bytes > budget.fits {
+			self.fits.clear();
+			self.fit_bytes = 0;
+			self.revision += 1;
+		}
+	}
 	/// Releases idle decoded frames and artwork textures; visible artwork refreshes its deadline.
 	fn release_idle(&mut self, now: Instant) {
 		let idle: Vec<String> = self
@@ -577,9 +647,29 @@ impl Avatars {
 		rect: egui::Rect,
 	) -> TextureHandle {
 		let physical = rect.width().max(rect.height()) * ctx.pixels_per_point();
-		let source = full.resolution()[0].max(full.resolution()[1]) as u32;
+		// `full` may be the still rendition while an animation plays, so measure the frame that
+		// will actually be drawn. Disagreeing with `paints_downscaled` here would skip an upload
+		// and then ask for it.
+		let resolution = self
+			.animations
+			.get(key)
+			.filter(|_| animated)
+			.and_then(|animation| {
+				animation
+					.frames
+					.get(animation.frame)
+					.or_else(|| animation.frames.first())
+			})
+			.map_or_else(|| full.resolution(), |(_, image)| image.resolution());
+		let source = resolution[0].max(resolution[1]) as u32;
 		let Some(edge) = crate::resample::fitted_edge(source, physical) else {
-			return full.clone();
+			// Nothing to downscale after all; the skipped full-size upload is needed.
+			return self
+				.animations
+				.get_mut(key)
+				.filter(|_| animated)
+				.and_then(|animation| animation.ensure_texture(ctx))
+				.unwrap_or_else(|| full.clone());
 		};
 		let frame = animated
 			.then(|| self.animations.get(key).map(|animation| animation.frame))
@@ -605,7 +695,7 @@ impl Avatars {
 		frame: Option<usize>,
 		image: ColorImage,
 	) -> TextureHandle {
-		if self.fit_bytes > FIT_BYTES {
+		if self.fit_bytes > self.texture_budget.fits {
 			self.fits.clear();
 			self.fit_bytes = 0;
 		}
@@ -711,10 +801,15 @@ impl Avatars {
 				&mut self.emoji_textures,
 				&mut self.emoji_bytes,
 				EMOJI_TEXTURES,
-				EMOJI_TEXTURE_BYTES,
+				self.texture_budget.emoji,
 			)
 		} else {
-			(&mut self.textures, &mut self.bytes, TEXTURES, TEXTURE_BYTES)
+			(
+				&mut self.textures,
+				&mut self.bytes,
+				TEXTURES,
+				self.texture_budget.artwork,
+			)
 		};
 		if let Some((_, old)) = textures.remove(&key) {
 			*bytes -= old.byte_size();
@@ -835,7 +930,8 @@ impl Avatars {
 		if let Some(key) = animated_emoji_key(id, edge, animated && self.animate_gifs && !demo)
 			&& !self.no_animations.contains(&key)
 		{
-			let frame = self.advance_animation(ctx, &key, false);
+			// Emoji paint the frame straight through `egui::Image`, so it needs its upload.
+			let (_, frame) = self.advance_animation(ctx, &key, false, true);
 			// Frames evicted from the shared pool come back while the emoji is visible.
 			if frame.is_none()
 				&& self.textures.contains_key(&key)
@@ -919,7 +1015,7 @@ impl Avatars {
 			}
 			model::ImageShare::Sticker { id, format_type } => {
 				let key = self.sticker_key(ctx, id, format_type, demo);
-				let animated = self.advance_animation(ctx, &key, false);
+				let (_, animated) = self.advance_animation(ctx, &key, false, true);
 				if let Some(entry) = self.textures.get_mut(&key) {
 					entry.0 = Instant::now();
 					Some(
@@ -1116,7 +1212,7 @@ impl Avatars {
 		demo: bool,
 	) -> Option<(egui::TextureId, [usize; 2])> {
 		let key = self.preview_key(preview);
-		let animated_texture = self.advance_animation(ctx, &key, false);
+		let (_, animated_texture) = self.advance_animation(ctx, &key, false, true);
 		if let Some(entry) = self.textures.get_mut(&key) {
 			entry.0 = Instant::now();
 			let texture = animated_texture.as_ref().unwrap_or(&entry.1);
@@ -1201,7 +1297,7 @@ impl Avatars {
 		{
 			self.request(key.clone());
 		}
-		let animated_texture = self.advance_animation(ctx, &key, play);
+		let (_, animated_texture) = self.advance_animation(ctx, &key, play, true);
 		#[cfg(any(test, feature = "demo"))]
 		if demo && !self.hold_demo_images && !self.textures.contains_key(&key) {
 			let mut image = ColorImage::filled([128, 48], color);
@@ -1402,15 +1498,16 @@ impl Avatars {
 		ctx: &egui::Context,
 		key: &str,
 		hovered: bool,
-	) -> Option<TextureHandle> {
+		upload: bool,
+	) -> (bool, Option<TextureHandle>) {
 		if !self.animate_gifs
 			|| !ctx.input(|input| input.focused)
 			|| !(hovered || self.avatar_animation || !is_animated_profile_or_avatar_key(key))
 		{
-			return None;
+			return (false, None);
 		}
 		if let Some(animation) = self.animations.get_mut(key) {
-			return animation.advance(ctx);
+			return (true, animation.advance(ctx, upload));
 		}
 		if is_animated_profile_or_avatar_key(key) {
 			if self.wanted.len() >= REQUESTS {
@@ -1424,7 +1521,25 @@ impl Avatars {
 		{
 			self.request(key.to_owned());
 		}
-		None
+		(false, None)
+	}
+	/// Whether this paint will draw a downscaled copy rather than the frame at its own size.
+	/// Checked before advancing, so the animation can skip an upload nothing would draw.
+	fn paints_downscaled(&self, ctx: &egui::Context, key: &str, rect: egui::Rect) -> bool {
+		let physical = rect.width().max(rect.height()) * ctx.pixels_per_point();
+		self.animations
+			.get(key)
+			.and_then(|animation| {
+				animation
+					.frames
+					.get(animation.frame)
+					.or_else(|| animation.frames.first())
+			})
+			.map(|(_, image)| image.resolution())
+			.is_some_and(|resolution| {
+				let source = resolution[0].max(resolution[1]) as u32;
+				crate::resample::fitted_edge(source, physical).is_some()
+			})
 	}
 	fn paint(&mut self, ui: &mut egui::Ui, key: &str, rect: egui::Rect, radius: u8) -> bool {
 		self.paint_fitted(ui, key, rect, radius, false)
@@ -1465,6 +1580,7 @@ impl Avatars {
 		cover: bool,
 	) -> bool {
 		let mut animated_texture = None;
+		let mut animated = false;
 		if ui.is_rect_visible(rect) {
 			let is_animated = key.starts_with("anim:") || is_animated_profile_or_avatar_key(key);
 			if is_animated
@@ -1475,10 +1591,12 @@ impl Avatars {
 			{
 				self.request(key.to_string());
 			}
-			animated_texture =
-				self.advance_animation(ui.ctx(), key, ui.rect_contains_pointer(rect));
+			// A frame painted from a downscaled copy never shows the full-size upload, so asking
+			// for both costs two textures per animation frame where one is drawn.
+			let downscaled = self.paints_downscaled(ui.ctx(), key, rect);
+			(animated, animated_texture) =
+				self.advance_animation(ui.ctx(), key, ui.rect_contains_pointer(rect), !downscaled);
 		}
-		let animated = animated_texture.is_some();
 		let full = {
 			let Some(entry) = self.textures.get_mut(key) else {
 				return false;
@@ -3463,8 +3581,31 @@ mod tests {
 				.values()
 				.map(|(_, texture)| texture.byte_size())
 				.sum::<usize>(),
-			TEXTURE_BYTES
+			avatars.texture_budget.artwork
 		);
+		// Lowering the budget in Settings must hand the video memory back on the spot, not when
+		// the artwork happens to go idle a minute later.
+		let smaller = model::CachePreferences {
+			texture_mib: model::TEXTURE_CACHE_MIB[0],
+			..Default::default()
+		}
+		.texture_limit();
+		avatars.set_texture_budget(smaller);
+		let held: usize = avatars
+			.textures
+			.values()
+			.map(|(_, texture)| texture.byte_size())
+			.sum();
+		assert!(
+			held <= smaller.artwork,
+			"{held} bytes still held against a {} byte budget",
+			smaller.artwork
+		);
+		assert_eq!(
+			avatars.bytes, held,
+			"the running total tracks the evictions"
+		);
+		assert!(avatars.fit_bytes <= smaller.fits);
 		let mut preview = Avatars::default();
 		let guild = model::Guild {
 			banner: None,
@@ -3511,5 +3652,57 @@ mod tests {
 			.collect();
 		avatars.accept_animation("effect-c-test".into(), frames);
 		assert!(avatars.animations.contains_key("effect-c-test"));
+	}
+
+	#[test]
+	fn an_animation_drawn_small_skips_the_upload_nothing_would_draw() {
+		let ctx = egui::Context::default();
+		let mut avatars = Avatars::default();
+		// `accept_animation` drops frames outright while animation is off, which it is by default.
+		avatars.set_animation(true);
+		let key = "effect-d-test";
+		avatars.request(key.into());
+		avatars.take_requests();
+		avatars.accept(
+			&ctx,
+			key.into(),
+			Some(ColorImage::filled([320, 320], egui::Color32::WHITE)),
+		);
+		let frames: crate::avatars::GifFrames = (0..2)
+			.map(|_| {
+				(
+					std::time::Duration::from_millis(50),
+					std::sync::Arc::new(ColorImage::filled([320, 320], egui::Color32::WHITE)),
+				)
+			})
+			.collect();
+		avatars.accept_animation(key.into(), frames);
+		assert!(
+			avatars.animations.contains_key(key),
+			"the frames were accepted, so a later failure is about the upload, not the setup"
+		);
+		let square =
+			|edge: f32| egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(edge, edge));
+		assert!(
+			avatars.paints_downscaled(&ctx, key, square(32.0)),
+			"a 320 px frame in a 32 px slot is drawn from a downscaled copy"
+		);
+		assert!(
+			!avatars.paints_downscaled(&ctx, key, square(320.0)),
+			"at its own size the frame itself is drawn"
+		);
+		let animation = avatars.animations.get_mut(key).expect("animation");
+		assert!(
+			animation
+				.seek(&ctx, std::time::Duration::from_millis(60), false)
+				.is_none()
+		);
+		assert!(
+			animation.texture.is_none(),
+			"the full-size frame is not uploaded when a downscaled copy is drawn"
+		);
+		// A painter that expected a downscaled copy and found none still needs the frame.
+		assert!(animation.ensure_texture(&ctx).is_some());
+		assert!(animation.texture.is_some());
 	}
 }

@@ -3673,6 +3673,10 @@ settings-image-cache-retention = Xóa hình ảnh không sử dụng sau
 # Context: image_cache_settings
 settings-image-cache-retention-description = Xóa ảnh lưu trên máy nếu không dùng lại trong thời gian đã chọn.
 # Context: image_cache_settings
+settings-image-cache-textures = Bộ nhớ hình của card đồ họa
+# Context: image_cache_settings
+settings-image-cache-textures-description = Hình đã giải mã được giữ sẵn trên card đồ họa để vẽ ngay. Đặt thấp thì nhường bộ nhớ cho chương trình khác, đổi lại hình phải tải lại khi bạn cuộn ngược lên.
+# Context: image_cache_settings
 settings-image-cache-days =
     { $count ->
         [one] { $count } ngày

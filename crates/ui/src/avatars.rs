@@ -930,7 +930,8 @@ impl Avatars {
 		if let Some(key) = animated_emoji_key(id, edge, animated && self.animate_gifs && !demo)
 			&& !self.no_animations.contains(&key)
 		{
-			let frame = self.advance_animation(ctx, &key, false);
+			// Emoji paint the frame straight through `egui::Image`, so it needs its upload.
+			let (_, frame) = self.advance_animation(ctx, &key, false, true);
 			// Frames evicted from the shared pool come back while the emoji is visible.
 			if frame.is_none()
 				&& self.textures.contains_key(&key)
@@ -1014,7 +1015,7 @@ impl Avatars {
 			}
 			model::ImageShare::Sticker { id, format_type } => {
 				let key = self.sticker_key(ctx, id, format_type, demo);
-				let animated = self.advance_animation(ctx, &key, false);
+				let (_, animated) = self.advance_animation(ctx, &key, false, true);
 				if let Some(entry) = self.textures.get_mut(&key) {
 					entry.0 = Instant::now();
 					Some(
@@ -1211,7 +1212,7 @@ impl Avatars {
 		demo: bool,
 	) -> Option<(egui::TextureId, [usize; 2])> {
 		let key = self.preview_key(preview);
-		let animated_texture = self.advance_animation(ctx, &key, false);
+		let (_, animated_texture) = self.advance_animation(ctx, &key, false, true);
 		if let Some(entry) = self.textures.get_mut(&key) {
 			entry.0 = Instant::now();
 			let texture = animated_texture.as_ref().unwrap_or(&entry.1);
@@ -1296,7 +1297,7 @@ impl Avatars {
 		{
 			self.request(key.clone());
 		}
-		let animated_texture = self.advance_animation(ctx, &key, play);
+		let (_, animated_texture) = self.advance_animation(ctx, &key, play, true);
 		#[cfg(any(test, feature = "demo"))]
 		if demo && !self.hold_demo_images && !self.textures.contains_key(&key) {
 			let mut image = ColorImage::filled([128, 48], color);
@@ -3668,7 +3669,7 @@ mod tests {
 		let frames: crate::avatars::GifFrames = (0..2)
 			.map(|_| {
 				(
-					Duration::from_millis(50),
+					std::time::Duration::from_millis(50),
 					std::sync::Arc::new(ColorImage::filled([320, 320], egui::Color32::WHITE)),
 				)
 			})
@@ -3687,7 +3688,7 @@ mod tests {
 		let animation = avatars.animations.get_mut(key).expect("animation");
 		assert!(
 			animation
-				.seek(&ctx, Duration::from_millis(60), false)
+				.seek(&ctx, std::time::Duration::from_millis(60), false)
 				.is_none()
 		);
 		assert!(

@@ -5298,9 +5298,25 @@ ui-builtin-studio = Studio
 
 ui-builtin-custom = Custom
 
-ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = RNNoise suppression, echo cancellation and automatic gain for speech.
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = Automatic noise suppression, echo cancellation and automatic gain for speech.
 
 ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = Open microphone without suppression, echo cancellation or automatic gain.
+
+ui-builtin-choose-your-noise-suppression-sensitivity-and-processing = Choose your noise suppression, sensitivity and processing.
+
+voice-suppression-automatic = Automatic
+
+voice-suppression-auto-detail = Uses DeepFilterNet, and RNNoise when this device is too busy for it.
+
+voice-suppression-fell-back = RNNoise is active: this device is too busy for DeepFilterNet.
+
+voice-suppression-strength-low = Low
+
+voice-suppression-strength-moderate = Moderate
+
+voice-suppression-strength-high = High
+
+voice-suppression-strength-very-high = Very high
 
 ui-builtin-turn-on-microphone = Turn on microphone
 

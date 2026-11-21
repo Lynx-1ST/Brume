@@ -5275,9 +5275,25 @@ ui-builtin-studio = 스튜디오
 
 ui-builtin-custom = 사용자 지정
 
-ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = RNNoise 소음 억제, 에코 제거 및 자동 음량 조절을 사용해요.
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = 자동 소음 억제, 에코 제거 및 자동 음량 조절을 사용해요.
 
 ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = 소음 억제, 에코 제거 또는 자동 음량 조절 없이 마이크를 사용해요.
+
+ui-builtin-choose-your-noise-suppression-sensitivity-and-processing = 소음 억제, 감도, 처리 방식을 직접 선택해요.
+
+voice-suppression-automatic = 자동
+
+voice-suppression-auto-detail = DeepFilterNet을 사용하고, 기기가 버거우면 RNNoise로 전환해요.
+
+voice-suppression-fell-back = RNNoise로 동작 중이에요: 이 기기에는 DeepFilterNet이 너무 무거워요.
+
+voice-suppression-strength-low = 낮음
+
+voice-suppression-strength-moderate = 보통
+
+voice-suppression-strength-high = 높음
+
+voice-suppression-strength-very-high = 매우 높음
 
 ui-builtin-turn-on-microphone = 마이크 켜기
 

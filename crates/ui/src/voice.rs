@@ -3657,7 +3657,7 @@ impl MessagingUi {
 				),
 				|ui| {
 					crate::design::Select::from_id_salt("voice-noise-suppression")
-						.selected_text(crate::i18n::translate_if_key(
+						.selected_text(crate::i18n::owned_control_text(
 							choices
 								.iter()
 								.find(|(value, _)| *value == processing.suppression)
@@ -3699,7 +3699,7 @@ impl MessagingUi {
 					None,
 					|ui| {
 						crate::design::Select::from_id_salt("voice-suppression-strength")
-							.selected_text(crate::i18n::translate_if_key(
+							.selected_text(crate::i18n::owned_control_text(
 								strength[usize::from(processing.suppression_level.min(3))],
 							))
 							.width(ui.available_width().min(160.0))

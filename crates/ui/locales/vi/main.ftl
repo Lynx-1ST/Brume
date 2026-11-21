@@ -5318,9 +5318,25 @@ ui-builtin-studio = Phòng thu
 
 ui-builtin-custom = Tùy chỉnh
 
-ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = Lọc tạp âm bằng RNNoise, khử tiếng vọng và tự điều chỉnh âm lượng giọng nói.
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = Tự động lọc tạp âm, khử tiếng vọng và tự điều chỉnh âm lượng giọng nói.
 
 ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = Thu mic trực tiếp, không lọc tạp âm, khử tiếng vọng hay tự điều chỉnh âm lượng.
+
+ui-builtin-choose-your-noise-suppression-sensitivity-and-processing = Tự chọn mức lọc tạp âm, độ nhạy và cách xử lý âm thanh.
+
+voice-suppression-automatic = Tự động
+
+voice-suppression-auto-detail = Dùng DeepFilterNet, và chuyển sang RNNoise khi máy quá tải.
+
+voice-suppression-fell-back = Đang dùng RNNoise: máy này quá tải so với DeepFilterNet.
+
+voice-suppression-strength-low = Thấp
+
+voice-suppression-strength-moderate = Vừa
+
+voice-suppression-strength-high = Cao
+
+voice-suppression-strength-very-high = Rất cao
 
 ui-builtin-turn-on-microphone = Bật mic
 

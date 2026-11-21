@@ -3142,8 +3142,10 @@ pub fn radio_row(
 	label: &str,
 	detail: Option<&str>,
 ) -> egui::Response {
-	let label = crate::i18n::translate_if_key(label);
-	let detail = detail.map(crate::i18n::translate_if_key);
+	// `owned_control_text`, not `translate_if_key`: these rows carry built-in English labels
+	// as often as catalog keys, and it falls back to the key lookup for the latter.
+	let label = crate::i18n::owned_control_text(label);
+	let detail = detail.map(crate::i18n::owned_control_text);
 	let p = palette(ui);
 	let width = ui.available_width();
 	let text_width = (width - 44.0).max(80.0);

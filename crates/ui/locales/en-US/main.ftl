@@ -316,6 +316,10 @@ attachments-media-menu-unavailable-for-synthetic-attachments = Unavailable for s
 attachments-open-original-open-original = Open original…
 # Context: pending_card
 attachments-pending-card-remove-attachment = Remove attachment
+# Context: pending_viewer
+attachments-pending-viewer-full-size-unavailable = Full-size preview unavailable
+attachments-pending-viewer-loading = Loading full-size image…
+attachments-pending-viewer-close = Close (Esc)
 attachments-loading-card-preparing = Preparing…
 # Context: show_status
 attachments-show-status-cancel-download = Cancel download
@@ -5294,9 +5298,25 @@ ui-builtin-studio = Studio
 
 ui-builtin-custom = Custom
 
-ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = RNNoise suppression, echo cancellation and automatic gain for speech.
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = Automatic noise suppression, echo cancellation and automatic gain for speech.
 
 ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = Open microphone without suppression, echo cancellation or automatic gain.
+
+ui-builtin-choose-your-noise-suppression-sensitivity-and-processing = Choose your noise suppression, sensitivity and processing.
+
+voice-suppression-automatic = Automatic
+
+voice-suppression-auto-detail = Uses DeepFilterNet, and RNNoise when this device is too busy for it.
+
+voice-suppression-fell-back = RNNoise is active: this device is too busy for DeepFilterNet.
+
+voice-suppression-strength-low = Low
+
+voice-suppression-strength-moderate = Moderate
+
+voice-suppression-strength-high = High
+
+voice-suppression-strength-very-high = Very high
 
 ui-builtin-turn-on-microphone = Turn on microphone
 

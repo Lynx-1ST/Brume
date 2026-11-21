@@ -321,6 +321,10 @@ attachments-media-menu-unavailable-for-synthetic-attachments = Không dùng đư
 attachments-open-original-open-original = Mở bản gốc…
 # Context: pending_card
 attachments-pending-card-remove-attachment = Xóa tệp đính kèm
+# Context: pending_viewer
+attachments-pending-viewer-full-size-unavailable = Không thể xem trước kích thước đầy đủ
+attachments-pending-viewer-loading = Đang tải ảnh kích thước đầy đủ…
+attachments-pending-viewer-close = Đóng (Esc)
 attachments-loading-card-preparing = Đang chuẩn bị…
 # Context: show_status
 attachments-show-status-cancel-download = Hủy tải xuống
@@ -5314,9 +5318,25 @@ ui-builtin-studio = Phòng thu
 
 ui-builtin-custom = Tùy chỉnh
 
-ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = Lọc tạp âm bằng RNNoise, khử tiếng vọng và tự điều chỉnh âm lượng giọng nói.
+ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech = Tự động lọc tạp âm, khử tiếng vọng và tự điều chỉnh âm lượng giọng nói.
 
 ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain = Thu mic trực tiếp, không lọc tạp âm, khử tiếng vọng hay tự điều chỉnh âm lượng.
+
+ui-builtin-choose-your-noise-suppression-sensitivity-and-processing = Tự chọn mức lọc tạp âm, độ nhạy và cách xử lý âm thanh.
+
+voice-suppression-automatic = Tự động
+
+voice-suppression-auto-detail = Dùng DeepFilterNet, và chuyển sang RNNoise khi máy quá tải.
+
+voice-suppression-fell-back = Đang dùng RNNoise: máy này quá tải so với DeepFilterNet.
+
+voice-suppression-strength-low = Thấp
+
+voice-suppression-strength-moderate = Vừa
+
+voice-suppression-strength-high = Cao
+
+voice-suppression-strength-very-high = Rất cao
 
 ui-builtin-turn-on-microphone = Bật mic
 

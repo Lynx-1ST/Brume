@@ -1082,6 +1082,7 @@ mod navigation_tests {
 			reply_deleted: false,
 			interaction: None,
 			forwarded: false,
+			forward_origin: None,
 			kind: 0,
 			unsupported: false,
 			components: vec![],

@@ -69,12 +69,27 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 		"Voice Isolation" => Some("ui-builtin-voice-isolation"),
 		"Studio" => Some("ui-builtin-studio"),
 		"Custom" => Some("ui-builtin-custom"),
-		"RNNoise suppression, echo cancellation and automatic gain for speech." => {
+		"Automatic noise suppression, echo cancellation and automatic gain for speech." => {
 			Some("ui-builtin-rnnoise-suppression-echo-cancellation-and-automatic-gain-for-speech")
 		}
 		"Open microphone without suppression, echo cancellation or automatic gain." => Some(
 			"ui-builtin-open-microphone-without-suppression-echo-cancellation-or-automatic-gain",
 		),
+		"Choose your noise suppression, sensitivity and processing." => {
+			Some("ui-builtin-choose-your-noise-suppression-sensitivity-and-processing")
+		}
+		"Automatic" => Some("voice-suppression-automatic"),
+		"Off" => Some("voice-voice-processing-controls-off"),
+		"Low" => Some("voice-suppression-strength-low"),
+		"Moderate" => Some("voice-suppression-strength-moderate"),
+		"High" => Some("voice-suppression-strength-high"),
+		"Very high" => Some("voice-suppression-strength-very-high"),
+		"Uses DeepFilterNet, and RNNoise when this device is too busy for it." => {
+			Some("voice-suppression-auto-detail")
+		}
+		"RNNoise is active: this device is too busy for DeepFilterNet." => {
+			Some("voice-suppression-fell-back")
+		}
 		"Turn on microphone" => Some("ui-builtin-turn-on-microphone"),
 		"Turn off microphone" => Some("ui-builtin-turn-off-microphone"),
 		"Voice settings" => Some("ui-builtin-voice-settings"),

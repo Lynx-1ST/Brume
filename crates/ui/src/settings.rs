@@ -1511,6 +1511,21 @@ impl MessagingUi {
 					);
 				},
 			);
+			design::card_divider(ui);
+			design::row(
+				ui,
+				"settings-image-cache-textures",
+				Some("settings-image-cache-textures-description"),
+				|ui| {
+					preset_combo(
+						ui,
+						"settings-image-cache-textures",
+						&mut cache.texture_mib,
+						&model::TEXTURE_CACHE_MIB,
+						|mib| cache_size_label(*mib),
+					);
+				},
+			);
 		});
 		if clear.is_some() {
 			self.clear_image_cache = clear;

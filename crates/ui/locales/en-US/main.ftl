@@ -3656,6 +3656,10 @@ settings-image-cache-retention = Remove unused images after
 # Context: image_cache_settings
 settings-image-cache-retention-description = Cached images that are not shown again for this long are deleted from disk.
 # Context: image_cache_settings
+settings-image-cache-textures = Video memory for artwork
+# Context: image_cache_settings
+settings-image-cache-textures-description = Decoded artwork kept on the graphics card, ready to paint. A smaller budget leaves more video memory to other programs and reloads artwork you scroll back to.
+# Context: image_cache_settings
 settings-image-cache-days =
     { $count ->
         [one] { $count } day

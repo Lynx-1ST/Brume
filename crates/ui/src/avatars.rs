@@ -35,13 +35,10 @@ struct Animation {
 
 // Emoji artwork has its own working set so media cannot evict it.
 const EMOJI_TEXTURES: usize = 1024;
-const EMOJI_TEXTURE_BYTES: usize = 16 * 1024 * 1024;
 const TEXTURES: usize = 512;
-const TEXTURE_BYTES: usize = 64 * 1024 * 1024;
 const IDLE_TEXTURES: Duration = Duration::from_secs(60);
 const SOURCE_EDGE: usize = 128;
 const SOURCE_BYTES: usize = 48 * 1024 * 1024;
-const FIT_BYTES: usize = 16 * 1024 * 1024;
 const FITS_PER_IMAGE: usize = 4;
 /// Longest edge for string-keyed artwork: stickers, picker previews, banners and activity art.
 pub const EMBED_EDGE: u32 = 512;
@@ -76,6 +73,9 @@ pub(crate) struct Avatars {
 	pub animate_gifs: bool,
 	/// Hidden cosmetics are neither painted nor requested.
 	pub cosmetics: model::CosmeticPreferences,
+	/// Video memory these caches may hold, chosen in Settings › Storage. Lowering it evicts
+	/// down to the new budget on the next frame rather than waiting for artwork to go idle.
+	texture_budget: model::TextureLimit,
 	avatar_animation: bool,
 	/// `--demo-loading`: synthetic artwork is withheld, so demo images stay in their loading state.
 	#[cfg(any(test, feature = "demo"))]
@@ -405,6 +405,53 @@ impl Avatars {
 			viewer,
 		]
 	}
+	/// Applies a texture budget chosen in Settings › Storage. A smaller one takes effect at once:
+	/// waiting for artwork to go idle would leave the video memory held for up to a minute after
+	/// the owner asked for it back, which is the whole point of lowering it.
+	pub(crate) fn set_texture_budget(&mut self, budget: model::TextureLimit) {
+		if self.texture_budget == budget {
+			return;
+		}
+		self.texture_budget = budget;
+		for (textures, bytes, byte_limit) in [
+			(&mut self.textures, &mut self.bytes, budget.artwork),
+			(
+				&mut self.emoji_textures,
+				&mut self.emoji_bytes,
+				budget.emoji,
+			),
+		] {
+			while *bytes > byte_limit {
+				let Some(oldest) = textures
+					.iter()
+					.min_by_key(|(_, (age, _))| *age)
+					.map(|(key, _)| key.clone())
+				else {
+					break;
+				};
+				if let Some((_, texture)) = textures.remove(&oldest) {
+					*bytes = bytes.saturating_sub(texture.byte_size());
+				}
+				self.animations.remove(&oldest);
+				self.released.remove(&oldest);
+				self.wanted.remove(&oldest);
+				if let Some(image) = self.sources.remove(&oldest) {
+					self.source_bytes = self.source_bytes.saturating_sub(image.pixels().len() * 4);
+				}
+				if let Some(fits) = self.fits.remove(&oldest) {
+					for fit in fits {
+						self.fit_bytes = self.fit_bytes.saturating_sub(fit.texture.byte_size());
+					}
+				}
+				self.revision += 1;
+			}
+		}
+		if self.fit_bytes > budget.fits {
+			self.fits.clear();
+			self.fit_bytes = 0;
+			self.revision += 1;
+		}
+	}
 	/// Releases idle decoded frames and artwork textures; visible artwork refreshes its deadline.
 	fn release_idle(&mut self, now: Instant) {
 		let idle: Vec<String> = self
@@ -605,7 +652,7 @@ impl Avatars {
 		frame: Option<usize>,
 		image: ColorImage,
 	) -> TextureHandle {
-		if self.fit_bytes > FIT_BYTES {
+		if self.fit_bytes > self.texture_budget.fits {
 			self.fits.clear();
 			self.fit_bytes = 0;
 		}
@@ -711,10 +758,15 @@ impl Avatars {
 				&mut self.emoji_textures,
 				&mut self.emoji_bytes,
 				EMOJI_TEXTURES,
-				EMOJI_TEXTURE_BYTES,
+				self.texture_budget.emoji,
 			)
 		} else {
-			(&mut self.textures, &mut self.bytes, TEXTURES, TEXTURE_BYTES)
+			(
+				&mut self.textures,
+				&mut self.bytes,
+				TEXTURES,
+				self.texture_budget.artwork,
+			)
 		};
 		if let Some((_, old)) = textures.remove(&key) {
 			*bytes -= old.byte_size();
@@ -3463,8 +3515,31 @@ mod tests {
 				.values()
 				.map(|(_, texture)| texture.byte_size())
 				.sum::<usize>(),
-			TEXTURE_BYTES
+			avatars.texture_budget.artwork
 		);
+		// Lowering the budget in Settings must hand the video memory back on the spot, not when
+		// the artwork happens to go idle a minute later.
+		let smaller = model::CachePreferences {
+			texture_mib: model::TEXTURE_CACHE_MIB[0],
+			..Default::default()
+		}
+		.texture_limit();
+		avatars.set_texture_budget(smaller);
+		let held: usize = avatars
+			.textures
+			.values()
+			.map(|(_, texture)| texture.byte_size())
+			.sum();
+		assert!(
+			held <= smaller.artwork,
+			"{held} bytes still held against a {} byte budget",
+			smaller.artwork
+		);
+		assert_eq!(
+			avatars.bytes, held,
+			"the running total tracks the evictions"
+		);
+		assert!(avatars.fit_bytes <= smaller.fits);
 		let mut preview = Avatars::default();
 		let guild = model::Guild {
 			banner: None,

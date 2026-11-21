@@ -3627,6 +3627,10 @@ settings-image-cache-retention = 사용하지 않는 이미지 제거 기간
 # Context: image_cache_settings
 settings-image-cache-retention-description = 이 기간 동안 다시 표시되지 않은 캐시 이미지를 디스크에서 삭제합니다.
 # Context: image_cache_settings
+settings-image-cache-textures = 그림용 비디오 메모리
+# Context: image_cache_settings
+settings-image-cache-textures-description = 그래픽 카드에 올려 두어 바로 그릴 수 있는 디코딩된 그림입니다. 적게 잡으면 다른 프로그램에 비디오 메모리를 더 남기지만, 되돌아가 볼 때 그림을 다시 불러옵니다.
+# Context: image_cache_settings
 settings-image-cache-days = { $count }일
 
 ## crates/ui/src/slash_commands.rs

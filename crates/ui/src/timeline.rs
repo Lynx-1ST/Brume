@@ -419,6 +419,7 @@ fn layout_key(message: &Message) -> u64 {
 		interaction.command.hash(&mut key);
 	}
 	message.forwarded.hash(&mut key);
+	message.forward_origin.hash(&mut key);
 	message.reply_deleted.hash(&mut key);
 	message.unsupported.hash(&mut key);
 	message.extra_content.hash(&mut key);
@@ -4446,6 +4447,22 @@ impl TimelineView {
 													self.browser_opening = target;
 												}
 											}
+											if message.forwarded
+												&& let Some(origin) = &message.forward_origin
+											{
+												ui.add_space(4.0);
+												if let Some(link) = crate::forwarding::origin(
+													ui,
+													state,
+													id,
+													origin,
+													avatars,
+													state.demo,
+													&mut surface,
+												) {
+													self.opening = Some(link);
+												}
+											}
 										});
 									body_bottom = body.response.rect.bottom();
 									if message.forwarded {
@@ -6889,6 +6906,7 @@ mod tests {
 			reply_deleted: false,
 			interaction: None,
 			forwarded: false,
+			forward_origin: None,
 			unsupported: false,
 			extra_content: Default::default(),
 			components: vec![],
@@ -10461,6 +10479,7 @@ mod tests {
 			reply_deleted: false,
 			interaction: None,
 			forwarded: false,
+			forward_origin: None,
 			unsupported: false,
 			extra_content: Default::default(),
 			components: vec![],
@@ -10637,6 +10656,7 @@ mod tests {
 			reply_deleted: false,
 			interaction: None,
 			forwarded: false,
+			forward_origin: None,
 			unsupported: false,
 			extra_content: Default::default(),
 			components: vec![],
@@ -10740,6 +10760,7 @@ mod tests {
 			reply_deleted: false,
 			interaction: None,
 			forwarded: false,
+			forward_origin: None,
 			unsupported: false,
 			extra_content: Default::default(),
 			components: vec![],

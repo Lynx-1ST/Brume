@@ -3529,7 +3529,7 @@ impl MessagingUi {
 			(
 				InputProfile::VoiceIsolation,
 				"Voice Isolation",
-				"RNNoise suppression, echo cancellation and automatic gain for speech.",
+				"Automatic noise suppression, echo cancellation and automatic gain for speech.",
 			),
 			(
 				InputProfile::Studio,
@@ -3552,6 +3552,12 @@ impl MessagingUi {
 			{
 				self.voice_processing.profile = profile;
 			}
+		}
+		let fell_back = "RNNoise is active: this device is too busy for DeepFilterNet.";
+		if self.voice_processing.profile == InputProfile::VoiceIsolation
+			&& self.voice_suppression_fell_back
+		{
+			design::hint(ui, fell_back);
 		}
 		ui.add_enabled_ui(
 			self.voice_processing.profile != InputProfile::Studio,
@@ -3637,9 +3643,11 @@ impl MessagingUi {
 			}
 			design::card_divider(ui);
 			let choices = [
+				(NoiseSuppression::Auto, "Automatic"),
 				(NoiseSuppression::Off, "Off"),
 				(NoiseSuppression::RnNoise, "RNNoise"),
 				(NoiseSuppression::WebRtc, "WebRTC"),
+				(NoiseSuppression::DeepFilterNet, "DeepFilterNet"),
 			];
 			design::row(
 				ui,
@@ -3667,7 +3675,22 @@ impl MessagingUi {
 						});
 				},
 			);
-			if processing.suppression == NoiseSuppression::WebRtc {
+			if processing.suppression == NoiseSuppression::Auto {
+				design::hint(
+					ui,
+					if self.voice_suppression_fell_back {
+						fell_back
+					} else {
+						"Uses DeepFilterNet, and RNNoise when this device is too busy for it."
+					},
+				);
+			}
+			// RNNoise has no strength, so the control waits while it stands in.
+			if match processing.suppression {
+				NoiseSuppression::WebRtc | NoiseSuppression::DeepFilterNet => true,
+				NoiseSuppression::Auto => !self.voice_suppression_fell_back,
+				NoiseSuppression::Off | NoiseSuppression::RnNoise => false,
+			} {
 				ui.add_space(6.0);
 				let strength = ["Low", "Moderate", "High", "Very high"];
 				design::row(

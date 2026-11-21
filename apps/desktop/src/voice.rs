@@ -1046,6 +1046,10 @@ impl Voice {
 		ui.voice_speaking.clear();
 		ui.voice_microphone_unavailable = false;
 		ui.voice_no_input_detected = false;
+		ui.voice_suppression_fell_back = self
+			.mic_preview
+			.as_ref()
+			.is_some_and(|preview| preview.audio.suppression_fell_back());
 		self.poll_camera_devices(state.demo, ui, ctx);
 		if ui.voice_refresh_devices {
 			ui.voice_refresh_devices = false;
@@ -1328,6 +1332,7 @@ impl Voice {
 			if monitor_input {
 				ctx.request_repaint_after(Duration::from_secs(1));
 			}
+			ui.voice_suppression_fell_back |= live.audio.suppression_fell_back();
 			if ui.voice_settings_open() {
 				ui.voice_preview_level = Some(live.audio.preview_level_db());
 				ctx.request_repaint_after(Duration::from_millis(50));

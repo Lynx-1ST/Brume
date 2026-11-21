@@ -2224,6 +2224,12 @@ impl Desktop {
 			messaging.preview_settings(&page);
 		}
 		#[cfg(feature = "demo")]
+		if demo && std::env::args().any(|arg| arg == "--demo-deepfilternet") {
+			// Preview voice controls are read-only, so show this Custom suppressor preselected.
+			messaging.voice_processing.edit().suppression =
+				model::voice_settings::NoiseSuppression::DeepFilterNet;
+		}
+		#[cfg(feature = "demo")]
 		if demo
 			&& let Some(tab) = std::env::args().find_map(|arg| {
 				arg.strip_prefix("--demo-theme-maker")
@@ -4498,6 +4504,8 @@ impl Desktop {
 							mentions: message.mentions,
 							attachments: message.attachments,
 							embeds: message.embeds,
+							forwarded: message.forwarded,
+							forward_origin: message.forward_origin,
 						}
 					})
 					.collect();
@@ -4603,6 +4611,8 @@ impl Desktop {
 									excerpt: message.content.clone(),
 									attachments: message.attachments,
 									embeds: message.embeds,
+									forwarded: message.forwarded,
+									forward_origin: message.forward_origin,
 								});
 							}
 						}
@@ -6517,7 +6527,18 @@ impl eframe::App for Desktop {
 		if held || cancelled {
 			self.ptt_release = None;
 		} else if self.messaging.voice_ptt_active && self.ptt_release.is_none() {
-			self.ptt_release = Some(now + self.messaging.keybinds.push_to_talk_release());
+			// After automatic suppression moved to RNNoise the longer delay is gone, and
+			// holding the microphone open for it would transmit sound from after the release.
+			let suppression = self.messaging.voice_processing.effective().suppression;
+			let fell_back = suppression == model::voice_settings::NoiseSuppression::Auto
+				&& self.messaging.voice_suppression_fell_back;
+			let extra = if fell_back {
+				Duration::ZERO
+			} else {
+				suppression.extra_delay()
+			};
+			let release = self.messaging.keybinds.push_to_talk_release();
+			self.ptt_release = Some(now + release + extra);
 		}
 		// Like Discord, transmission lingers for the release delay so a word is not clipped.
 		let lingering = talking && self.ptt_release.is_some_and(|until| until > now);
@@ -6688,6 +6709,7 @@ impl eframe::App for Desktop {
 			// Explicit artwork Send finishes asynchronously; retain its prepared thumbnails.
 			self.messaging.attachment_previews = self.uploads.previews();
 			self.messaging.attachment_files = self.uploads.files();
+			self.messaging.attachment_keys = self.uploads.selection_keys();
 			self.messaging.stage_pending_upload(&ctx, &command);
 			if let Command::Send { channel, .. } = &command {
 				self.messaging.draft_changes.push(*channel);
@@ -6738,6 +6760,22 @@ impl eframe::App for Desktop {
 				.map(|(name, size)| (name.to_owned(), size));
 			self.messaging.attachment_previews = self.uploads.previews();
 			self.messaging.attachment_files = self.uploads.files();
+			self.messaging.attachment_keys = self.uploads.selection_keys();
+		}
+		// Validate identity before any decode request after navigation or selection changes.
+		self.messaging.validate_attachment_view(&self.state);
+		// One staged image can be looked at full size; its decode runs off the render thread.
+		if let Some(index) = self.messaging.attachment_view_open {
+			self.uploads
+				.request_view(index, self.runtime.handle(), &ctx);
+			// Pending is `None` too, so a file replaced at this index never shows the old pixels.
+			self.messaging.attachment_view_image = self
+				.uploads
+				.view_image(index)
+				.map(|decoded| (index, decoded));
+		} else {
+			self.uploads.cancel_view();
+			self.messaging.attachment_view_image = None;
 		}
 		self.messaging
 			.external_upload

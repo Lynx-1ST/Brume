@@ -112,16 +112,35 @@ pub(crate) struct Avatars {
 }
 
 impl Animation {
-	fn advance(&mut self, ctx: &egui::Context) -> Option<TextureHandle> {
+	fn advance(&mut self, ctx: &egui::Context, upload: bool) -> Option<TextureHandle> {
 		let total_nanos = self.total.as_nanos();
 		if total_nanos == 0 {
 			return None;
 		}
 		let elapsed_nanos = (self.started.elapsed().as_nanos() % total_nanos) as u64;
-		self.seek(ctx, Duration::from_nanos(elapsed_nanos))
+		self.seek(ctx, Duration::from_nanos(elapsed_nanos), upload)
+	}
+	/// Uploads the current frame when a skipped upload turns out to be needed after all, so a
+	/// painter that expected a downscaled copy and found none still shows the right frame.
+	fn ensure_texture(&mut self, ctx: &egui::Context) -> Option<TextureHandle> {
+		if self.texture.is_none() {
+			let image = self.frames.get(self.frame)?.1.clone();
+			self.texture =
+				Some(ctx.load_texture("service-animation", image, egui::TextureOptions::LINEAR));
+		}
+		self.texture.clone()
 	}
 	/// Shows the frame at `elapsed` into the clip, which must be shorter than `total`.
-	fn seek(&mut self, ctx: &egui::Context, mut elapsed: Duration) -> Option<TextureHandle> {
+	///
+	/// `upload` false means the caller paints a downscaled copy of this frame, so the full-size
+	/// one would be uploaded and never drawn. Dropping the handle instead of leaving it stale
+	/// keeps [`Self::ensure_texture`] honest if the caller changes its mind.
+	fn seek(
+		&mut self,
+		ctx: &egui::Context,
+		mut elapsed: Duration,
+		upload: bool,
+	) -> Option<TextureHandle> {
 		let now = Instant::now();
 		self.played = now;
 		let mut target_index = self.frames.len().saturating_sub(1);
@@ -140,15 +159,19 @@ impl Animation {
 				ctx.request_repaint_after(self.next_upload - now);
 				return self.texture.clone();
 			}
-			let image = &self.frames[target_index].1;
-			if let Some(texture) = &mut self.texture {
-				texture.set(image.clone(), egui::TextureOptions::LINEAR);
+			if upload {
+				let image = &self.frames[target_index].1;
+				if let Some(texture) = &mut self.texture {
+					texture.set(image.clone(), egui::TextureOptions::LINEAR);
+				} else {
+					self.texture = Some(ctx.load_texture(
+						"service-animation",
+						image.clone(),
+						egui::TextureOptions::LINEAR,
+					));
+				}
 			} else {
-				self.texture = Some(ctx.load_texture(
-					"service-animation",
-					image.clone(),
-					egui::TextureOptions::LINEAR,
-				));
+				self.texture = None;
 			}
 			self.frame = target_index;
 			self.next_upload = now + ANIMATION_INTERVAL;
@@ -624,9 +647,29 @@ impl Avatars {
 		rect: egui::Rect,
 	) -> TextureHandle {
 		let physical = rect.width().max(rect.height()) * ctx.pixels_per_point();
-		let source = full.resolution()[0].max(full.resolution()[1]) as u32;
+		// `full` may be the still rendition while an animation plays, so measure the frame that
+		// will actually be drawn. Disagreeing with `paints_downscaled` here would skip an upload
+		// and then ask for it.
+		let resolution = self
+			.animations
+			.get(key)
+			.filter(|_| animated)
+			.and_then(|animation| {
+				animation
+					.frames
+					.get(animation.frame)
+					.or_else(|| animation.frames.first())
+			})
+			.map_or_else(|| full.resolution(), |(_, image)| image.resolution());
+		let source = resolution[0].max(resolution[1]) as u32;
 		let Some(edge) = crate::resample::fitted_edge(source, physical) else {
-			return full.clone();
+			// Nothing to downscale after all; the skipped full-size upload is needed.
+			return self
+				.animations
+				.get_mut(key)
+				.filter(|_| animated)
+				.and_then(|animation| animation.ensure_texture(ctx))
+				.unwrap_or_else(|| full.clone());
 		};
 		let frame = animated
 			.then(|| self.animations.get(key).map(|animation| animation.frame))
@@ -1454,15 +1497,16 @@ impl Avatars {
 		ctx: &egui::Context,
 		key: &str,
 		hovered: bool,
-	) -> Option<TextureHandle> {
+		upload: bool,
+	) -> (bool, Option<TextureHandle>) {
 		if !self.animate_gifs
 			|| !ctx.input(|input| input.focused)
 			|| !(hovered || self.avatar_animation || !is_animated_profile_or_avatar_key(key))
 		{
-			return None;
+			return (false, None);
 		}
 		if let Some(animation) = self.animations.get_mut(key) {
-			return animation.advance(ctx);
+			return (true, animation.advance(ctx, upload));
 		}
 		if is_animated_profile_or_avatar_key(key) {
 			if self.wanted.len() >= REQUESTS {
@@ -1476,7 +1520,25 @@ impl Avatars {
 		{
 			self.request(key.to_owned());
 		}
-		None
+		(false, None)
+	}
+	/// Whether this paint will draw a downscaled copy rather than the frame at its own size.
+	/// Checked before advancing, so the animation can skip an upload nothing would draw.
+	fn paints_downscaled(&self, ctx: &egui::Context, key: &str, rect: egui::Rect) -> bool {
+		let physical = rect.width().max(rect.height()) * ctx.pixels_per_point();
+		self.animations
+			.get(key)
+			.and_then(|animation| {
+				animation
+					.frames
+					.get(animation.frame)
+					.or_else(|| animation.frames.first())
+			})
+			.map(|(_, image)| image.resolution())
+			.is_some_and(|resolution| {
+				let source = resolution[0].max(resolution[1]) as u32;
+				crate::resample::fitted_edge(source, physical).is_some()
+			})
 	}
 	fn paint(&mut self, ui: &mut egui::Ui, key: &str, rect: egui::Rect, radius: u8) -> bool {
 		self.paint_fitted(ui, key, rect, radius, false)
@@ -1517,6 +1579,7 @@ impl Avatars {
 		cover: bool,
 	) -> bool {
 		let mut animated_texture = None;
+		let mut animated = false;
 		if ui.is_rect_visible(rect) {
 			let is_animated = key.starts_with("anim:") || is_animated_profile_or_avatar_key(key);
 			if is_animated
@@ -1527,10 +1590,12 @@ impl Avatars {
 			{
 				self.request(key.to_string());
 			}
-			animated_texture =
-				self.advance_animation(ui.ctx(), key, ui.rect_contains_pointer(rect));
+			// A frame painted from a downscaled copy never shows the full-size upload, so asking
+			// for both costs two textures per animation frame where one is drawn.
+			let downscaled = self.paints_downscaled(ui.ctx(), key, rect);
+			(animated, animated_texture) =
+				self.advance_animation(ui.ctx(), key, ui.rect_contains_pointer(rect), !downscaled);
 		}
-		let animated = animated_texture.is_some();
 		let full = {
 			let Some(entry) = self.textures.get_mut(key) else {
 				return false;
@@ -3586,5 +3651,51 @@ mod tests {
 			.collect();
 		avatars.accept_animation("effect-c-test".into(), frames);
 		assert!(avatars.animations.contains_key("effect-c-test"));
+	}
+
+	#[test]
+	fn an_animation_drawn_small_skips_the_upload_nothing_would_draw() {
+		let ctx = egui::Context::default();
+		let mut avatars = Avatars::default();
+		let key = "effect-d-test";
+		avatars.request(key.into());
+		avatars.take_requests();
+		avatars.accept(
+			&ctx,
+			key.into(),
+			Some(ColorImage::filled([320, 320], egui::Color32::WHITE)),
+		);
+		let frames: crate::avatars::GifFrames = (0..2)
+			.map(|_| {
+				(
+					Duration::from_millis(50),
+					std::sync::Arc::new(ColorImage::filled([320, 320], egui::Color32::WHITE)),
+				)
+			})
+			.collect();
+		avatars.accept_animation(key.into(), frames);
+		let square =
+			|edge: f32| egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(edge, edge));
+		assert!(
+			avatars.paints_downscaled(&ctx, key, square(32.0)),
+			"a 320 px frame in a 32 px slot is drawn from a downscaled copy"
+		);
+		assert!(
+			!avatars.paints_downscaled(&ctx, key, square(320.0)),
+			"at its own size the frame itself is drawn"
+		);
+		let animation = avatars.animations.get_mut(key).expect("animation");
+		assert!(
+			animation
+				.seek(&ctx, Duration::from_millis(60), false)
+				.is_none()
+		);
+		assert!(
+			animation.texture.is_none(),
+			"the full-size frame is not uploaded when a downscaled copy is drawn"
+		);
+		// A painter that expected a downscaled copy and found none still needs the frame.
+		assert!(animation.ensure_texture(&ctx).is_some());
+		assert!(animation.texture.is_some());
 	}
 }

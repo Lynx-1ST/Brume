@@ -466,7 +466,7 @@ mod tests {
 		let mut encoded = [0; 1275];
 		// A tone on the left against its mirror image on the right. A decoder that downmixes
 		// returns the two channels identical, which correlates positively instead.
-		let input: Vec<f32> = (0..960 * 2)
+		let input: Vec<f32> = (0..960usize * 2)
 			.map(|i| {
 				let tone =
 					((i / 2) as f32 * std::f32::consts::TAU * 1_000.0 / 48_000.0).sin() * 0.5;

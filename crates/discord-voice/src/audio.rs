@@ -1085,9 +1085,14 @@ struct Playback {
 	input: rtrb::Consumer<crate::PlaybackFrame>,
 	reference: Capture,
 	frame: Frame,
+	/// The right channel of `frame` while stream audio carries one; mono frames leave it unset
+	/// and both outputs read `frame`.
+	right: Option<Frame>,
 	index: usize,
-	previous: f32,
-	next: f32,
+	/// Both channels share `phase` and `step`: resampling them independently would let the
+	/// stereo image drift apart sample by sample.
+	previous: (f32, f32),
+	next: (f32, f32),
 	phase: f64,
 	step: f64,
 	rate: u32,
@@ -1124,10 +1129,20 @@ impl Playback {
 			let gain = f32::from(gate.output_gain.load(Ordering::Relaxed)) / 100.0;
 			for (n, frame) in data.chunks_mut(channels).enumerate() {
 				let at = at + Duration::from_secs_f64(n as f64 / f64::from(self.rate));
-				let sample = amplify(self.sample_at(Some(at)), gain);
-				frame.fill(T::from_sample(sample));
+				let (left, right) = self.sample_at(Some(at));
+				let (left, right) = (amplify(left, gain), amplify(right, gain));
+				// The echo canceller models one speaker signal, and a mono device plays one, so
+				// both take the downmix. A mono frame has right == left, leaving calls unchanged.
+				let mono = (left + right) * 0.5;
+				for (channel, out) in frame.iter_mut().enumerate() {
+					*out = T::from_sample(match (channels, channel % 2) {
+						(1, _) => mono,
+						(_, 1) => right,
+						_ => left,
+					});
+				}
 				// Reference actual output, including gain, underrun silence and resampling.
-				self.reference.sample(sample);
+				self.reference.sample(mono);
 			}
 		}
 		if gate.diagnostics {
@@ -1152,9 +1167,10 @@ impl Playback {
 			input,
 			reference: Capture::new(rate, reference),
 			frame: [0.0; 960],
+			right: None,
 			index: 960,
-			previous: 0.0,
-			next: 0.0,
+			previous: (0.0, 0.0),
+			next: (0.0, 0.0),
 			phase: 1.0,
 			step: 48_000.0 / f64::from(rate),
 			rate,
@@ -1168,14 +1184,16 @@ impl Playback {
 		}
 		self.reference.reset();
 		self.frame.fill(0.0);
+		self.right = None;
 		self.index = 960;
-		self.previous = 0.0;
-		self.next = 0.0;
+		self.previous = (0.0, 0.0);
+		self.next = (0.0, 0.0);
 		self.phase = 1.0;
 	}
-	fn pull(&mut self, at: Option<Instant>) -> f32 {
+	fn pull(&mut self, at: Option<Instant>) -> (f32, f32) {
 		if self.index == 960 {
 			self.frame = [0.0; 960];
+			self.right = None;
 			for _ in 0..8 {
 				let Ok(frame) = self.input.pop() else {
 					self.gaps[0] += 1;
@@ -1191,29 +1209,38 @@ impl Playback {
 					}
 				}
 				self.frame = frame.samples;
+				self.right = frame.right;
 				break;
 			}
 			self.index = 0;
 		}
-		let value = self.frame[self.index];
+		let left = self.frame[self.index];
+		let right = self.right.map_or(left, |right| right[self.index]);
 		self.index += 1;
-		if value.is_finite() {
-			value.clamp(-1.0, 1.0)
-		} else {
-			0.0
-		}
+		let bound = |value: f32| {
+			if value.is_finite() {
+				value.clamp(-1.0, 1.0)
+			} else {
+				0.0
+			}
+		};
+		(bound(left), bound(right))
 	}
 	#[cfg(test)]
 	fn sample(&mut self) -> f32 {
-		self.sample_at(None)
+		self.sample_at(None).0
 	}
-	fn sample_at(&mut self, at: Option<Instant>) -> f32 {
+	fn sample_at(&mut self, at: Option<Instant>) -> (f32, f32) {
 		while self.phase >= 1.0 {
 			self.previous = self.next;
 			self.next = self.pull(at);
 			self.phase -= 1.0;
 		}
-		let value = self.previous + (self.next - self.previous) * self.phase as f32;
+		let phase = self.phase as f32;
+		let value = (
+			self.previous.0 + (self.next.0 - self.previous.0) * phase,
+			self.previous.1 + (self.next.1 - self.previous.1) * phase,
+		);
 		self.phase += self.step;
 		value
 	}
@@ -1764,6 +1791,7 @@ mod tests {
 		let stream = || crate::PlaybackFrame {
 			session: None,
 			samples: [0.3; 960],
+			right: None,
 			presentation: Some(clock.stamp(now)),
 			additional_presentations: std::array::from_fn(|_| None),
 			has_call_audio: false,
@@ -1781,14 +1809,45 @@ mod tests {
 		send.push(call).unwrap();
 		let mut playback = Playback::new(48_000, receive, rtrb::RingBuffer::new(8).0);
 		for _ in 0..960 {
-			assert_eq!(playback.pull(Some(now)), 0.5);
+			assert_eq!(playback.pull(Some(now)), (0.5, 0.5));
 		}
 		for _ in 0..960 {
-			assert_eq!(playback.pull(Some(now)), 0.2);
+			assert_eq!(playback.pull(Some(now)), (0.2, 0.2));
 		}
 		assert_eq!(playback.gaps, [0, 1]);
 		// Invalidated timing metadata cannot move the new stream's output clock.
 		assert_eq!(clock.stamp(now).deadline(now), now);
+	}
+	#[test]
+	fn a_stereo_frame_reaches_both_device_channels_and_resamples_in_lockstep() {
+		let audio = audio_without_devices();
+		audio.set_ready(true);
+		assert!(
+			audio
+				.gate
+				.acknowledge(audio.gate.revision.load(Ordering::Acquire))
+		);
+		let (mut send, receive) = rtrb::RingBuffer::new(8);
+		send.push(crate::PlaybackFrame {
+			session: None,
+			additional_presentations: std::array::from_fn(|_| None),
+			has_call_audio: false,
+			samples: [0.6; 960],
+			right: Some([-0.6; 960]),
+			presentation: None,
+		})
+		.unwrap();
+		// 44.1 kHz resamples, so a per-channel phase would slide the two apart.
+		let mut playback = Playback::new(44_100, receive, rtrb::RingBuffer::new(8).0);
+		let mut output = [0.0f32; 128];
+		playback.render_at(&mut output, 2, &audio.gate, Instant::now());
+		// The first output pair interpolates from the opening silence, so start past it.
+		for pair in output[4..].chunks_exact(2) {
+			assert!(
+				(pair[0] - 0.6).abs() < 0.01 && (pair[1] + 0.6).abs() < 0.01,
+				"channels drifted or collapsed: {pair:?}"
+			);
+		}
 	}
 	#[test]
 	fn resampled_output_reports_device_time_for_the_matching_stream_frame() {
@@ -1810,6 +1869,7 @@ mod tests {
 			}),
 			has_call_audio: false,
 			samples: [0.2; 960],
+			right: None,
 			presentation: Some(clock.stamp(now)),
 		})
 		.unwrap();
@@ -1835,6 +1895,7 @@ mod tests {
 			additional_presentations: std::array::from_fn(|_| None),
 			has_call_audio: false,
 			samples: [0.8; 960],
+			right: None,
 			presentation: Some(clock.stamp(now)),
 		})
 		.unwrap();

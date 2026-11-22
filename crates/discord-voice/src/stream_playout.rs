@@ -98,7 +98,16 @@ impl Playout {
 			};
 			source.started = true;
 			if let Some(output) = &mut output {
+				// A mono source contributes equally to both channels, so widen the running mix
+				// before adding to it. Taken before the left channel changes, or the right would
+				// inherit this frame twice.
+				let base = output.right.unwrap_or(output.samples);
+				let incoming = frame.right.unwrap_or(frame.samples);
 				for (out, sample) in output.samples.iter_mut().zip(frame.samples) {
+					*out += if sample.is_finite() { sample } else { 0.0 };
+				}
+				let existing = output.right.insert(base);
+				for (out, sample) in existing.iter_mut().zip(incoming) {
 					*out += if sample.is_finite() { sample } else { 0.0 };
 				}
 				for tag in frame.presentations() {
@@ -112,6 +121,13 @@ impl Playout {
 						*sample = 0.0;
 					}
 				}
+				if let Some(right) = &mut frame.right {
+					for sample in right {
+						if !sample.is_finite() {
+							*sample = 0.0;
+						}
+					}
+				}
 				output = Some(frame);
 			}
 		}
@@ -119,6 +135,11 @@ impl Playout {
 		if let Some(output) = &mut output {
 			for sample in &mut output.samples {
 				*sample = (*sample * gain).clamp(-1.0, 1.0);
+			}
+			if let Some(right) = &mut output.right {
+				for sample in right {
+					*sample = (*sample * gain).clamp(-1.0, 1.0);
+				}
 			}
 		}
 		output
@@ -190,6 +211,7 @@ mod tests {
 				send.send(PlaybackFrame {
 					session: Some(clock.stamp(at)),
 					samples: [(index + n + 1) as f32 / 100.0; 960],
+					right: None,
 					presentation: Some(clock.stamp(at)),
 					additional_presentations: std::array::from_fn(|_| None),
 					has_call_audio: false,
@@ -230,6 +252,7 @@ mod tests {
 			send.send(PlaybackFrame {
 				session: None,
 				samples: [0.8; 960],
+				right: None,
 				presentation: Some(clock.stamp(std::time::Instant::now())),
 				additional_presentations: std::array::from_fn(|_| None),
 				has_call_audio: false,

@@ -3,6 +3,8 @@ use crate::PlaybackFrame;
 use std::{collections::VecDeque, sync::mpsc::Receiver};
 
 const MAX_STREAMS: usize = client_core::voice::MAX_WATCHED_STREAMS;
+/// Frames each stream keeps queued before it starts, and the backlog a late tick trims back to.
+const HEADROOM: usize = 3;
 
 struct Source {
 	session: Option<crate::Presentation>,
@@ -33,7 +35,7 @@ impl Playout {
 		});
 		for _ in 0..8 * MAX_STREAMS {
 			let Ok(frame) = source.try_recv() else { break };
-			if !enabled || stalled || volume == 0 || !frame.is_current() {
+			if !enabled || volume == 0 || !frame.is_current() {
 				continue;
 			}
 			let index =
@@ -66,15 +68,27 @@ impl Playout {
 			}
 			pending.push_back(frame);
 		}
-		if !enabled || stalled || volume == 0 {
+		if !enabled || volume == 0 {
 			self.sources.clear();
 			return None;
+		}
+		// A late tick says this client was busy, not that the queued stream audio went stale.
+		// Emptying the queue would cost `HEADROOM` frames of silence to build back up, for
+		// frames that are still perfectly playable. Drop only the backlog that accumulated
+		// while this loop was away, so added delay stays bounded and playback keeps going.
+		if stalled {
+			for source in &mut self.sources {
+				while source.pending.len() > HEADROOM {
+					source.pending.pop_front();
+					self.stats[0] += 1;
+				}
+			}
 		}
 		let mut output: Option<PlaybackFrame> = None;
 		for source in &mut self.sources {
 			source.pending.retain(PlaybackFrame::is_current);
 			// Each stream retains its own 40 ms scheduling headroom and sample order.
-			if !source.started && source.pending.len() < 3 {
+			if !source.started && source.pending.len() < HEADROOM {
 				continue;
 			}
 			let Some(frame) = source.pending.pop_front() else {
@@ -258,8 +272,18 @@ mod tests {
 		}
 		assert!(playout.next(&receive, 0, false, false).is_none());
 		assert!(playout.sources.is_empty());
-		send.send([0.2; 960].into()).unwrap();
-		assert!(playout.next(&receive, 100, true, true).is_none());
-		assert!(playout.sources.is_empty());
+		// A late tick trims the backlog it caused instead of emptying the queue: playback
+		// continues from the newest `HEADROOM` frames rather than restarting from silence.
+		for n in 0..6u32 {
+			send.send([n as f32 / 100.0; 960].into()).unwrap();
+		}
+		let frame = playout
+			.next(&receive, 100, true, true)
+			.expect("a late tick must not interrupt playable stream audio");
+		assert_eq!(
+			(frame.samples[0] * 100.0).round() as u32,
+			3,
+			"the backlog older than the headroom is dropped, not the headroom itself"
+		);
 	}
 }

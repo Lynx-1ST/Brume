@@ -26,7 +26,9 @@ struct Source {
 	next: Option<u16>,
 	latest: Option<(u16, u32)>,
 	cursor: Option<u32>,
-	pcm: Box<[f32; 5760]>,
+	/// Interleaved stereo, so twice the per-channel sample budget. Every index derived from it
+	/// (`offset`, `length`) stays in per-channel samples.
+	pcm: Box<[f32; 11520]>,
 	pcm_timestamp: u32,
 	offset: usize,
 	length: usize,
@@ -119,7 +121,8 @@ impl Source {
 			opus: opus.into_boxed_slice(),
 		});
 	}
-	fn pop(&mut self, clock: &mut Sync, now: Instant) -> Option<Frame> {
+	/// Returns the left and right channels of this source's next output frame.
+	fn pop(&mut self, clock: &mut Sync, now: Instant) -> Option<(Frame, Frame)> {
 		let timestamp = self.cursor?;
 		let deadline = clock.deadline(self.user, self.ssrc, 48_000, timestamp, now);
 		let target = clock.target(self.ssrc);
@@ -148,7 +151,8 @@ impl Source {
 		self.stats[4] += adjustment.max(0) as u64;
 		self.stats[5] += (-adjustment).max(0) as u64;
 		let wanted = (960 + adjustment) as usize;
-		let mut frame = [0.0; 965];
+		let mut left = [0.0; 965];
+		let mut right = [0.0; 965];
 		let mut filled = 0usize;
 		let mut decoded = 0;
 		while filled < wanted {
@@ -170,7 +174,7 @@ impl Source {
 					self.pcm_timestamp = cursor;
 					self.length = self
 						.decoder
-						.decode_float(&[], &mut self.pcm[..count], false)
+						.decode_float(&[], &mut self.pcm[..count * 2], false)
 						.inspect_err(|_| self.stats[2] += 1)
 						.unwrap_or(0);
 					self.stats[1] += self.length as u64;
@@ -210,8 +214,12 @@ impl Source {
 			}
 			self.offset += ((-i64::from(delta)) as usize).min(self.length - self.offset);
 			let count = (self.length - self.offset).min(wanted - filled);
-			frame[filled..filled + count]
-				.copy_from_slice(&self.pcm[self.offset..self.offset + count]);
+			// `pcm` is interleaved while every index here counts per-channel samples.
+			for step in 0..count {
+				let pair = (self.offset + step) * 2;
+				left[filled + step] = self.pcm[pair];
+				right[filled + step] = self.pcm[pair + 1];
+			}
 			self.offset += count;
 			filled += count;
 		}
@@ -223,14 +231,18 @@ impl Source {
 			return None;
 		}
 		self.cursor = Some(timestamp.wrapping_add(wanted as u32));
-		let output = std::array::from_fn(|i| {
-			let position = i as f32 * wanted as f32 / 960.0;
-			let left = position as usize;
-			let right = (left + 1).min(wanted - 1);
-			frame[left] + (frame[right] - frame[left]) * position.fract()
-		});
+		// One position sequence drives both channels, so rate correction cannot drift them
+		// apart; a per-channel phase would comb-filter the stereo image.
+		let resample = |channel: &[f32; 965]| -> Frame {
+			std::array::from_fn(|i| {
+				let position = i as f32 * wanted as f32 / 960.0;
+				let before = position as usize;
+				let after = (before + 1).min(wanted - 1);
+				channel[before] + (channel[after] - channel[before]) * position.fract()
+			})
+		};
 		self.presentation = clock.audio_frame(self.user, self.ssrc, timestamp, now);
-		Some(output)
+		Some((resample(&left), resample(&right)))
 	}
 }
 #[derive(Default)]
@@ -280,13 +292,15 @@ impl Audio {
 			presentation: None,
 			user,
 			ssrc,
-			decoder: Decoder::new(48_000, Channels::Mono)
+			// Go Live audio is stereo. A mono decoder would have libopus downmix it, which
+			// loses the image before anything downstream could carry it.
+			decoder: Decoder::new(48_000, Channels::Stereo)
 				.map_err(|_| "Stream audio decoder initialization failed")?,
 			packets: Vec::new(),
 			next: None,
 			latest: None,
 			cursor: None,
-			pcm: Box::new([0.0; 5760]),
+			pcm: Box::new([0.0; 11520]),
 			pcm_timestamp: 0,
 			offset: 0,
 			length: 0,
@@ -330,26 +344,34 @@ impl Audio {
 	}
 	pub fn pop_timed(&mut self, clock: &mut Sync, now: Instant) -> Option<crate::PlaybackFrame> {
 		let mut output = [0.0; 960];
+		let mut output_right = [0.0; 960];
 		let mut heard = false;
 		let mut result = crate::PlaybackFrame::from([0.0; 960]);
 		result.session = Some(clock.session(now));
 		for source in &mut self.sources {
-			if let Some(frame) = source.pop(clock, now) {
+			if let Some((left, right)) = source.pop(clock, now) {
 				heard = true;
 				if let Some(presentation) = source.presentation.clone() {
 					result.push_presentation(presentation);
 				}
-				for (mixed, sample) in output.iter_mut().zip(frame) {
+				for (mixed, sample) in output.iter_mut().zip(left) {
+					if sample.is_finite() {
+						*mixed += sample;
+					}
+				}
+				for (mixed, sample) in output_right.iter_mut().zip(right) {
 					if sample.is_finite() {
 						*mixed += sample;
 					}
 				}
 			}
 		}
-		output
-			.iter_mut()
-			.for_each(|sample| *sample = sample.clamp(-1.0, 1.0));
+		for (left, right) in output.iter_mut().zip(output_right.iter_mut()) {
+			*left = left.clamp(-1.0, 1.0);
+			*right = right.clamp(-1.0, 1.0);
+		}
 		result.samples = output;
+		result.right = Some(output_right);
 		heard.then_some(result)
 	}
 }
@@ -433,6 +455,40 @@ mod tests {
 		sync.clear();
 		assert!(!video.is_current());
 		assert!(!queued.unwrap().is_current());
+	}
+	#[test]
+	fn a_stereo_stream_keeps_its_channels_apart_instead_of_downmixing_them() {
+		let now = Instant::now();
+		let mut audio = Audio::default();
+		let mut sync = Sync::default();
+		audio.announce(7, 70).unwrap();
+		let mut encoder = Encoder::new(48_000, Channels::Stereo, Application::Audio).unwrap();
+		let mut encoded = [0; 1275];
+		// A tone on the left against its mirror image on the right. A decoder that downmixes
+		// returns the two channels identical, which correlates positively instead.
+		let input: Vec<f32> = (0..960usize * 2)
+			.map(|i| {
+				let tone =
+					((i / 2) as f32 * std::f32::consts::TAU * 1_000.0 / 48_000.0).sin() * 0.5;
+				if i.is_multiple_of(2) { tone } else { -tone }
+			})
+			.collect();
+		let length = encoder.encode_float(&input, &mut encoded).unwrap();
+		audio.push(70, 0, 0, encoded[..length].to_vec(), &mut sync, now);
+		let frame = audio
+			.pop_timed(&mut sync, now + super::super::stream_sync::BUFFER)
+			.expect("stream audio");
+		let right = frame.right.expect("a stereo stream carries both channels");
+		let correlation: f32 = frame
+			.samples
+			.iter()
+			.zip(right)
+			.map(|(left, right)| left * right)
+			.sum();
+		assert!(
+			correlation < 0.0,
+			"the mirrored channel came back as a copy of the left one: {correlation}"
+		);
 	}
 	#[test]
 	fn reordered_variable_duration_audio_keeps_sample_timestamps_across_wrap() {

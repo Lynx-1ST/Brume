@@ -137,7 +137,11 @@ impl Presentation {
 #[derive(Clone, Debug)]
 pub struct PlaybackFrame {
 	pub(crate) session: Option<Presentation>,
+	/// The left channel, or the whole signal when `right` is absent.
 	pub samples: crate::Frame,
+	/// Present only for stereo stream audio. Call speech is mono, so a frame without it plays
+	/// the same samples to every output channel, exactly as before stereo streams existed.
+	pub right: Option<crate::Frame>,
 	pub presentation: Option<Presentation>,
 	pub(crate) additional_presentations:
 		[Option<Presentation>; client_core::voice::MAX_WATCHED_STREAMS * MAX_SOURCES - 1],
@@ -178,12 +182,21 @@ impl PlaybackFrame {
 	pub(crate) fn mix(call: Option<crate::Frame>, stream: Option<Self>) -> Option<Self> {
 		let stream = stream.filter(Self::is_current);
 		match (call, stream) {
-			(Some(mut samples), Some(stream)) => {
-				for (out, sample) in samples.iter_mut().zip(stream.samples) {
+			(Some(call), Some(stream)) => {
+				let mut samples = stream.samples;
+				for (out, sample) in samples.iter_mut().zip(call) {
 					*out = (*out + sample).clamp(-1.0, 1.0);
 				}
+				// Call speech is mono, so it belongs in both channels rather than only the left.
+				let right = stream.right.map(|mut right| {
+					for (out, sample) in right.iter_mut().zip(call) {
+						*out = (*out + sample).clamp(-1.0, 1.0);
+					}
+					right
+				});
 				Some(Self {
 					samples,
+					right,
 					session: stream.session,
 					presentation: stream.presentation,
 					additional_presentations: stream.additional_presentations,
@@ -199,6 +212,7 @@ impl From<crate::Frame> for PlaybackFrame {
 	fn from(samples: crate::Frame) -> Self {
 		Self {
 			samples,
+			right: None,
 			session: None,
 			presentation: None,
 			additional_presentations: std::array::from_fn(|_| None),

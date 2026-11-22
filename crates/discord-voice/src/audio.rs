@@ -1842,7 +1842,7 @@ mod tests {
 		let mut output = [0.0f32; 128];
 		playback.render_at(&mut output, 2, &audio.gate, Instant::now());
 		// The first output pair interpolates from the opening silence, so start past it.
-		for pair in output[4..].chunks_exact(2) {
+		for pair in output[4..].as_chunks::<2>().0 {
 			assert!(
 				(pair[0] - 0.6).abs() < 0.01 && (pair[1] + 0.6).abs() < 0.01,
 				"channels drifted or collapsed: {pair:?}"

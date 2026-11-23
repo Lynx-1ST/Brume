@@ -21,6 +21,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 /// Generated from `extensions/` and pinned to a merged commit by the catalog workflow.
+/// NOTE: This URL points to the upstream ViceVerse-cz/Serein repository.
+/// See docs/windows-fork.md for the decision on whether to redirect to this fork's own catalog.
 const CATALOG_URL: &str =
 	"https://raw.githubusercontent.com/ViceVerse-cz/Serein/main/extensions/catalog.json";
 const MAX_PACKAGE: usize = 16 * 1024 * 1024;

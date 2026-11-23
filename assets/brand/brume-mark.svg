@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>Brume mark</title>
+  <desc>Brume mist-stripe mark, solid white silhouette. The stripes are cut out so the shape reads correctly when tinted at draw time.</desc>
+  <defs>
+  <mask id="mist">
+    <rect width="1024" height="1024" rx="60" fill="white"/>
+    <rect x="200" y="290" width="540" height="62" rx="31" fill="black"/>
+    <rect x="260" y="412" width="620" height="62" rx="31" fill="black"/>
+    <rect x="180" y="534" width="580" height="62" rx="31" fill="black"/>
+    <rect x="300" y="656" width="500" height="62" rx="31" fill="black"/>
+  </mask>
+  </defs>
+  <rect width="1024" height="1024" rx="60" fill="#fff" mask="url(#mist)"/>
+</svg>

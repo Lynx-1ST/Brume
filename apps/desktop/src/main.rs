@@ -628,7 +628,7 @@ fn main() -> eframe::Result {
 		..Default::default()
 	};
 	let result = eframe::run_native(
-		"Serein",
+		"Brume",
 		options,
 		Box::new(move |cc| {
 			let mut desktop = Desktop::new(
@@ -661,7 +661,7 @@ fn main() -> eframe::Result {
 	// Quitting mid-share drops media workers that are still closing their encoders, and
 	// NVIDIA's exit handlers crash or deadlock if the process exits during that teardown.
 	if !discord_voice::wait_for_media_threads(std::time::Duration::from_secs(5)) {
-		eprintln!("Screen or camera capture was still closing when Serein exited.");
+		eprintln!("Screen or camera capture was still closing when Brume exited.");
 	}
 	result
 }

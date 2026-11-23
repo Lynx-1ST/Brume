@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>Brume gradient app icon</title>
+  <desc>Brume mist-stripe app icon. Four horizontal stripes of staggered length are cut out of a rounded plate, suggesting drifting mist. Flat, no border, no shadow.</desc>
+  <defs>
+  <linearGradient id="bg" x1="100" y1="0" x2="760" y2="1024" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#8BBEFF"/>
+    <stop offset="0.30" stop-color="#506DDC"/>
+    <stop offset="0.65" stop-color="#303D9C"/>
+    <stop offset="1" stop-color="#2D247C"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="1060" cy="970" r="720" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#5625A5" stop-opacity="0.75"/>
+    <stop offset="1" stop-color="#5625A5" stop-opacity="0"/>
+  </radialGradient>
+  <!-- Mask: plate is white (visible), stripes are black (cut away) -->
+  <mask id="mist">
+    <rect width="1024" height="1024" rx="60" fill="white"/>
+    <!-- Four mist stripes, staggered lengths, drifting left-to-right feel -->
+    <rect x="200" y="290" width="540" height="62" rx="31" fill="black"/>
+    <rect x="260" y="412" width="620" height="62" rx="31" fill="black"/>
+    <rect x="180" y="534" width="580" height="62" rx="31" fill="black"/>
+    <rect x="300" y="656" width="500" height="62" rx="31" fill="black"/>
+  </mask>
+  </defs>
+  <g mask="url(#mist)">
+    <rect width="1024" height="1024" rx="60" fill="url(#bg)"/>
+    <rect width="1024" height="1024" rx="60" fill="url(#glow)"/>
+  </g>
+</svg>

@@ -1,24 +1,24 @@
-# Serein · Windows fork
+# Brume · Windows client
 
-Ứng dụng Discord desktop viết bằng **Rust**, với giao diện native **egui/wgpu**. Đây là bản fork của [ViceVerse-cz/Serein](https://github.com/ViceVerse-cz/Serein), do **Lynx-1ST** duy trì, tập trung vào Windows và trải nghiệm tiếng Việt.
+Ứng dụng Discord desktop viết bằng **Rust**, với giao diện native **egui/wgpu**. Dự án ban đầu tách từ bản fork của [ViceVerse-cz/Serein](https://github.com/ViceVerse-cz/Serein), do **Lynx-1ST** duy trì, tập trung vào Windows và trải nghiệm tiếng Việt.
 
 Giao diện chính chạy native; đăng nhập sử dụng trang Discord chính thức trong WebView2 tạm thời.
 
 [**Tải bản Windows**](https://github.com/Lynx-1ST/Serein/releases) · [Hướng dẫn chi tiết](docs/windows-fork.md) · [Báo lỗi](https://github.com/Lynx-1ST/Serein/issues) · [Dự án gốc](https://github.com/ViceVerse-cz/Serein)
 
 <p align="center">
-  <img src="docs/preview.png" alt="Giao diện Serein — ảnh minh họa từ dự án gốc" width="900" />
+  <img src="docs/preview.png" alt="Giao diện Brume — ảnh minh họa từ dự án gốc" width="900" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/Lynx-1ST/Serein/releases"><img src="https://img.shields.io/github/v/release/Lynx-1ST/Serein?include_prereleases&label=Windows%20release" alt="Bản phát hành của fork" /></a>
+  <a href="https://github.com/Lynx-1ST/Serein/releases"><img src="https://img.shields.io/github/v/release/Lynx-1ST/Serein?include_prereleases&label=Windows%20release" alt="Bản phát hành Windows" /></a>
   <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/platform-Windows%20x64-blue" alt="Windows x64" /></a>
   <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.99.1-orange?logo=rust" alt="Rust 1.99.1" /></a>
   <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green" alt="MIT hoặc Apache-2.0" /></a>
 </p>
 
 > [!WARNING]
-> Serein là ứng dụng không chính thức, không được Discord chứng thực. Việc dùng tài khoản cá nhân qua client bên thứ ba có rủi ro vi phạm điều khoản Discord và bị khóa tài khoản. Đọc [khả năng tương thích](docs/discord-compatibility.md) và [hướng dẫn đăng nhập](docs/authentication.md) trước khi sử dụng.
+> Brume là ứng dụng không chính thức, không được Discord chứng thực. Việc dùng tài khoản cá nhân qua client bên thứ ba có rủi ro vi phạm điều khoản Discord và bị khóa tài khoản. Đọc [khả năng tương thích](docs/discord-compatibility.md) và [hướng dẫn đăng nhập](docs/authentication.md) trước khi sử dụng.
 
 ## Tải và cài đặt
 
@@ -50,7 +50,7 @@ Bản cài từ upstream hoặc bản fork cũ chưa đổi địa chỉ updater
 | Thành viên trong voice | Hiện tag máy chủ; ưu tiên người đang live, sau đó xếp theo tên hiển thị không phân biệt hoa/thường, dùng ID để phân xử tên trùng. |
 | Thanh thành viên bên phải | Kéo mép trái để chỉnh độ rộng; lưu lựa chọn trên thiết bị. |
 | Xem stream | Chọn tối đa bốn stream trong cùng cuộc gọi, cải thiện lịch trình chiếu khung hình và hiển thị người xem. |
-| PiP trong Serein | Xem stream của người khác hoặc bản xem trước của mình khi chuyển sang màn hình khác; hỗ trợ kéo, đổi kích thước, dãy avatar, biểu tượng mắt và hover tên người xem. |
+| PiP trong Brume | Xem stream của người khác hoặc bản xem trước của mình khi chuyển sang màn hình khác; hỗ trợ kéo, đổi kích thước, dãy avatar, biểu tượng mắt và hover tên người xem. |
 | Nút X trên PiP | Dừng xem stream được chọn; với stream của mình thì dừng chia sẻ. Nút trở lại đưa về kênh thoại. |
 | Điều khiển stream | Nút ba chấm khi đang chia sẻ mở chỉnh độ phân giải/FPS. Áp dụng sẽ khởi động lại stream với cấu hình mới và giữ kết nối thoại. |
 | Giao diện xem stream | Bỏ bảng ghi chú hover ở góc dưới trái của hình stream; giữ các nút điều khiển ở giữa. |

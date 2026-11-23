@@ -192,52 +192,55 @@ jobs:
             }
           }
           $notes = @"
-          Bản Windows x64 của fork này, dựng từ commit $env:SOURCE_SHA.
+          Windows x64 build of this fork at commit $env:SOURCE_SHA.
 
-          ### Tải về
+          ### Download
 
-          | Tệp | Dùng khi nào |
+          | File | When to take it |
           | --- | --- |
-          | **-Setup.exe** | Cài cho tài khoản Windows hiện tại. Phù hợp với phần lớn người dùng. |
-          | **.zip** | Bản portable. Giải nén vào thư mục có quyền ghi rồi chạy ``serein.exe``. |
-          | **.exe** | Chạy thẳng, không cài. Dùng ``.zip`` nếu cần cả tài liệu và công cụ kèm theo. |
-          | **SHA256SUMS.txt** | Đối chiếu mã băm của tệp vừa tải. |
+          | **-Setup.exe** | Installs for the current Windows account. Right for most people. |
+          | **.zip** | Portable. Extract somewhere writable and run ``serein.exe``. |
+          | **.exe** | Runs as it is, no install. Take the ``.zip`` if you want the bundled docs and tools. |
+          | **SHA256SUMS.txt** | Check what you downloaded. |
 
-          Mọi gói đều có sẵn thoại và không kèm dữ liệu demo. Đăng nhập cần **Microsoft Edge
-          WebView2 Runtime**. Các tệp này **chưa được ký mã**, nên Windows SmartScreen có thể
-          cảnh báo ở lần chạy đầu.
+          Every package ships voice and excludes demo fixtures. Signing in needs the **Microsoft
+          Edge WebView2 Runtime**. These binaries are **unsigned**, so Windows SmartScreen will
+          warn the first time you run one.
 
-          Bật tiếng Việt: **Settings → Language & Time → Display language → Tiếng Việt**.
+          Vietnamese: **Settings → Language & Time → Display language → Tiếng Việt**.
 
-          ### Fork này khác bản gốc ở đâu
+          ### What this fork changes
 
-          **Tiếng Việt** — catalog đầy đủ, gồm cả bảng xử lý âm thanh đầu vào và nhãn
-          DeepFilterNet. Thuật ngữ rà theo ngữ cảnh Discord, ngày giờ theo định dạng Việt Nam.
+          **Vietnamese** — a complete catalog, the input processing panel and DeepFilterNet labels
+          included. Terminology follows Discord's own usage; dates and times are localized.
 
-          **Thoại và mic** — lọc tạp âm DeepFilterNet với chế độ tự chuyển về RNNoise khi máy
-          không kham nổi; độ nhạy mic tự động; nhận diện giọng nói nâng cao; xác nhận trước khi
-          chuyển kênh thoại. Cảnh báo mic câm đo mức tín hiệu thô từ thiết bị, nên lọc tạp âm và
-          cổng nhận diện không còn làm nó báo nhầm khi bạn chỉ đang im lặng.
+          **Voice and microphone** — DeepFilterNet noise suppression that falls back to RNNoise
+          when the machine cannot keep up, automatic microphone sensitivity, advanced voice
+          activity, and a confirmation before switching voice channels. The silent-microphone
+          warning measures the raw device signal, so noise suppression and the activity gate no
+          longer make it fire while you are simply not speaking.
 
-          **Stream** — xem tối đa bốn stream cùng lúc, Picture-in-Picture kéo và đổi kích thước
-          được, chỉnh độ phân giải/FPS khi đang chia sẻ mà không rớt thoại. Âm thanh stream không
-          còn bị xóa sạch bộ đệm mỗi khi vòng lặp thoại chạy trễ, vốn là nguyên nhân gây hụt tiếng
-          dồn vài lần liên tiếp lúc máy tải nặng.
+          **Streams** — watch up to four at once, with a draggable, resizable Picture-in-Picture
+          and resolution/FPS changes while sharing that keep the call up. Stream audio is no
+          longer discarded whenever the voice loop runs late, which is what made it drop out
+          several times in a row on a loaded machine.
 
-          **Hiệu năng** — chọn ngân sách bộ nhớ hình cho card đồ họa trong **Settings → Storage**
-          (32–192 MB, mặc định 96 MB giữ nguyên hành vi cũ). Avatar và sticker động vẽ nhỏ hơn
-          kích thước gốc không còn nạp thừa một texture mỗi khung hình.
+          **Performance** — choose the video memory budget for artwork in **Settings → Storage**
+          (32-192 MB; the 96 MB default is the behaviour this client always had). Animated avatars
+          and stickers drawn smaller than their source no longer upload a texture per frame that
+          nothing draws.
 
-          **Khác** — chat ngay trong kênh thoại, tag máy chủ cho người đang trong voice, thanh
-          thành viên kéo được, emoji nét hơn ở DPI cao, gợi ý nhắc tên dùng đúng biệt danh máy chủ.
+          **Elsewhere** — chat inside voice channels, guild tags for voice participants, a
+          resizable member sidebar, sharper emoji at high DPI, and mention suggestions that use
+          the right per-server nickname.
 
-          ### Cần biết
+          ### Worth knowing
 
-          - Âm thanh stream hiện được giải mã **mono**; stream stereo bị trộn xuống một kênh.
-          - Schema cache cục bộ là **30**. Client schema 29 cũ không mở lại được cache đã nâng.
-          - Serein là ứng dụng **không chính thức**, không được Discord chứng thực.
+          - Stream audio is decoded as **mono**; a stereo stream is downmixed to one channel.
+          - The local cache schema is **30**. Older schema-29 clients cannot reopen an upgraded cache.
+          - Serein is **unofficial** and not endorsed by Discord.
 
-          Danh sách commit đầy đủ của bản này nằm ở liên kết **Compare** phía trên.
+          The full commit list for this build is behind the **Compare** link above.
           "@
           $notes | Set-Content -LiteralPath release-notes.md -Encoding utf8NoBOM
           $releaseArgs = @('release', 'create', $env:TAG, '--repo', $env:GH_REPO,

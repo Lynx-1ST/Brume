@@ -141,7 +141,8 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 			Some("ui-builtin-control-your-microphone-and-incoming-audio-during-a-connected-call")
 		}
 		"Proxy authentication" => Some("ui-builtin-proxy-authentication"),
-		"Credentials stay in Serein's OS credential store and are never shared with the plugin. Apply the proxy URL before saving credentials." => {
+		"Credentials stay in Brume's OS credential store and are never shared with the plugin. Apply the proxy URL before saving credentials."
+		| "Credentials stay in Serein's OS credential store and are never shared with the plugin. Apply the proxy URL before saving credentials." => {
 			Some(
 				"ui-builtin-credentials-stay-in-serein-s-os-credential-store-and-are-never-shared-with-the-plugin-apply-the-prox",
 			)
@@ -269,7 +270,8 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 		"Voice calls are unavailable in the offline preview" => {
 			Some("status-owned-voice-calls-are-unavailable-in-the-offline-preview")
 		}
-		"Local storage worker stopped. Restart Serein to save fonts." => {
+		"Local storage worker stopped. Restart Brume to save fonts."
+		| "Local storage worker stopped. Restart Serein to save fonts." => {
 			Some("status-owned-local-storage-worker-stopped-restart-serein-to-save-fonts")
 		}
 		"No saved login for that account on this device. Use another account to sign in again, or forget it with ×." => {
@@ -357,7 +359,8 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 		"Update downloaded and verified. Restart when you are ready." => {
 			Some("status-owned-update-downloaded-and-verified-restart-when-you-are-ready")
 		}
-		"Update ready. Close Serein to install and restart." => {
+		"Update ready. Close Brume to install and restart."
+		| "Update ready. Close Serein to install and restart." => {
 			Some("status-owned-update-ready-close-serein-to-install-and-restart")
 		}
 		"The update worker stopped. Please try again." => {
@@ -540,7 +543,7 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 			Some("ui-status-waiting-for-the-previous-call-to-disconnect")
 		}
 		"Looking for cameras..." => Some("ui-status-looking-for-cameras"),
-		"Audio worker stopped; restart Serein" => {
+		"Audio worker stopped; restart Brume" | "Audio worker stopped; restart Serein" => {
 			Some("ui-status-audio-worker-stopped-restart-serein")
 		}
 		"Screen sharing stopped with a system error" => {
@@ -660,7 +663,7 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 		"Could not read channel preferences from local storage." => {
 			Some("ui-status-could-not-read-channel-preferences-from-local-storage")
 		}
-		"Video worker stopped; restart Serein" => {
+		"Video worker stopped; restart Brume" | "Video worker stopped; restart Serein" => {
 			Some("ui-status-video-worker-stopped-restart-serein")
 		}
 		"Video audio output stopped" => Some("ui-status-video-audio-output-stopped"),
@@ -684,19 +687,20 @@ pub(super) fn key(text: &str) -> Option<&'static str> {
 		"The update checksum or length did not match. Nothing was installed." => {
 			Some("ui-status-the-update-checksum-or-length-did-not-match-nothing-was-installed")
 		}
-		"Run Serein from an extracted release package to install updates; source builds cannot replace themselves." => {
+		"Run Brume from an extracted release package to install updates; source builds cannot replace themselves."
+		| "Run Serein from an extracted release package to install updates; source builds cannot replace themselves." => {
 			Some(
 				"ui-status-run-serein-from-an-extracted-release-package-to-install-updates-source-builds-cannot-replace-themselves",
 			)
 		}
-		"The update helper did not start. Serein will remain open." => {
+		"The update helper did not start. Brume will remain open."
+		| "The update helper did not start. Serein will remain open." => {
 			Some("ui-status-the-update-helper-did-not-start-serein-will-remain-open")
 		}
-		"The installation folder contains too many entries. Move Serein into its own folder." => {
-			Some(
-				"ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder",
-			)
-		}
+		"The installation folder contains too many entries. Move Brume into its own folder."
+		| "The installation folder contains too many entries. Move Serein into its own folder." => Some(
+			"ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder",
+		),
 		"Filter messages from non-friends" => Some("ui-status-filter-messages-from-non-friends"),
 		"Server members" => Some("ui-status-server-members"),
 		"Only from servers where you also allow Direct Messages." => {

@@ -101,6 +101,8 @@ Function ${PREFIX}CheckSereinRunning
       ${DoWhile} $2 != 0
         System::Call '*$1(&v36, &w260 .r4)'
         ${If} $4 == "${APP_EXE}"
+        ${OrIf} $4 == "serein.exe"
+        ${OrIf} $4 == "brume.exe"
           StrCpy $R0 1
           ${Break}
         ${EndIf}
@@ -288,6 +290,8 @@ Section "Uninstall"
 
   ; Remove installed files
   Delete "$INSTDIR\${APP_EXE}"
+  Delete "$INSTDIR\brume.exe"
+  Delete "$INSTDIR\serein.exe"
   Delete "$INSTDIR\README.md"
   Delete "$INSTDIR\LICENSE-MIT"
   Delete "$INSTDIR\LICENSE-APACHE"

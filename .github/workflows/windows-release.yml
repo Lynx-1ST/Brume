@@ -141,13 +141,14 @@ jobs:
           $brumeAsset = "brume-$env:TAG-Windows-X64"
           New-Item -ItemType Directory release-assets | Out-Null
           if (!(Test-Path -LiteralPath 'dist/serein.exe')) { throw 'Missing production executable.' }
+          Copy-Item -LiteralPath 'dist/serein.exe' -Destination 'dist/brume.exe'
           $installers = @(Get-ChildItem -Path 'dist-installer/*-setup.exe')
           if ($installers.Count -ne 1) { throw 'Expected exactly one NSIS installer.' }
           Copy-Item -LiteralPath $installers[0].FullName -Destination "release-assets/$asset-Setup.exe"
           Copy-Item -LiteralPath 'dist/serein.exe' -Destination "release-assets/$asset.exe"
           Compress-Archive -Path 'dist/*' -DestinationPath "release-assets/$asset.zip" -CompressionLevel Optimal
           Copy-Item -LiteralPath "release-assets/$asset-Setup.exe" -Destination "release-assets/$brumeAsset-Setup.exe"
-          Copy-Item -LiteralPath "release-assets/$asset.exe" -Destination "release-assets/$brumeAsset.exe"
+          Copy-Item -LiteralPath 'dist/brume.exe' -Destination "release-assets/$brumeAsset.exe"
           Copy-Item -LiteralPath "release-assets/$asset.zip" -Destination "release-assets/$brumeAsset.zip"
           Get-ChildItem release-assets -File | Sort-Object Name | ForEach-Object {
             $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()

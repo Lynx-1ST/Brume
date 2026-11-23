@@ -1,7 +1,7 @@
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-const repository = 'Lynx-1ST/Serein';
+const repository = process.env.GITHUB_REPOSITORY || 'Lynx-1ST/Serein';
 const root = `/repos/${repository}`;
 const validSha = value => /^[a-f0-9]{40}$/.test(value ?? '');
 const owned = pr => pr.user?.login?.toLowerCase() === 'lynx-1st'

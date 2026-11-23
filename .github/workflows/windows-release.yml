@@ -24,7 +24,7 @@ concurrency:
 jobs:
   source:
     if: >-
-      github.repository == 'Lynx-1ST/Serein' &&
+      (github.repository == 'Lynx-1ST/Brume' || github.repository == 'Lynx-1ST/Serein') &&
       (github.event_name != 'workflow_run' ||
        (github.event.workflow_run.conclusion == 'success' &&
         github.event.workflow_run.head_repository.full_name == github.repository))

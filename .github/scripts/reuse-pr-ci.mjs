@@ -1,14 +1,15 @@
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-const repository = 'Lynx-1ST/Serein';
+const allowedRepositories = ['Lynx-1ST/Brume', 'Lynx-1ST/Serein'];
 const shaPattern = /^[a-f0-9]{40}$/;
 const requiredJobs = ['verified-source', 'preflight', 'native (windows-latest)', 'fork-automation', 'extension-sdk', 'security', 'licenses', 'fuzz'];
 
 // Only main pushes from an actual merged PR may reuse checks. PR jobs explicitly
 // check out the head SHA, so equality of full Git trees proves identical inputs.
-export async function reusableCi(api, { eventName, ref, sha, runId, now = Date.now() }) {
+export async function reusableCi(api, { eventName, ref, sha, runId, now = Date.now(), repo }) {
   if (eventName !== 'push' || ref !== 'refs/heads/main' || !shaPattern.test(sha ?? '')) return null;
+  const repository = repo && allowedRepositories.includes(repo) ? repo : (process.env.GITHUB_REPOSITORY && allowedRepositories.includes(process.env.GITHUB_REPOSITORY) ? process.env.GITHUB_REPOSITORY : 'Lynx-1ST/Serein');
   const root = `/repos/${repository}`;
   const [commit, pulls, workflow] = await Promise.all([
     api(`${root}/git/commits/${sha}`),
@@ -18,7 +19,7 @@ export async function reusableCi(api, { eventName, ref, sha, runId, now = Date.n
   if (!shaPattern.test(commit.tree?.sha ?? '') || !Number.isSafeInteger(workflow.id)) return null;
   for (const pr of pulls) {
     if (!pr.merged_at || pr.merge_commit_sha !== sha || pr.base?.ref !== 'main'
-      || pr.base.repo?.full_name !== repository || pr.head?.repo?.full_name !== repository
+      || !allowedRepositories.includes(pr.base.repo?.full_name) || !allowedRepositories.includes(pr.head?.repo?.full_name)
       || !shaPattern.test(pr.head.sha ?? '')) continue;
     const head = await api(`${root}/git/commits/${pr.head.sha}`);
     if (head.tree?.sha !== commit.tree.sha) continue;

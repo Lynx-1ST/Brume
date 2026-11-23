@@ -3367,12 +3367,12 @@ impl Desktop {
 					None
 				}
 				Command::Website => {
-					ctx.open_url(egui::OpenUrl::new_tab("https://github.com/Lynx-1ST/Serein"));
+					ctx.open_url(egui::OpenUrl::new_tab("https://github.com/Lynx-1ST/Brume"));
 					None
 				}
 				Command::ReportIssue => {
 					ctx.open_url(egui::OpenUrl::new_tab(
-						"https://github.com/Lynx-1ST/Serein/issues/new/choose",
+						"https://github.com/Lynx-1ST/Brume/issues/new/choose",
 					));
 					None
 				}

@@ -17,7 +17,7 @@ SetCompressor /SOLID lzma
 !define LEGACY_PRODUCT_ID "Serein"
 !define PRODUCT_NAME "Brume"
 !define PRODUCT_PUBLISHER "Brume contributors"
-!define PRODUCT_WEB_SITE "https://github.com/Lynx-1ST/Serein"
+!define PRODUCT_WEB_SITE "https://github.com/Lynx-1ST/Brume"
 !define APP_EXE "serein.exe"
 !define APP_ID "cz.viceverse.serein"
 

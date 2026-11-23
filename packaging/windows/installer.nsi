@@ -1,5 +1,5 @@
-; Serein Windows Installer Script (NSIS Modern UI 2)
-; Installs per-user to $LOCALAPPDATA\Programs\Serein without elevation
+; Brume Windows Installer Script (NSIS Modern UI 2)
+; Installs per-user to $LOCALAPPDATA\Programs\Brume without elevation
 ; Preserves write permissions for seamless in-app autoupdates
 
 Unicode True
@@ -13,8 +13,8 @@ SetCompressor /SOLID lzma
 !include "Win\COM.nsh"
 !include "Win\Propkey.nsh"
 
-!define PRODUCT_NAME "Serein"
-!define PRODUCT_PUBLISHER "Serein contributors"
+!define PRODUCT_NAME "Brume"
+!define PRODUCT_PUBLISHER "Brume contributors"
 !define PRODUCT_WEB_SITE "https://github.com/Lynx-1ST/Serein"
 !define APP_EXE "serein.exe"
 !define APP_ID "cz.viceverse.serein"
@@ -41,7 +41,7 @@ SetCompressor /SOLID lzma
 
 Name "${PRODUCT_NAME} ${VERSION}"
 OutFile "${OUTPUT_DIR}\serein-${VERSION}-setup.exe"
-InstallDir "$LOCALAPPDATA\Programs\Serein"
+InstallDir "$LOCALAPPDATA\Programs\Brume"
 InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "InstallLocation"
 
 !if /FileExists "packaging\windows\Serein.ico"
@@ -169,7 +169,7 @@ Function .onInit
       Abort
     ${EndIf}
     ${If} $0 != 0
-      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${PRODUCT_NAME} is currently running. Please close Serein before continuing." /SD IDCANCEL IDRETRY retry_init IDCANCEL cancel_init
+      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${PRODUCT_NAME} is currently running. Please close Brume before continuing." /SD IDCANCEL IDRETRY retry_init IDCANCEL cancel_init
       retry_init:
         ${Continue}
       cancel_init:
@@ -241,7 +241,7 @@ Function un.onInit
       Abort
     ${EndIf}
     ${If} $0 != 0
-      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${PRODUCT_NAME} is currently running. Please close Serein before uninstalling." /SD IDCANCEL IDRETRY retry_uninit IDCANCEL cancel_uninit
+      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${PRODUCT_NAME} is currently running. Please close Brume before uninstalling." /SD IDCANCEL IDRETRY retry_uninit IDCANCEL cancel_uninit
       retry_uninit:
         ${Continue}
       cancel_uninit:

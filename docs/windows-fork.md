@@ -1,4 +1,17 @@
-# Bản Windows của Lynx-1ST/Serein
+# Bản Windows — Brume (trước đây là Lynx-1ST/Serein)
+
+## Đổi nhận diện: Serein → Brume
+
+Dự án đã rời mạng lưới fork của `ViceVerse-cz/Serein` để trở thành dự án độc lập, mang tên nhận diện mới là **Brume**:
+
+- **Tên hiển thị:** **Brume** trên toàn bộ giao diện bề mặt: tiêu đề cửa sổ (`eframe::run_native`), tên sản phẩm và shortcut trong bộ cài NSIS (`installer.nsi`), ghi chú phát hành (`windows-release.yml`), tài liệu README.
+- **Logo:** Bốn dải sương khoét rỗng khỏi khối bo tròn `rx=60` (`assets/brand/brume.svg`), phẳng, đọc tốt ở kích thước 16 px và chế độ một màu. Giữ nguyên dải màu gradient `#8BBEFF → #506DDC → #2D247C` và màu nhấn `#1a72e8`.
+- **Định danh nội bộ được giữ nguyên:** Giữ nguyên binary `serein.exe`, thư mục dữ liệu `serein-development`, biến môi trường `SEREIN_DATA_DIR`, khóa registry khởi động `Serein`, và AppUserModelID `cz.viceverse.serein`. Lý do: những thành phần này hầu như vô hình với người dùng; việc đổi chúng sẽ làm các bản đã cài mất đường cập nhật, mất tự khởi động và mất cache cục bộ.
+- **Dư âm fork về danh mục extension:** `apps/desktop/src/extensions.rs:25` hiện đang tải danh mục extension từ `ViceVerse-cz/Serein`. Việc trỏ về repo này đòi hỏi tự duy trì danh mục; giữ nguyên thì vẫn phụ thuộc upstream. Phần này được để ngỏ để quyết định riêng.
+- **Rủi ro đã biết:**
+  1. Icon `.ico` đa kích thước cần dựng lại từ vector mới nhưng máy phát triển hiện chưa dựng được, cần kiểm tra bằng mắt sau khi CI đóng gói.
+  2. Định dạng tên release cũ (`Serein ...`) và mới (`Brume ...`) khác nhau trong danh sách release.
+  3. Việc kiểm tra cục bộ chỉ ở mức biên dịch mã nguồn; việc hiển thị thực tế do CI đóng gói và kiểm chứng.
 
 ## Tải và chọn tiếng Việt
 
@@ -35,7 +48,7 @@ riêng. Dừng một stream không dừng các stream còn lại; âm lượng s
 [PR #886](https://github.com/ViceVerse-cz/Serein/pull/886) đưa lịch vẽ theo thời điểm trình chiếu
 của khung hình. Các công cụ lab Linux đi kèm chỉ dành cho thử nghiệm ngoại tuyến.
 
-PiP nổi bên trong Serein khi rời màn hình cuộc gọi; có thể mở từ menu của ô stream, kéo,
+PiP nổi bên trong Brume khi rời màn hình cuộc gọi; có thể mở từ menu của ô stream, kéo,
 đổi kích thước và chọn stream qua menu chuột phải, gồm bản xem trước stream của mình.
 PiP tái sử dụng texture đang xem, hiện dãy avatar và số người xem; di chuột lên để xem tên.
 Nút trở lại và X nằm ở góc trên phải khi hover PiP. Tên màn hình chia sẻ và người xem

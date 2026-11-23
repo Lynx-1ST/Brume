@@ -234,7 +234,7 @@ jobs:
           - The local cache schema is 30. Older schema-29 clients cannot reopen an upgraded cache.
           - Signing in needs the Microsoft Edge WebView2 Runtime.
           - These binaries are unsigned, so Windows SmartScreen will warn the first time you run one.
-          - Serein is unofficial and not endorsed by Discord.
+          - Brume is unofficial and not endorsed by Discord.
 
           ### Download
 
@@ -250,7 +250,7 @@ jobs:
           "@
           $notes | Set-Content -LiteralPath release-notes.md -Encoding utf8NoBOM
           $releaseArgs = @('release', 'create', $env:TAG, '--repo', $env:GH_REPO,
-            '--target', $env:SOURCE_SHA, '--title', "Serein $env:VERSION (Windows)",
+            '--target', $env:SOURCE_SHA, '--title', "Brume $env:VERSION (Windows)",
             '--notes-file', 'release-notes.md')
           if ($env:VERSION.Contains('-nightly.')) { $releaseArgs += @('--prerelease', '--latest=false') }
           $releaseArgs += @(Get-ChildItem release-assets -File | ForEach-Object { $_.FullName })

@@ -192,25 +192,52 @@ jobs:
             }
           }
           $notes = @"
-          Windows x64 build of this fork at commit $env:SOURCE_SHA.
+          Bản Windows x64 của fork này, dựng từ commit $env:SOURCE_SHA.
 
-          - Vietnamese: Settings > Language & Time > Display language > Tiếng Việt.
-          - Revised Vietnamese terminology and localized dates and times.
-          - Voice chat and invite buttons appear only on row hover; Open Chat is also in the voice-channel context menu.
-          - Stream viewer avatars/count and Open Stream fix, ported from upstream PR #1017.
-          - Sharper emoji at high DPI, ported from upstream PR #1040.
-          - Server nickname suggestions include retained offscreen members (issue #1044).
-          - Voice participant guild tags and resizable member sidebar.
-          - Richer own-account popout with available profile information and supported cosmetics.
-          - Compact guild tags; outer profile-frame changes are deferred.
-          - In-app stream Picture-in-Picture and up to four watched streams (upstream PR #916).
-          - Deadline-based stream repaint scheduling and offline lab tools (upstream PR #886).
-          - Vietnamese labels and tooltips wired across voice controls and other application dialogs.
-          - Optional automatic mic sensitivity, RNNoise speech detection, silent-input warning and channel-switch confirmation.
-          - Local cache schema upgrades to 30; older schema-29 clients cannot reopen the upgraded cache.
-          - Download **-Setup.exe** to install, or extract **.zip** for the portable app.
-          - The standalone **.exe** is also provided. Packages include voice support and exclude demo fixtures.
-          - Windows binaries are unsigned. SHA-256 hashes are in SHA256SUMS.txt.
+          ### Tải về
+
+          | Tệp | Dùng khi nào |
+          | --- | --- |
+          | **-Setup.exe** | Cài cho tài khoản Windows hiện tại. Phù hợp với phần lớn người dùng. |
+          | **.zip** | Bản portable. Giải nén vào thư mục có quyền ghi rồi chạy ``serein.exe``. |
+          | **.exe** | Chạy thẳng, không cài. Dùng ``.zip`` nếu cần cả tài liệu và công cụ kèm theo. |
+          | **SHA256SUMS.txt** | Đối chiếu mã băm của tệp vừa tải. |
+
+          Mọi gói đều có sẵn thoại và không kèm dữ liệu demo. Đăng nhập cần **Microsoft Edge
+          WebView2 Runtime**. Các tệp này **chưa được ký mã**, nên Windows SmartScreen có thể
+          cảnh báo ở lần chạy đầu.
+
+          Bật tiếng Việt: **Settings → Language & Time → Display language → Tiếng Việt**.
+
+          ### Fork này khác bản gốc ở đâu
+
+          **Tiếng Việt** — catalog đầy đủ, gồm cả bảng xử lý âm thanh đầu vào và nhãn
+          DeepFilterNet. Thuật ngữ rà theo ngữ cảnh Discord, ngày giờ theo định dạng Việt Nam.
+
+          **Thoại và mic** — lọc tạp âm DeepFilterNet với chế độ tự chuyển về RNNoise khi máy
+          không kham nổi; độ nhạy mic tự động; nhận diện giọng nói nâng cao; xác nhận trước khi
+          chuyển kênh thoại. Cảnh báo mic câm đo mức tín hiệu thô từ thiết bị, nên lọc tạp âm và
+          cổng nhận diện không còn làm nó báo nhầm khi bạn chỉ đang im lặng.
+
+          **Stream** — xem tối đa bốn stream cùng lúc, Picture-in-Picture kéo và đổi kích thước
+          được, chỉnh độ phân giải/FPS khi đang chia sẻ mà không rớt thoại. Âm thanh stream không
+          còn bị xóa sạch bộ đệm mỗi khi vòng lặp thoại chạy trễ, vốn là nguyên nhân gây hụt tiếng
+          dồn vài lần liên tiếp lúc máy tải nặng.
+
+          **Hiệu năng** — chọn ngân sách bộ nhớ hình cho card đồ họa trong **Settings → Storage**
+          (32–192 MB, mặc định 96 MB giữ nguyên hành vi cũ). Avatar và sticker động vẽ nhỏ hơn
+          kích thước gốc không còn nạp thừa một texture mỗi khung hình.
+
+          **Khác** — chat ngay trong kênh thoại, tag máy chủ cho người đang trong voice, thanh
+          thành viên kéo được, emoji nét hơn ở DPI cao, gợi ý nhắc tên dùng đúng biệt danh máy chủ.
+
+          ### Cần biết
+
+          - Âm thanh stream hiện được giải mã **mono**; stream stereo bị trộn xuống một kênh.
+          - Schema cache cục bộ là **30**. Client schema 29 cũ không mở lại được cache đã nâng.
+          - Serein là ứng dụng **không chính thức**, không được Discord chứng thực.
+
+          Danh sách commit đầy đủ của bản này nằm ở liên kết **Compare** phía trên.
           "@
           $notes | Set-Content -LiteralPath release-notes.md -Encoding utf8NoBOM
           $releaseArgs = @('release', 'create', $env:TAG, '--repo', $env:GH_REPO,

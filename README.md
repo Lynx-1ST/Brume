@@ -56,13 +56,25 @@ Bản cài từ upstream hoặc bản fork cũ chưa đổi địa chỉ updater
 | Giao diện xem stream | Bỏ bảng ghi chú hover ở góc dưới trái của hình stream; giữ các nút điều khiển ở giữa. |
 | Liên kết | Menu sao chép liên kết; sửa thao tác mở URL bằng trình duyệt mặc định trên Windows. |
 | Mic và cuộc gọi | Thêm điều chỉnh độ nhạy tự động, nhận diện giọng nói nâng cao, cảnh báo không phát hiện âm thanh và xác nhận chuyển kênh thoại. |
+| Cảnh báo mic câm | Đo mức tín hiệu **thô từ thiết bị**, trước lọc tạp âm và trước cổng nhận diện. Trước đây đo sau lọc tạp âm nên ngồi im trong phòng yên tĩnh với Voice Isolation cũng bị báo oan. |
+| Âm thanh stream | Vòng lặp thoại chạy trễ không còn xóa sạch bộ đệm phát của stream mà chỉ cắt phần tồn dư, nên hết hiện tượng hụt tiếng dồn 3–4 lần khi máy đang tải nặng. |
+| Bộ nhớ hình của GPU | **Settings → Storage** có thêm ngân sách bộ nhớ hình cho card đồ họa (32–192 MB, mặc định 96 MB giữ nguyên hành vi cũ). Hạ xuống thì giải phóng ngay, đổi lại ảnh phải tải lại khi cuộn ngược. |
+| Ảnh động | Avatar và sticker động vẽ nhỏ hơn kích thước gốc không còn nạp thừa một texture mỗi khung hình. |
 | Gợi ý nhắc tên | Dùng biệt danh đúng máy chủ khi dữ liệu có sẵn, kể cả thành viên ngoài vùng danh sách đang hiển thị. |
 | Emoji | Cải thiện độ nét theo DPI với Twemoji và cache có giới hạn. |
 | DAVE | Tích hợp bản port đã sửa từ PR #862, gồm xử lý chuyển khóa và khôi phục stream. |
 
-Nhận diện giọng nói nâng cao dùng xác suất giọng nói từ **RNNoise**; không phải thuật toán độc quyền của Discord. Danh sách người xem phụ thuộc dữ liệu Discord gửi, ứng dụng không tự suy đoán khi thiếu dữ liệu.
+Lọc tạp âm mặc định ở chế độ **Tự động**: dùng **DeepFilterNet** và tự chuyển về **RNNoise** khi máy không xử lý kịp. Khi đang chuyển về RNNoise, bảng cài đặt sẽ nói rõ điều đó thay vì im lặng.
 
-Phần làm lại khung trang trí ngoài của popout tài khoản đang được hoãn. Animation khởi động mới chưa được tích hợp.
+Nhận diện giọng nói nâng cao dùng xác suất giọng nói từ **RNNoise**, không phải thuật toán độc quyền của Discord. Khi RNNoise đang lọc tạp âm thì xác suất này có sẵn; khi DeepFilterNet lọc, một bộ dò RNNoise riêng chạy thêm chỉ để lấy xác suất.
+
+Danh sách người xem phụ thuộc dữ liệu Discord gửi, ứng dụng không tự suy đoán khi thiếu dữ liệu.
+
+### Giới hạn đã biết
+
+- Âm thanh stream được giải mã **mono**. Đường phát lại của ứng dụng vốn là mono vì thoại Discord là mono, nên stream stereo bị trộn xuống một kênh. Đang được xử lý.
+- Phần làm lại khung trang trí ngoài của popout tài khoản đang được hoãn.
+- Animation khởi động mới chưa được tích hợp.
 
 Chi tiết cấu hình và giới hạn: [Windows fork](docs/windows-fork.md).
 

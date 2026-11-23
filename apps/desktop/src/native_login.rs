@@ -1227,7 +1227,7 @@ impl Desktop {
 				ui.painter().rect_filled(mark, 8, p.accent);
 				ui::icons::paint(
 					ui.painter(),
-					ui::icons::Icon::Serein,
+					ui::icons::Icon::Brume,
 					mark.shrink(8.0),
 					p.accent_text,
 				);

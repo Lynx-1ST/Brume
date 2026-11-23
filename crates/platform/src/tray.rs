@@ -110,9 +110,9 @@ impl MenuState {
 		if !rows.is_empty() {
 			rows.push(Row::Separator);
 		}
-		rows.push(action("Show Serein", Event::Show));
+		rows.push(action("Show Brume", Event::Show));
 		#[cfg(target_os = "linux")]
-		rows.push(action("Minimize Serein", Event::Minimize));
+		rows.push(action("Minimize Brume", Event::Minimize));
 		rows.push(Row::Separator);
 		rows.push(Row::Action {
 			label: "Mute",
@@ -134,7 +134,7 @@ impl MenuState {
 			enabled: self.call.is_some(),
 		});
 		rows.push(Row::Separator);
-		rows.push(action("Quit Serein", Event::Quit));
+		rows.push(action("Quit Brume", Event::Quit));
 		rows
 	}
 }
@@ -350,7 +350,7 @@ mod native {
 				},
 				..Default::default()
 			};
-			for (slot, unit) in data.szTip.iter_mut().zip("Serein".encode_utf16()) {
+			for (slot, unit) in data.szTip.iter_mut().zip("Brume".encode_utf16()) {
 				*slot = unit;
 			}
 			let tray = Self {
@@ -444,10 +444,10 @@ mod native {
 
 	fn voice_state_tip(state: super::VoiceState) -> &'static str {
 		match state {
-			super::VoiceState::Unmuted => "Serein",
-			super::VoiceState::Speaking => "Serein (Speaking)",
-			super::VoiceState::Muted => "Serein (Muted)",
-			super::VoiceState::Deafened => "Serein (Deafened)",
+			super::VoiceState::Unmuted => "Brume",
+			super::VoiceState::Speaking => "Brume (Speaking)",
+			super::VoiceState::Muted => "Brume (Muted)",
+			super::VoiceState::Deafened => "Brume (Deafened)",
 		}
 	}
 
@@ -677,47 +677,9 @@ mod native {
 			unsafe { create_hicon_from_bgra(ICON_SIZE as u32, ICON_SIZE as u32, &bgra) }
 		};
 
-		let extract_gradient =
-			|cell: usize, top_left: [u8; 3], bottom_right: [u8; 3]| -> Option<HICON> {
-				let col = cell % 8;
-				let row = cell / 8;
-				let base_x = (col * 64) as u32;
-				let base_y = (row * 64) as u32;
-				let mut bgra = [0u8; ICON_SIZE * ICON_SIZE * 4];
-
-				for dy in 0..ICON_SIZE {
-					for dx in 0..ICON_SIZE {
-						let sx = base_x + (dx as u32) * 2;
-						let sy = base_y + (dy as u32) * 2;
-						let a00 = atlas.get_pixel(sx, sy)[3] as u32;
-						let a01 = atlas.get_pixel(sx + 1, sy)[3] as u32;
-						let a10 = atlas.get_pixel(sx, sy + 1)[3] as u32;
-						let a11 = atlas.get_pixel(sx + 1, sy + 1)[3] as u32;
-						let alpha = ((a00 + a01 + a10 + a11 + 2) / 4) as u8;
-
-						// Diagonal interpolation factor across 32x32: dx + dy in 0..=62
-						let t = (dx + dy) as u32;
-						let cr = ((top_left[0] as u32 * (62 - t) + bottom_right[0] as u32 * t) / 62)
-							as u16;
-						let cg = ((top_left[1] as u32 * (62 - t) + bottom_right[1] as u32 * t) / 62)
-							as u16;
-						let cb = ((top_left[2] as u32 * (62 - t) + bottom_right[2] as u32 * t) / 62)
-							as u16;
-
-						let idx = (dy * ICON_SIZE + dx) * 4;
-						let a = alpha as u16;
-						bgra[idx] = ((cb * a) / 255) as u8;
-						bgra[idx + 1] = ((cg * a) / 255) as u8;
-						bgra[idx + 2] = ((cr * a) / 255) as u8;
-						bgra[idx + 3] = alpha;
-					}
-				}
-				unsafe { create_hicon_from_bgra(ICON_SIZE as u32, ICON_SIZE as u32, &bgra) }
-			};
-
 		[
 			extract(58, [215, 218, 224]),
-			extract_gradient(58, [100, 165, 255], [120, 50, 230]),
+			extract(58, [100, 165, 255]),
 			extract(4, [242, 63, 67]),
 			extract(6, [242, 63, 67]),
 		]

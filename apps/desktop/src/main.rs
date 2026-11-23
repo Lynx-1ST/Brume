@@ -6928,7 +6928,7 @@ impl eframe::App for Desktop {
 						ui.painter().rect_filled(rect, 8, p.accent);
 						ui::icons::paint(
 							ui.painter(),
-							ui::icons::Icon::Serein,
+							ui::icons::Icon::Brume,
 							rect.shrink(7.0),
 							p.accent_text,
 						);

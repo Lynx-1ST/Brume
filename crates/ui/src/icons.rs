@@ -137,6 +137,8 @@ pub enum Icon {
 }
 
 impl Icon {
+	/// Alias for the application brand mark.
+	pub const Brume: Icon = Icon::Serein;
 	/// Canonical atlas cells; Forward reuses the mirrored Reply cell.
 	pub const ALL: [Icon; 112] = [
 		Icon::ChevronDown,

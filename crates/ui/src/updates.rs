@@ -306,7 +306,7 @@ impl MessagingUi {
 					.rect_filled(badge, 12, colors.accent.gamma_multiply(0.16));
 				crate::icons::paint(
 					ui.painter(),
-					crate::icons::Icon::Serein,
+					crate::icons::Icon::Brume,
 					badge.shrink(10.0),
 					colors.accent,
 				);

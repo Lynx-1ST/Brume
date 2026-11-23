@@ -1,19 +1,20 @@
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-const repository = process.env.GITHUB_REPOSITORY || 'Lynx-1ST/Serein';
-const root = `/repos/${repository}`;
+const allowedRepositories = ['Lynx-1ST/Brume', 'Lynx-1ST/Serein'];
 const validSha = value => /^[a-f0-9]{40}$/.test(value ?? '');
-const owned = pr => pr.user?.login?.toLowerCase() === 'lynx-1st'
-  && pr.head?.repo?.full_name === repository && pr.base?.repo?.full_name === repository;
+const owned = (pr, repo) => pr.user?.login?.toLowerCase() === 'lynx-1st'
+  && (pr.head?.repo?.full_name === repo || (allowedRepositories.includes(repo) && allowedRepositories.includes(pr.head?.repo?.full_name)))
+  && (pr.base?.repo?.full_name === repo || (allowedRepositories.includes(repo) && allowedRepositories.includes(pr.base?.repo?.full_name)));
 const stopped = note => ({ advanced: false, note });
 
 // A one-off delivery queue explicitly requested by the owner: release PR 12, then check PR 13.
 export async function advanceQueue(api, { repo, source, tag }) {
-  if (repo !== repository || !validSha(source) || !/^v\d+\.\d+\.\d+(?:-nightly\.\d+\.\d+)?$/.test(tag ?? ''))
+  if (!allowedRepositories.includes(repo) || !validSha(source) || !/^v\d+\.\d+\.\d+(?:-nightly\.\d+\.\d+)?$/.test(tag ?? ''))
     return stopped('Invalid release queue source.');
+  const root = `/repos/${repo}`;
   const previous = await api(`${root}/pulls/12`);
-  if (!owned(previous) || !previous.merged || previous.base.ref !== 'main'
+  if (!owned(previous, repo) || !previous.merged || previous.base.ref !== 'main'
       || previous.merge_commit_sha !== source)
     return stopped('This release is not the merged PR #12 source.');
   const releases = await api(`${root}/releases?per_page=100`);
@@ -27,7 +28,7 @@ export async function advanceQueue(api, { repo, source, tag }) {
   const main = await api(`${root}/git/ref/heads/main`);
   if (main.object?.sha !== source) return stopped('Main moved after the PR #12 release.');
   const next = await api(`${root}/pulls/13`);
-  if (!owned(next) || next.state !== 'open' || next.merged || next.draft
+  if (!owned(next, repo) || next.state !== 'open' || next.merged || next.draft
       || next.head.ref !== 'fix/account-profile-decoration' || !validSha(next.head.sha)
       || !['main', 'feat/windows-chat-stream-polish'].includes(next.base.ref))
     return stopped('PR #13 is no longer the queued owner decoration PR.');

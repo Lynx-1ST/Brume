@@ -28,8 +28,8 @@ export async function reusableCi(api, { eventName, ref, sha, runId, now = Date.n
       const age = now - Date.parse(run.updated_at);
       if (String(run.id) === String(runId) || run.workflow_id !== workflow.id
         || run.path !== '.github/workflows/ci.yml' || run.event !== 'pull_request'
-        || run.head_sha !== pr.head.sha || run.repository?.full_name !== repository
-        || run.head_repository?.full_name !== repository
+        || run.head_sha !== pr.head.sha || !allowedRepositories.includes(run.repository?.full_name)
+        || !allowedRepositories.includes(run.head_repository?.full_name)
         || run.status !== 'completed' || run.conclusion !== 'success'
         || !Number.isFinite(age) || age < -300000 || age > 24 * 60 * 60 * 1000) continue;
       const { jobs } = await api(`${root}/actions/runs/${run.id}/jobs?filter=latest&per_page=100`);

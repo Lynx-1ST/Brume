@@ -275,7 +275,7 @@ impl MessagingUi {
 		};
 
 		format!(
-			"- **Serein Version:** {} ({channel})\n- **Operating System:** {os} ({arch}){session_type}{package_type}{graphics}\n- **Display Scale:** {scale:.2}\n- **Theme:** {theme_mode} ({theme_variant})\n- **Update Channel:** {update_channel}\n- **Auto Update:** {}",
+			"- **Brume Version:** {} ({channel})\n- **Operating System:** {os} ({arch}){session_type}{package_type}{graphics}\n- **Display Scale:** {scale:.2}\n- **Theme:** {theme_mode} ({theme_variant})\n- **Update Channel:** {update_channel}\n- **Auto Update:** {}",
 			self.build.version,
 			if self.updates.auto_update {
 				"Enabled"
@@ -367,7 +367,7 @@ impl MessagingUi {
 					ui.vertical(|ui| {
 						ui.spacing_mut().item_spacing.y = 2.0;
 						ui.label(
-							design::semibold(ui, format!("Serein {}", self.build.version), 17.0)
+							design::semibold(ui, format!("Brume {}", self.build.version), 17.0)
 								.color(colors.text_strong),
 						);
 						ui.add(
@@ -675,7 +675,7 @@ impl MessagingUi {
 				if index > 0 {
 					design::card_divider(ui);
 				}
-				let title = format!("Serein {}", entry.version);
+				let title = format!("Brume {}", entry.version);
 				egui::CollapsingHeader::new(
 					design::semibold(ui, &title, 14.0).color(colors.text_strong),
 				)

@@ -1043,7 +1043,7 @@ impl Drop for FrameMetrics {
 			let _ = writeln!(
 				std::io::stderr(),
 				// Preserve the legacy diagnostic label; elapsed callback time is wall time.
-				"[Serein frames] callbacks={} without_input={} cpu_us_buckets(1000,2000,4000,8000,16000,32000,64000,above)={:?} reflows(total,consecutive)={:?}",
+				"[Brume frames] callbacks={} without_input={} cpu_us_buckets(1000,2000,4000,8000,16000,32000,64000,above)={:?} reflows(total,consecutive)={:?}",
 				self.frames,
 				self.inputless,
 				self.buckets,
@@ -2065,7 +2065,7 @@ impl Desktop {
 			let (found, wake) = (gsync.clone(), cc.egui_ctx.clone());
 			platform::gsync::detect(move |enabled| {
 				if enabled {
-					eprintln!("[Serein] G-SYNC display detected");
+					eprintln!("[Brume] G-SYNC display detected");
 					found.store(true, std::sync::atomic::Ordering::Relaxed);
 					wake.request_repaint();
 				}
@@ -2933,7 +2933,7 @@ impl Desktop {
 	fn diagnostics_report(&self, ctx: &egui::Context) -> String {
 		use std::fmt::Write;
 		let mut report = String::with_capacity(24 * 1024);
-		report.push_str("# Serein diagnostics\n\n");
+		report.push_str("# Brume diagnostics\n\n");
 		report.push_str(&self.messaging.diagnostic_info(ctx));
 		report.push('\n');
 		let log_file = diagnostics::path()
@@ -5098,14 +5098,14 @@ impl Desktop {
 						if self.messaging.custom_font.busy && self.font_picker.is_none() {
 							self.messaging.custom_font.busy = false;
 							self.messaging.custom_font.status =
-								"Local storage worker stopped. Restart Serein to save fonts.";
+								"Local storage worker stopped. Restart Brume to save fonts.";
 						}
 						if self.messaging.channel_preferences_reload
 							|| self.messaging.channel_preferences_load_pending
 						{
 							self.messaging.channel_preferences_reload = false;
 							self.messaging.channel_preferences_load_pending = false;
-							self.messaging.channel_preferences_status = "Local storage worker stopped; restart Serein to restore channel preferences.";
+							self.messaging.channel_preferences_status = "Local storage worker stopped; restart Brume to restore channel preferences.";
 						}
 						presence_cache_stopped = self.presence_load_pending;
 						break;
@@ -5412,7 +5412,7 @@ impl Desktop {
 							"Login saved in the OS credential store"
 						}
 						platform::Saved::Plaintext => {
-							"No OS keyring found. The login is saved in a private file in Serein's data folder."
+							"No OS keyring found. The login is saved in a private file in Brume's data folder."
 						}
 					}
 				}
@@ -5792,7 +5792,7 @@ impl Desktop {
 					// One extra fixed-label terminal line per enabled scope; closed stderr is OK.
 					let _ = writeln!(
 						std::io::stderr(),
-						"[Serein {scope}] Session stopped: {}",
+						"[Brume {scope}] Session stopped: {}",
 						failure.label()
 					);
 				}

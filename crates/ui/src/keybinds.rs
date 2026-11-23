@@ -60,7 +60,7 @@ pub(super) fn show(
 	section(
 		ui,
 		"Navigation",
-		"Move around Serein without reaching for the mouse.",
+		"Move around Brume without reaching for the mouse.",
 		NAVIGATION,
 		bindings,
 		capturing,

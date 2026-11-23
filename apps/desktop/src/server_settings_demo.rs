@@ -803,7 +803,7 @@ fn execute_integrations(
 					user: state.user.clone(),
 					source_guild: (index == 2).then(|| Source {
 						id: Id(9990),
-						name: Some("Serein Community".into()),
+						name: Some("Brume Community".into()),
 					}),
 					source_channel: (index == 2).then(|| Source {
 						id: Id(9991),

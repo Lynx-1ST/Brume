@@ -223,6 +223,7 @@ jobs:
           - Watch up to four streams at once, with a draggable, resizable Picture-in-Picture.
           - Change stream resolution and FPS while sharing without dropping the call.
           - Stream audio is no longer discarded when the voice loop runs late, which is what made it drop out several times in a row on a loaded machine.
+          - Stream audio plays in stereo. Call speech stays mono, as Discord sends it.
           - Choose the video memory budget for artwork in Settings > Storage; the 96 MB default is the behaviour this client always had.
           - Animated avatars and stickers drawn smaller than their source no longer upload a texture per frame that nothing draws.
           - Chat inside voice channels, guild tags for voice participants, and a resizable member sidebar.
@@ -230,7 +231,6 @@ jobs:
 
           ### Worth knowing
 
-          - Stream audio is decoded as mono; a stereo stream is downmixed to one channel.
           - The local cache schema is 30. Older schema-29 clients cannot reopen an upgraded cache.
           - Signing in needs the Microsoft Edge WebView2 Runtime.
           - These binaries are unsigned, so Windows SmartScreen will warn the first time you run one.

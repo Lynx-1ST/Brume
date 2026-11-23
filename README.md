@@ -58,6 +58,7 @@ Bản cài từ upstream hoặc bản fork cũ chưa đổi địa chỉ updater
 | Mic và cuộc gọi | Thêm điều chỉnh độ nhạy tự động, nhận diện giọng nói nâng cao, cảnh báo không phát hiện âm thanh và xác nhận chuyển kênh thoại. |
 | Cảnh báo mic câm | Đo mức tín hiệu **thô từ thiết bị**, trước lọc tạp âm và trước cổng nhận diện. Trước đây đo sau lọc tạp âm nên ngồi im trong phòng yên tĩnh với Voice Isolation cũng bị báo oan. |
 | Âm thanh stream | Vòng lặp thoại chạy trễ không còn xóa sạch bộ đệm phát của stream mà chỉ cắt phần tồn dư, nên hết hiện tượng hụt tiếng dồn 3–4 lần khi máy đang tải nặng. |
+| Stereo cho stream | Stream được giải mã và phát **stereo** suốt chặng, từ bộ giải mã tới thiết bị. Thoại vẫn mono vì Discord gửi mono. Hai kênh dùng chung pha khi nội suy để không bị lệch. |
 | Bộ nhớ hình của GPU | **Settings → Storage** có thêm ngân sách bộ nhớ hình cho card đồ họa (32–192 MB, mặc định 96 MB giữ nguyên hành vi cũ). Hạ xuống thì giải phóng ngay, đổi lại ảnh phải tải lại khi cuộn ngược. |
 | Ảnh động | Avatar và sticker động vẽ nhỏ hơn kích thước gốc không còn nạp thừa một texture mỗi khung hình. |
 | Gợi ý nhắc tên | Dùng biệt danh đúng máy chủ khi dữ liệu có sẵn, kể cả thành viên ngoài vùng danh sách đang hiển thị. |
@@ -72,7 +73,6 @@ Danh sách người xem phụ thuộc dữ liệu Discord gửi, ứng dụng kh
 
 ### Giới hạn đã biết
 
-- Âm thanh stream được giải mã **mono**. Đường phát lại của ứng dụng vốn là mono vì thoại Discord là mono, nên stream stereo bị trộn xuống một kênh. Đang được xử lý.
 - Phần làm lại khung trang trí ngoài của popout tài khoản đang được hoãn.
 - Animation khởi động mới chưa được tích hợp.
 

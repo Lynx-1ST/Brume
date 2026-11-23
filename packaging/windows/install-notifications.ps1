@@ -1,16 +1,19 @@
-# Run explicitly after extracting Serein to its final folder. No administrator rights required.
-# Creates only the current user's Serein Start Menu shortcut; does not enable OS alerts in Serein.
+# Run explicitly after extracting Brume to its final folder. No administrator rights required.
+# Creates only the current user's Brume Start Menu shortcut; does not enable OS alerts in Brume.
 param([switch]$Remove, [switch]$Force)
 $ErrorActionPreference = 'Stop'
-$shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Serein.lnk'
+$shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Brume.lnk'
+$legacyShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Serein.lnk'
 if ($Remove) {
     if (Test-Path -LiteralPath $shortcut) { Remove-Item -LiteralPath $shortcut }
+    if (Test-Path -LiteralPath $legacyShortcut) { Remove-Item -LiteralPath $legacyShortcut }
     return
 }
 $executable = Join-Path $PSScriptRoot 'serein.exe'
 if (!(Test-Path -LiteralPath $executable)) { throw 'Keep this script next to serein.exe in its final folder.' }
-if ((Test-Path -LiteralPath $shortcut) -and !$Force) { throw 'Serein.lnk already exists. Remove it explicitly with -Remove before replacing it.' }
+if ((Test-Path -LiteralPath $shortcut) -and !$Force) { throw 'Brume.lnk already exists. Remove it explicitly with -Remove before replacing it.' }
 if ($Force -and (Test-Path -LiteralPath $shortcut)) { Remove-Item -LiteralPath $shortcut -Force }
+if (Test-Path -LiteralPath $legacyShortcut) { Remove-Item -LiteralPath $legacyShortcut -Force }
 
 # A desktop toast requires a Start Menu shortcut carrying the same AppUserModelID as the notifier.
 # https://learn.microsoft.com/windows/win32/shell/enable-desktop-toast-with-appusermodelid
@@ -53,7 +56,7 @@ try {
     $link = $shell.CreateShortcut($shortcut)
     $link.TargetPath = $executable
     $link.WorkingDirectory = $PSScriptRoot
-    $link.Description = 'Serein'
+    $link.Description = 'Brume'
     $link.Save()
     [SereinShortcut]::SetAppId($shortcut)
 } catch {
@@ -63,4 +66,4 @@ try {
     if ($null -ne $link) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($link) }
     [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)
 }
-Write-Output 'Serein Start Menu shortcut registered. Enable system notifications separately in Serein for each session.'
+Write-Output 'Brume Start Menu shortcut registered. Enable system notifications separately in Brume for each session.'

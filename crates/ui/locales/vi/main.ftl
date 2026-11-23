@@ -30,7 +30,7 @@ description-messaging-permissions = Quyền nhận tin nhắn và lời mời k�
 description-notifications = Âm thanh, thông báo và nội dung xem trước.
 description-registered-games = Phát hiện trò chơi và chia sẻ hoạt động.
 description-voice = Micrô, loa, camera và xử lý âm thanh.
-description-keybinds = Phím tắt cho Serein.
+description-keybinds = Phím tắt cho Brume.
 description-storage = Quản lý dữ liệu lưu trên máy.
 description-updates = Phiên bản và cập nhật ứng dụng.
 description-extensions = Quản lý tiện ích mở rộng.
@@ -45,8 +45,8 @@ log-out = Đăng xuất
 unofficial = Không chính thức · không được Discord chứng thực
 offline-preview = Xem trước ngoại tuyến · thay đổi chỉ có hiệu lực trong phiên này và không được gửi đi.
 general-startup = Khởi động
-general-open-at-startup = Mở Serein khi máy tính khởi động
-general-open-at-startup-description = Tự mở Serein khi đăng nhập Windows.
+general-open-at-startup = Mở Brume khi máy tính khởi động
+general-open-at-startup-description = Tự mở Brume khi đăng nhập Windows.
 general-start-minimized = Khởi động ở chế độ thu nhỏ
 general-start-minimized-description = Thu nhỏ cửa sổ khi khởi động.
 general-startup-unavailable = Tự động khởi động có sẵn trên Windows và macOS.
@@ -54,11 +54,11 @@ general-window = Cửa sổ
 general-hide-decorations = Không có thanh tiêu đề
 general-hide-decorations-description = Ẩn thanh tiêu đề và viền cửa sổ. Dùng trình quản lý cửa sổ để di chuyển hoặc đóng ứng dụng.
 general-custom-title-bar = Thanh tiêu đề tùy chỉnh
-general-custom-title-bar-description = Dùng thanh tiêu đề của Serein thay cho thanh tiêu đề hệ thống.
-general-hide-title-bar = Ẩn thanh tiêu đề Serein
+general-custom-title-bar-description = Dùng thanh tiêu đề của Brume thay cho thanh tiêu đề hệ thống.
+general-hide-title-bar = Ẩn thanh tiêu đề Brume
 general-hide-title-bar-description = Dùng thanh tiêu đề hệ thống.
-general-keep-menu-bar = Giữ Serein trong thanh menu
-general-keep-system-tray = Giữ Serein trong khay hệ thống
+general-keep-menu-bar = Giữ Brume trong thanh menu
+general-keep-system-tray = Giữ Brume trong khay hệ thống
 general-menu-bar-description = Đóng cửa sổ để ẩn vào thanh menu. Chọn Thoát để đóng ứng dụng.
 general-linux-tray-description = Đóng cửa sổ để ẩn vào khay hệ thống.
 general-windows-tray-description = Đóng cửa sổ để ẩn vào khay hệ thống. Chọn Thoát để đóng ứng dụng.
@@ -68,19 +68,19 @@ general-render-with = Kết xuất bằng
 general-graphics-api = API đồ họa
 general-graphics-api-description = Chọn cách dựng giao diện. Có hiệu lực sau khi khởi động lại.
 general-graphics-api-env-override = WGPU_BACKEND đang chọn API cho lần chạy này. Xóa biến môi trường đó để dùng cài đặt này.
-general-gpu-restart = Có hiệu lực khi khởi động lại Serein.
+general-gpu-restart = Có hiệu lực khi khởi động lại Brume.
 general-gpu-current-prefix = Đang kết xuất bằng
 general-steady-refresh-rate = Tốc độ làm mới ổn định
-general-steady-refresh-rate-description = Giảm nhấp nháy trên màn hình G-SYNC/FreeSync khi dùng Serein. Tốn điện hơn.
+general-steady-refresh-rate-description = Giảm nhấp nháy trên màn hình G-SYNC/FreeSync khi dùng Brume. Tốn điện hơn.
 steady-refresh-prompt-title = Đã phát hiện thấy màn hình G-SYNC
-steady-refresh-prompt-body = Serein chỉ vẽ lại khi có thay đổi, nên màn hình G-SYNC có thể nhấp nháy khi cửa sổ Serein đang được chọn. Bật tốc độ làm mới ổn định sẽ vẽ lại theo tần số quét của màn hình để tránh hiện tượng này, nhưng dùng nhiều điện hơn. Bạn có muốn bật không?
+steady-refresh-prompt-body = Brume chỉ vẽ lại khi có thay đổi, nên màn hình G-SYNC có thể nhấp nháy khi cửa sổ Brume đang được chọn. Bật tốc độ làm mới ổn định sẽ vẽ lại theo tần số quét của màn hình để tránh hiện tượng này, nhưng dùng nhiều điện hơn. Bạn có muốn bật không?
 steady-refresh-prompt-turn-on = Bật
 steady-refresh-prompt-keep-off = Không, cảm ơn
 steady-refresh-prompt-settings = Bạn có thể đổi lại trong Cài đặt > { $page } > { $group }.
 gpu-automatic = Tự động
 gpu-high-performance = Hiệu suất cao
 gpu-power-saving = Tiết kiệm điện
-gpu-automatic-description = Để Serein chọn GPU có thể hiển thị cửa sổ này.
+gpu-automatic-description = Để Brume chọn GPU có thể hiển thị cửa sổ này.
 gpu-high-performance-description = Sử dụng card đồ họa rời khi có sẵn.
 gpu-power-saving-description = Sử dụng đồ họa tích hợp để tiết kiệm pin.
 direct-messages = Tin nhắn trực tiếp
@@ -229,7 +229,7 @@ account-menu-custom-status-editor-clear-after = Xóa sau
 # Context: custom_status_editor
 account-menu-custom-status-editor-no-custom-status = Không có trạng thái tùy chỉnh
 # Context: custom_status_editor
-account-menu-custom-status-editor-serein-clears-it = Serein sẽ xóa trạng thái
+account-menu-custom-status-editor-serein-clears-it = Brume sẽ xóa trạng thái
 # Context: custom_status_editor
 account-menu-custom-status-editor-status-text = Văn bản trạng thái
 # Context: custom_status_editor
@@ -1120,7 +1120,7 @@ fonts-show-none-installed = Không tìm thấy phông chữ nào được cài �
 # Context: show
 fonts-show-the-quick-brown-fox-jumps-over-the-lazy-dog-0123456789 = Con cáo nâu nhanh nhẹn nhảy qua con chó lười. 0123456789
 # Context: show
-fonts-show-ttf-or-otf-up-to-32-mib-saved-on-this = Phông chữ đã cài trên thiết bị này, tối đa 32 MiB. Serein lưu một bản sao để sử dụng. Đoạn mã vẫn dùng phông chữ đơn cách.
+fonts-show-ttf-or-otf-up-to-32-mib-saved-on-this = Phông chữ đã cài trên thiết bị này, tối đa 32 MiB. Brume lưu một bản sao để sử dụng. Đoạn mã vẫn dùng phông chữ đơn cách.
 # Context: show
 fonts-show-typography = Kiểu chữ
 
@@ -1643,7 +1643,7 @@ keybinds-show-voice-enable-global-keybinds = Bật phím tắt toàn hệ thốn
 # Context: show_voice
 keybinds-show-voice-global-availability = Khả năng dùng phím tắt toàn hệ thống
 # Context: show_voice
-keybinds-show-voice-use-voice-shortcuts-while-another-app-is-focused-when-off = Dùng phím tắt thoại cả khi đang dùng ứng dụng khác. Khi tắt, phím tắt chỉ hoạt động khi cửa sổ Serein đang được chọn.
+keybinds-show-voice-use-voice-shortcuts-while-another-app-is-focused-when-off = Dùng phím tắt thoại cả khi đang dùng ứng dụng khác. Khi tắt, phím tắt chỉ hoạt động khi cửa sổ Brume đang được chọn.
 
 ## crates/ui/src/lib.rs
 # Context: account_card
@@ -1721,7 +1721,7 @@ main-restoring-checking-your-saved-login = Đang kiểm tra thông tin đăng nh
 # Context: restoring
 main-restoring-connecting-to-discord = Đang kết nối với Discord
 # Context: restoring_screen
-main-restoring-screen-serein = Serein
+main-restoring-screen-serein = Brume
 # Context: restoring_screen
 main-restoring-screen-use-a-different-account = Sử dụng một tài khoản khác
 # Context: restoring_screen
@@ -1731,11 +1731,11 @@ main-sign-in-accounts-saved-accounts = Tài khoản đã lưu
 # Context: sign_in_consent
 main-sign-in-consent-passwords-and-2fa-stay-on-discord-s-own-login-page = Mật khẩu và mã 2FA chỉ được nhập trên trang đăng nhập của Discord. Chỉ token phiên được lưu trong kho thông tin xác thực của hệ điều hành.
 # Context: sign_in_disclosures
-main-sign-in-disclosures-about-serein = Về Serein
+main-sign-in-disclosures-about-serein = Về Brume
 # Context: sign_in_disclosures
 main-sign-in-disclosures-connect-with-this-token = Kết nối bằng token này
 # Context: sign_in_disclosures
-main-sign-in-disclosures-for-owners-who-already-hold-a-valid-discord-session-token = Dành cho người đã có token phiên Discord hợp lệ, chẳng hạn từ một bản cài đặt Serein khác đã đăng nhập. Không nhập mật khẩu hay mã 2FA tại đây; cách này không dùng trang đăng nhập của Discord.
+main-sign-in-disclosures-for-owners-who-already-hold-a-valid-discord-session-token = Dành cho người đã có token phiên Discord hợp lệ, chẳng hạn từ một bản cài đặt Brume khác đã đăng nhập. Không nhập mật khẩu hay mã 2FA tại đây; cách này không dùng trang đăng nhập của Discord.
 # Context: sign_in_disclosures
 main-sign-in-disclosures-forget-saved-login = Quên thông tin đăng nhập đã lưu
 # Context: sign_in_disclosures
@@ -1749,7 +1749,7 @@ main-sign-in-header-sign-in-with-your-discord-account-to-get-started = Đăng nh
 # Context: sign_in_header
 main-sign-in-header-welcome-back = Chào mừng trở lại
 # Context: sign_in_header
-main-sign-in-header-welcome-to-serein = Chào mừng đến với Serein
+main-sign-in-header-welcome-to-serein = Chào mừng đến với Brume
 # Context: sign_in_preview
 main-sign-in-status-copy-failure-details = Sao chép chi tiết lỗi
 main-sign-in-preview-explore-the-offline-preview = Khám phá bản xem trước ngoại tuyến
@@ -1758,7 +1758,7 @@ main-sign-in-preview-sample-conversations-no-discord-connection = Cuộc trò ch
 # Context: sign_in_screen
 main-sign-in-screen-independent-and-open-source-not-affiliated-with-discord = Nguồn mở và độc lập · Không liên kết với Discord
 # Context: sign_in_screen
-main-sign-in-screen-serein = Serein
+main-sign-in-screen-serein = Brume
 # Context: ui
 main-ui-cancel = Hủy
 # Context: ui
@@ -2373,13 +2373,13 @@ screen-body-refresh = Làm mới
 # Context: body
 screen-body-screen-or-window = Màn hình hoặc cửa sổ
 # Context: body
-screen-body-send-what-your-mac-plays-along-with-the-screen-serein = Chia sẻ âm thanh trên máy Mac cùng với màn hình. Không thu âm thanh cuộc gọi của Serein.
+screen-body-send-what-your-mac-plays-along-with-the-screen-serein = Chia sẻ âm thanh trên máy Mac cùng với màn hình. Không thu âm thanh cuộc gọi của Brume.
 # Context: body
-screen-body-share-sound-from-other-apps-even-when-sharing-one-window = Chia sẻ âm thanh từ các ứng dụng khác, kể cả khi chỉ chia sẻ một cửa sổ. Không thu âm thanh của Serein.
+screen-body-share-sound-from-other-apps-even-when-sharing-one-window = Chia sẻ âm thanh từ các ứng dụng khác, kể cả khi chỉ chia sẻ một cửa sổ. Không thu âm thanh của Brume.
 # Context: body
 screen-body-share-system-audio = Chia sẻ âm thanh hệ thống
 # Context: body
-screen-body-share-the-shared-apps-sound-or-other-apps-for-a-screen = Chia sẻ âm thanh của ứng dụng đã chọn, hoặc của các ứng dụng khác khi chia sẻ toàn màn hình. Không thu âm thanh của Serein.
+screen-body-share-the-shared-apps-sound-or-other-apps-for-a-screen = Chia sẻ âm thanh của ứng dụng đã chọn, hoặc của các ứng dụng khác khi chia sẻ toàn màn hình. Không thu âm thanh của Brume.
 # Context: body
 screen-body-show-cursor = Hiển thị con trỏ
 # Context: body
@@ -3536,7 +3536,7 @@ settings-activity-added-games = Trò chơi đã thêm
 # Context: activity_settings
 settings-activity-no-games-added = Không có trò chơi nào được thêm vào
 # Context: activity_settings
-settings-activity-hidden = Ẩn. Serein sẽ không phát hiện ra trò chơi này.
+settings-activity-hidden = Ẩn. Brume sẽ không phát hiện ra trò chơi này.
 # Context: activity_settings
 settings-activity-detected = Được phát hiện tự động
 # Context: activity_settings
@@ -3627,7 +3627,7 @@ settings-storage-page-messages-and-drafts-are-cached-on-this-device-inside-bound
 # Context: storage_page
 settings-storage-page-removes-cached-messages-and-media-drafts-and-your-login-stay = Xóa tin nhắn và hình ảnh lưu trên máy; giữ bản nháp và thông tin đăng nhập.
 # Context: storage_page
-settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Serein không tự gửi dữ liệu chẩn đoán. Dữ liệu trên Discord tuân theo chính sách của Discord.
+settings-storage-page-serein-does-not-collect-telemetry-or-upload-diagnostics-discord-retains = Brume không tự gửi dữ liệu chẩn đoán. Dữ liệu trên Discord tuân theo chính sách của Discord.
 # Context: storage_page
 settings-storage-page-your-privacy = Quyền riêng tư của bạn
 # Context: cosmetic_settings
@@ -4117,7 +4117,7 @@ updates-update-settings-release-channel = Kênh phát hành
 # Context: update_settings
 updates-update-settings-restart-to-update = Khởi động lại để cập nhật
 # Context: update_settings
-updates-update-settings-serein-was-installed-via-your-distribution-run-this-in-a = Serein được cài qua bản phân phối Linux. Chạy lệnh này trong terminal để cập nhật.
+updates-update-settings-serein-was-installed-via-your-distribution-run-this-in-a = Brume được cài qua bản phân phối Linux. Chạy lệnh này trong terminal để cập nhật.
 # Context: update_settings
 updates-update-settings-save-diagnostics = Lưu chẩn đoán
 # Context: update_settings
@@ -4139,7 +4139,7 @@ updates-update-settings-log-warnings = Lỗi và cảnh báo
 # Context: update_settings
 updates-update-settings-open-folder = Mở thư mục
 # Context: update_settings
-updates-update-settings-the-log-folder-could-not-be-written = Không thể ghi thư mục nhật ký. Hãy kiểm tra thư mục dữ liệu của Serein và thử lại.
+updates-update-settings-the-log-folder-could-not-be-written = Không thể ghi thư mục nhật ký. Hãy kiểm tra thư mục dữ liệu của Brume và thử lại.
 # Context: update_settings
 updates-update-settings-timings-stages-and-failures-in-one-local-file-no-account-channel-or = Lưu nhật ký lỗi trên máy để chẩn đoán. Không ghi nội dung tin nhắn hoặc thông tin đăng nhập.
 # Context: update_log
@@ -4207,7 +4207,7 @@ verification-show-verification-required = Yêu cầu xác minh
 # Context: show
 verification-show-verify = Xác minh
 # Context: show
-verification-show-safer-in-the-official-discord-app = Việc hoàn thành bước kiểm tra này trong ứng dụng Discord chính thức sẽ an toàn hơn. Discord có thể yêu cầu các tài khoản mới hơn xác minh số điện thoại sau khi kiểm tra được giải quyết trong Serein.
+verification-show-safer-in-the-official-discord-app = Việc hoàn thành bước kiểm tra này trong ứng dụng Discord chính thức sẽ an toàn hơn. Discord có thể yêu cầu các tài khoản mới hơn xác minh số điện thoại sau khi kiểm tra được giải quyết trong Brume.
 # Context: show
 verification-show-open-discord = Mở Discord
 
@@ -4627,7 +4627,7 @@ onboarding-rules-heading = Nội quy máy chủ
 # Context: rules
 onboarding-rules-review = Người kiểm duyệt sẽ xem xét các câu trả lời trước khi bạn có thể trò chuyện.
 # Context: field
-onboarding-field-unsupported = Máy chủ có câu hỏi Serein chưa hiển thị được. Hãy hoàn tất việc tham gia trong ứng dụng Discord.
+onboarding-field-unsupported = Máy chủ có câu hỏi Brume chưa hiển thị được. Hãy hoàn tất việc tham gia trong ứng dụng Discord.
 # Context: field
 onboarding-field-agree = Tôi đã đọc và đồng ý với nội quy
 
@@ -4667,7 +4667,7 @@ public-upload-host-catbox = Tối đa 200 MB (GIF: 20 MB) · có thể bị xóa
 public-upload-host-litterbox = Lên tới 1 GB · tạm thời, xóa sau 72 giờ
 public-upload-over-limit = { $size } · vượt giới hạn tải lên Discord { $limit } của bạn
 public-upload-uploading = Đang tải lên { $host } · { $sent } / { $total }
-public-upload-privacy = Bất kỳ ai có liên kết đều có thể mở tệp này. Nó được tải lên không thay đổi, bao gồm siêu dữ liệu, bên ngoài Discord và Serein không thể xóa nó sau này.
+public-upload-privacy = Bất kỳ ai có liên kết đều có thể mở tệp này. Nó được tải lên không thay đổi, bao gồm siêu dữ liệu, bên ngoài Discord và Brume không thể xóa nó sau này.
 public-upload-review = Chưa có gì được gửi. Thêm liên kết vào bản nháp của bạn hoặc sao chép nó, sau đó tự gửi.
 public-upload-return = Quay lại cuộc trò chuyện ban đầu để thêm liên kết tệp.
 public-upload-preparing = Đang chuẩn bị tải lên công khai…
@@ -4822,7 +4822,7 @@ reading-double-click-reaction = Thả biểu cảm bằng nhấp đúp
 
 ## crates/platform/src/app_menu.rs
 # Context: macos_menu_bar
-app-menu-about = Về Serein
+app-menu-about = Về Brume
 # Context: macos_menu_bar
 app-menu-updates = Kiểm tra cập nhật…
 # Context: macos_menu_bar
@@ -4830,13 +4830,13 @@ app-menu-settings = Cài đặt…
 # Context: macos_menu_bar
 app-menu-services = Dịch vụ
 # Context: macos_menu_bar
-app-menu-hide = Ẩn Serein
+app-menu-hide = Ẩn Brume
 # Context: macos_menu_bar
 app-menu-hide-others = Ẩn ứng dụng khác
 # Context: macos_menu_bar
 app-menu-show-all = Hiển thị tất cả
 # Context: macos_menu_bar
-app-menu-quit = Thoát khỏi Serein
+app-menu-quit = Thoát khỏi Brume
 # Context: macos_menu_bar
 app-menu-file = Tệp
 # Context: macos_menu_bar
@@ -4878,7 +4878,7 @@ app-menu-bring-all-to-front = Đưa tất cả lên phía trước
 # Context: macos_menu_bar
 app-menu-help = Trợ giúp
 # Context: macos_menu_bar
-app-menu-github = Serein trên GitHub
+app-menu-github = Brume trên GitHub
 # Context: macos_menu_bar
 app-menu-report-issue = Báo cáo sự cố…
 
@@ -5115,9 +5115,9 @@ new-message-cancel = Hủy
 setup-appearance-title = Tùy chỉnh giao diện
 setup-appearance-body = Chế độ và màu sắc được áp dụng ngay khi bạn chọn.
 setup-window-title = Độ trong suốt của cửa sổ
-setup-window-body = Cho phép nhìn thấy hình nền phía sau các bảng của Serein.
+setup-window-body = Cho phép nhìn thấy hình nền phía sau các bảng của Brume.
 setup-window-transparency-description = Chủ đề có thể điều chỉnh hiệu ứng khi nó được bật.
-setup-window-restart = Cần khởi động lại Serein để bật hoặc tắt độ trong suốt. Lựa chọn của bạn đã được lưu.
+setup-window-restart = Cần khởi động lại Brume để bật hoặc tắt độ trong suốt. Lựa chọn của bạn đã được lưu.
 setup-desktop-title = Cài đặt trên máy tính
 setup-desktop-body = Khởi động cùng máy tính, thanh tiêu đề và khay hệ thống.
 setup-profiles-title = Trang trí hồ sơ
@@ -5125,7 +5125,7 @@ setup-profiles-body = Chọn các hiệu ứng hiển thị cho hồ sơ và tê
 setup-chat-title = Hiển thị tin nhắn
 setup-chat-body = Cỡ chữ, khoảng cách giữa tin nhắn và định dạng thời gian.
 setup-notifications-title = Thông báo
-setup-notifications-body = Chọn cách Serein thông báo tin nhắn mới khi bạn đang dùng ứng dụng khác.
+setup-notifications-body = Chọn cách Brume thông báo tin nhắn mới khi bạn đang dùng ứng dụng khác.
 setup-notifications-desktop-description = Thông báo cho tin nhắn trực tiếp và lượt nhắc đến. Bạn có thể chỉnh riêng cho từng máy chủ và kênh trong menu tương ứng.
 setup-notifications-sounds = Âm thanh thông báo
 setup-notifications-sounds-description = Âm thanh tin nhắn, cuộc gọi và thao tác thoại. Bạn có thể chọn từng âm thanh trong Cài đặt.
@@ -5578,7 +5578,7 @@ status-owned-loading-font = Đang tải phông chữ…
 
 status-owned-voice-calls-are-unavailable-in-the-offline-preview = Không thể gọi thoại trong bản xem trước ngoại tuyến.
 
-status-owned-local-storage-worker-stopped-restart-serein-to-save-fonts = Bộ phận lưu trữ đã dừng. Khởi động lại Serein để lưu phông chữ.
+status-owned-local-storage-worker-stopped-restart-serein-to-save-fonts = Bộ phận lưu trữ đã dừng. Khởi động lại Brume để lưu phông chữ.
 
 status-owned-no-saved-login-for-that-account-on-this-device-use-another-account-to-sign-in-again-or-for = Thiết bị này chưa lưu thông tin đăng nhập của tài khoản. Hãy đăng nhập lại bằng tài khoản khác, hoặc nhấn × để xóa thông tin đã lưu.
 
@@ -5642,7 +5642,7 @@ status-owned-updates-have-not-been-checked-on-this-channel-yet = Chưa kiểm tr
 
 status-owned-update-downloaded-and-verified-restart-when-you-are-ready = Đã tải và xác minh bản cập nhật. Bạn có thể khởi động lại khi sẵn sàng.
 
-status-owned-update-ready-close-serein-to-install-and-restart = Bản cập nhật đã sẵn sàng. Đóng Serein để cài đặt và khởi động lại.
+status-owned-update-ready-close-serein-to-install-and-restart = Bản cập nhật đã sẵn sàng. Đóng Brume để cài đặt và khởi động lại.
 
 status-owned-the-update-worker-stopped-please-try-again = Tiến trình cập nhật đã dừng. Hãy thử lại.
 
@@ -5814,7 +5814,7 @@ ui-status-waiting-for-the-previous-call-to-disconnect = Đang chờ kết thúc 
 
 ui-status-looking-for-cameras = Đang tìm camera…
 
-ui-status-audio-worker-stopped-restart-serein = Bộ xử lý âm thanh đã dừng. Hãy khởi động lại Serein.
+ui-status-audio-worker-stopped-restart-serein = Bộ xử lý âm thanh đã dừng. Hãy khởi động lại Brume.
 
 ui-status-screen-sharing-stopped-with-a-system-error = Chia sẻ màn hình đã dừng do lỗi hệ thống.
 
@@ -5940,7 +5940,7 @@ ui-status-cached-history-cleared-saved-drafts-preserved = Đã xóa lịch sử 
 
 ui-status-could-not-read-channel-preferences-from-local-storage = Không thể đọc cài đặt kênh đã lưu trên thiết bị.
 
-ui-status-video-worker-stopped-restart-serein = Bộ xử lý video đã dừng. Hãy khởi động lại Serein.
+ui-status-video-worker-stopped-restart-serein = Bộ xử lý video đã dừng. Hãy khởi động lại Brume.
 
 ui-status-video-audio-output-stopped = Âm thanh của video đã dừng.
 
@@ -5960,11 +5960,11 @@ ui-status-github-could-not-provide-the-update-try-again-later = Không thể t�
 
 ui-status-the-update-checksum-or-length-did-not-match-nothing-was-installed = Tệp cập nhật không khớp mã kiểm tra hoặc dung lượng. Chưa cài đặt thay đổi nào.
 
-ui-status-run-serein-from-an-extracted-release-package-to-install-updates-source-builds-cannot-replace-themselves = Hãy chạy Serein từ gói phát hành đã giải nén để cập nhật. Bản chạy từ mã nguồn không thể tự thay thế.
+ui-status-run-serein-from-an-extracted-release-package-to-install-updates-source-builds-cannot-replace-themselves = Hãy chạy Brume từ gói phát hành đã giải nén để cập nhật. Bản chạy từ mã nguồn không thể tự thay thế.
 
-ui-status-the-update-helper-did-not-start-serein-will-remain-open = Không thể khởi chạy trình cập nhật. Serein vẫn đang mở.
+ui-status-the-update-helper-did-not-start-serein-will-remain-open = Không thể khởi chạy trình cập nhật. Brume vẫn đang mở.
 
-ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder = Thư mục cài đặt chứa quá nhiều tệp. Hãy chuyển Serein vào một thư mục riêng.
+ui-status-the-installation-folder-contains-too-many-entries-move-serein-into-its-own-folder = Thư mục cài đặt chứa quá nhiều tệp. Hãy chuyển Brume vào một thư mục riêng.
 
 ui-status-filter-messages-from-non-friends = Lọc tin nhắn từ người chưa kết bạn
 
@@ -6101,9 +6101,9 @@ native-login-more-token = Token phiên đăng nhập
 
 native-login-more-web = Đăng nhập qua web
 
-native-login-token-detail = Dán token phiên bạn đã có, ví dụ từ một bản cài đặt Serein khác.
+native-login-token-detail = Dán token phiên bạn đã có, ví dụ từ một bản cài đặt Brume khác.
 
-native-login-about-risk = Các client không chính thức như Serein có thể gây rủi ro cho tài khoản Discord của bạn.
+native-login-about-risk = Các client không chính thức như Brume có thể gây rủi ro cho tài khoản Discord của bạn.
 
 native-login-about-storage = Tin nhắn và bản nháp được lưu đệm trên thiết bị này. Thông tin đăng nhập được lưu trong kho lưu trữ chứng thực của hệ điều hành.
 
@@ -6137,7 +6137,7 @@ native-login-error-network = Không kết nối được với Discord. Hãy ki�
 
 native-login-error-route = Kết nối mạng chưa sẵn sàng. Hãy thử lại sau ít phút.
 
-native-login-error-protocol = Serein chưa xử lý được phản hồi đăng nhập từ Discord.
+native-login-error-protocol = Brume chưa xử lý được phản hồi đăng nhập từ Discord.
 
 native-login-error-rate = Chờ { $seconds } giây trước khi đăng nhập lại.
 
@@ -6150,3 +6150,4 @@ native-login-error-verification-expired = Xác minh đã hết hạn. Vui lòng 
 ## crates/ui/src/interface_ui.rs
 # Context: interface_tree
 interface-ui-empty = Plugin này chưa có gì để hiển thị.
+

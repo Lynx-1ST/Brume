@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Installs or uninstalls Serein for the current Windows user without elevation.
+Installs or uninstalls Brume for the current Windows user without elevation.
 Preserves write permissions for seamless in-app autoupdates.
 #>
 param(
@@ -9,20 +9,23 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$appName = 'Serein'
-$publisher = 'Serein contributors'
-$website = 'https://github.com/ViceVerse-cz/Serein'
+$appName = 'Brume'
+$legacyAppName = 'Serein'
+$publisher = 'Brume contributors'
+$website = 'https://github.com/Lynx-1ST/Serein'
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\$appName"
 $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$appName"
+$legacyUninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$legacyAppName"
 $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) "$appName.lnk"
+$legacyShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) "$legacyAppName.lnk"
 
-# Check if Serein is currently running
+# Check if Brume/serein is currently running
 $running = Get-Process serein -ErrorAction SilentlyContinue
 if ($running) {
     if ($Quiet) {
         $running | Stop-Process -Force
     } else {
-        throw "Serein is currently running. Please close Serein before running setup."
+        throw "Brume is currently running. Please close Brume before running setup."
     }
 }
 
@@ -30,18 +33,27 @@ if ($Uninstall) {
     if (Test-Path -LiteralPath $shortcut) {
         Remove-Item -LiteralPath $shortcut -Force
     }
+    if (Test-Path -LiteralPath $legacyShortcut) {
+        Remove-Item -LiteralPath $legacyShortcut -Force
+    }
     if (Test-Path -LiteralPath $uninstallKey) {
         Remove-Item -LiteralPath $uninstallKey -Recurse -Force
+    }
+    if (Test-Path -LiteralPath $legacyUninstallKey) {
+        Remove-Item -LiteralPath $legacyUninstallKey -Recurse -Force
     }
     $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
     if ((Get-ItemProperty -LiteralPath $runKey -Name $appName -ErrorAction SilentlyContinue)) {
         Remove-ItemProperty -LiteralPath $runKey -Name $appName -Force
     }
+    if ((Get-ItemProperty -LiteralPath $runKey -Name $legacyAppName -ErrorAction SilentlyContinue)) {
+        Remove-ItemProperty -LiteralPath $runKey -Name $legacyAppName -Force
+    }
     if (Test-Path -LiteralPath $installDir) {
         Remove-Item -LiteralPath $installDir -Recurse -Force
     }
     if (!$Quiet) {
-        Write-Host "Serein was successfully uninstalled."
+        Write-Host "Brume was successfully uninstalled."
     }
     return
 }
@@ -98,5 +110,5 @@ Set-ItemProperty -LiteralPath $uninstallKey -Name 'NoModify' -Value 1 -Type DWor
 Set-ItemProperty -LiteralPath $uninstallKey -Name 'NoRepair' -Value 1 -Type DWord
 
 if (!$Quiet) {
-    Write-Host "Serein $version installed successfully to $installDir"
+    Write-Host "Brume $version installed successfully to $installDir"
 }

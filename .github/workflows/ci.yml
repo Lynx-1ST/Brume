@@ -1,4 +1,4 @@
-name: Serein Fork CI
+name: Brume CI
 on:
   push:
     branches: [ main ]

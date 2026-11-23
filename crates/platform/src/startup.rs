@@ -46,14 +46,15 @@ mod native {
 	};
 
 	const RUN: PCWSTR = w!("Software\\Microsoft\\Windows\\CurrentVersion\\Run");
-	const VALUE: PCWSTR = w!("Serein");
+	const VALUE: PCWSTR = w!("Brume");
+	const LEGACY_VALUE: PCWSTR = w!("Serein");
 	// Windows documents a 260-character limit for Run commands, excluding the terminator.
 	const MAX_COMMAND: usize = 260;
 	const READ_ERROR: &str = "Could not read the Windows startup setting.";
 	const WRITE_ERROR: &str = "Could not update the Windows startup setting.";
 	const PATH_ERROR: &str = "This executable path cannot be registered for Windows startup.";
 	const INVALID_ENTRY: &str =
-		"The Serein startup entry does not match this application. Turn startup on to replace it.";
+		"The Brume startup entry does not match this application. Turn startup on to replace it.";
 
 	pub fn load() -> Result<Settings, &'static str> {
 		let executable = std::env::current_exe().map_err(|_| PATH_ERROR)?;
@@ -83,7 +84,7 @@ mod native {
 		let command = format!("\"{path}\" --autostart{suffix}");
 		if command.encode_utf16().count() > MAX_COMMAND {
 			return Err(
-				"The executable path is too long for Windows startup. Move Serein to a shorter path.",
+				"The executable path is too long for Windows startup. Move Brume to a shorter path.",
 			);
 		}
 		Ok(command)
@@ -101,7 +102,7 @@ mod native {
 		Err(INVALID_ENTRY)
 	}
 
-	fn load_at(subkey: PCWSTR, executable: &Path) -> Result<Settings, &'static str> {
+	fn read_registry_value(subkey: PCWSTR, name: PCWSTR) -> Result<Option<String>, &'static str> {
 		let mut data = [0_u16; MAX_COMMAND + 1];
 		let mut bytes = std::mem::size_of_val(&data) as u32;
 		// SAFETY: all names are terminated and live for the call; the writable buffer's
@@ -110,7 +111,7 @@ mod native {
 			RegGetValueW(
 				HKEY_CURRENT_USER,
 				subkey,
-				VALUE,
+				name,
 				RRF_RT_REG_SZ,
 				None,
 				Some(data.as_mut_ptr().cast()),
@@ -118,7 +119,7 @@ mod native {
 			)
 		};
 		if matches!(status, ERROR_FILE_NOT_FOUND | ERROR_PATH_NOT_FOUND) {
-			return Ok(Settings::default());
+			return Ok(None);
 		}
 		if status != ERROR_SUCCESS {
 			return Err(READ_ERROR);
@@ -127,8 +128,22 @@ mod native {
 		if !bytes.is_multiple_of(2) || units == 0 || units > data.len() || data[units - 1] != 0 {
 			return Err(INVALID_ENTRY);
 		}
-		let command = String::from_utf16(&data[..units - 1]).map_err(|_| INVALID_ENTRY)?;
-		parse_command(&command, executable)
+		String::from_utf16(&data[..units - 1])
+			.map(Some)
+			.map_err(|_| INVALID_ENTRY)
+	}
+
+	fn load_at(subkey: PCWSTR, executable: &Path) -> Result<Settings, &'static str> {
+		if let Some(command) = read_registry_value(subkey, VALUE)? {
+			return parse_command(&command, executable);
+		}
+		if let Some(legacy_command) = read_registry_value(subkey, LEGACY_VALUE)? {
+			let settings = parse_command(&legacy_command, executable)?;
+			// Migrate: write the new Brume value and remove the legacy Serein value
+			let _ = save_at(subkey, Some(&legacy_command));
+			return Ok(settings);
+		}
+		Ok(Settings::default())
 	}
 
 	fn save_at(subkey: PCWSTR, command: Option<&str>) -> Result<(), &'static str> {
@@ -136,7 +151,7 @@ mod native {
 			let data: Vec<u16> = command.encode_utf16().chain(Some(0)).collect();
 			// SAFETY: names and bounded REG_SZ data are terminated and live for the call.
 			// This writes only our named value, creating the subkey if needed.
-			unsafe {
+			let res = unsafe {
 				RegSetKeyValueW(
 					HKEY_CURRENT_USER,
 					subkey,
@@ -145,10 +160,19 @@ mod native {
 					Some(data.as_ptr().cast()),
 					(data.len() * 2) as u32,
 				)
+			};
+			if res == ERROR_SUCCESS {
+				unsafe {
+					let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, subkey, LEGACY_VALUE);
+				}
 			}
+			res
 		} else {
 			// SAFETY: names are terminated and live for the call. Other values are untouched.
-			unsafe { RegDeleteKeyValueW(HKEY_CURRENT_USER, subkey, VALUE) }
+			unsafe {
+				let _ = RegDeleteKeyValueW(HKEY_CURRENT_USER, subkey, LEGACY_VALUE);
+				RegDeleteKeyValueW(HKEY_CURRENT_USER, subkey, VALUE)
+			}
 		};
 		if status == ERROR_SUCCESS
 			|| (command.is_none() && matches!(status, ERROR_FILE_NOT_FOUND | ERROR_PATH_NOT_FOUND))

@@ -262,15 +262,37 @@ fn resolve_data_dir(configured: Option<OsString>, default: Option<PathBuf>) -> R
 	}
 }
 
-/// Keeps source-build data persistent but separate from installed Serein data.
+/// Keeps source-build data persistent but separate from installed Brume data.
+/// Automatically migrates legacy Serein data directories to Brume on first run.
 fn default_data_dir() -> Option<PathBuf> {
+	let root = dirs::data_local_dir()?;
 	#[cfg(feature = "development-data")]
-	{
-		dirs::data_local_dir().map(|root| root.join("serein-development"))
-	}
+	let (legacy_name, new_name) = ("serein-development", "brume-development");
 	#[cfg(not(feature = "development-data"))]
-	{
-		dirs::data_local_dir().map(|root| root.join("serein"))
+	let (legacy_name, new_name) = ("serein", "brume");
+
+	let legacy_path = root.join(legacy_name);
+	let new_path = root.join(new_name);
+
+	if !new_path.exists() && legacy_path.exists() {
+		match std::fs::rename(&legacy_path, &new_path) {
+			Ok(()) => Some(new_path),
+			Err(err) => {
+				eprintln!(
+					"Could not rename data directory from {} to {}: {}; using legacy directory",
+					legacy_path.display(),
+					new_path.display(),
+					err
+				);
+				Some(legacy_path)
+			}
+		}
+	} else if new_path.exists() {
+		Some(new_path)
+	} else if legacy_path.exists() {
+		Some(legacy_path)
+	} else {
+		Some(new_path)
 	}
 }
 
@@ -293,7 +315,9 @@ fn create_data_dir(root: &Path) -> Result<()> {
 
 /// Shared root for local application data. Developers may select an isolated absolute path.
 pub fn data_dir() -> std::result::Result<PathBuf, StoreError> {
-	resolve_data_dir(std::env::var_os("SEREIN_DATA_DIR"), default_data_dir())
+	let env_override =
+		std::env::var_os("BRUME_DATA_DIR").or_else(|| std::env::var_os("SEREIN_DATA_DIR"));
+	resolve_data_dir(env_override, default_data_dir())
 }
 
 /// Reject excess entries during parsing, before allocating a whole malformed array.
@@ -1765,7 +1789,7 @@ mod tests {
 			resolve_data_dir(None, Some(default.clone())),
 			Ok(default.clone())
 		);
-		let configured = default.join("serein-development");
+		let configured = default.join("brume-development");
 		assert_eq!(
 			resolve_data_dir(Some(configured.clone().into_os_string()), None),
 			Ok(configured)

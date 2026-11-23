@@ -24,7 +24,7 @@ define_class!(
 	// SAFETY: NSObject has no subclassing requirements. All state and callbacks stay on
 	// the main thread, and the target lives until every menu item is disconnected.
 	#[unsafe(super = NSObject)]
-	#[name = "SereinTrayTarget"]
+	#[name = "BrumeTrayTarget"]
 	#[thread_kind = MainThreadOnly]
 	#[ivars = State]
 	struct Target;
@@ -33,12 +33,12 @@ define_class!(
 	unsafe impl NSObjectProtocol for Target {}
 
 	impl Target {
-		#[unsafe(method(showSerein:))]
+		#[unsafe(method(showBrume:))]
 		fn show(&self, _sender: &NSMenuItem) {
 			self.emit(Event::Show);
 		}
 
-		#[unsafe(method(quitSerein:))]
+		#[unsafe(method(quitBrume:))]
 		fn quit(&self, _sender: &NSMenuItem) {
 			self.emit(Event::Quit);
 		}
@@ -114,9 +114,9 @@ impl Tray {
 			image.setSize(NSSize::new(MARK_POINTS, MARK_POINTS));
 			button.setImage(Some(&image));
 		} else {
-			button.setTitle(ns_string!("Serein"));
+			button.setTitle(ns_string!("Brume"));
 		}
-		button.setToolTip(Some(ns_string!("Serein")));
+		button.setToolTip(Some(ns_string!("Brume")));
 		tray.fill(mtm);
 		tray.item.setMenu(Some(&tray.menu));
 		Ok(tray)
@@ -139,8 +139,8 @@ impl Tray {
 					enabled,
 				} => {
 					let action = match event {
-						Event::Show => sel!(showSerein:),
-						Event::Quit => sel!(quitSerein:),
+						Event::Show => sel!(showBrume:),
+						Event::Quit => sel!(quitBrume:),
 						Event::ToggleMute => sel!(toggleMute:),
 						Event::ToggleDeafen => sel!(toggleDeafen:),
 						Event::Disconnect => sel!(disconnectCall:),

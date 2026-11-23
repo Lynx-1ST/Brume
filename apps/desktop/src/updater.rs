@@ -535,6 +535,26 @@ fn release_version(tag: &str) -> Option<semver::Version> {
 }
 fn asset_name(tag: &str) -> Option<String> {
 	if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+		return install::appimage_session().then(|| format!("brume-{tag}-Linux-X64.AppImage"));
+	}
+	let os = if cfg!(target_os = "macos") {
+		"macOS"
+	} else if cfg!(windows) {
+		"Windows"
+	} else {
+		return None;
+	};
+	let arch = if cfg!(target_arch = "aarch64") {
+		"ARM64"
+	} else if cfg!(target_arch = "x86_64") {
+		"X64"
+	} else {
+		return None;
+	};
+	Some(format!("brume-{tag}-{os}-{arch}.zip"))
+}
+fn legacy_asset_name(tag: &str) -> Option<String> {
+	if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
 		return install::appimage_session().then(|| format!("serein-{tag}-Linux-X64.AppImage"));
 	}
 	let os = if cfg!(target_os = "macos") {
@@ -694,15 +714,27 @@ fn select_release(
 			release.tag_name
 		);
 		if asset.browser_download_url != expected {
-			return Err("The asset is not from the Serein release repository.".into());
+			return Err("The asset is not from the Brume release repository.".into());
 		}
 		Ok(asset.clone())
 	};
-	let archive = find(&wanted)?;
+	let (archive, resolved_name) = match find(&wanted) {
+		Ok(asset) => (asset, wanted.clone()),
+		Err(wanted_err) => {
+			if let Some(legacy) = legacy_asset_name(&release.tag_name) {
+				match find(&legacy) {
+					Ok(asset) => (asset, legacy),
+					Err(_) => return Err(wanted_err),
+				}
+			} else {
+				return Err(wanted_err);
+			}
+		}
+	};
 	let checksums = find("SHA256SUMS.txt")?;
-	let zsync = wanted
+	let zsync = resolved_name
 		.ends_with(".AppImage")
-		.then(|| find(&format!("{wanted}.zsync")).ok())
+		.then(|| find(&format!("{resolved_name}.zsync")).ok())
 		.flatten()
 		.filter(|asset| asset.size <= delta::MAX_CONTROL as u64);
 	if checksums.size > 64 * 1024 {

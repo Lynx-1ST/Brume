@@ -79,7 +79,7 @@ if (plan && channel === 'production') {
       successComment: false,
       failComment: false,
       releasedLabels: false,
-      releaseNameTemplate: 'Serein <%= nextRelease.version %>',
+      releaseNameTemplate: 'Brume <%= nextRelease.version %>',
     }],
   );
 }
@@ -126,7 +126,7 @@ if (mode === 'plan') {
       const assets = readdirSync('release-assets')
         .map(name => `release-assets/${name}`);
       execFileSync('gh', ['release', 'create', plan.gitTag, ...assets,
-        '--target', plan.gitHead, '--title', `Serein ${plan.version}`,
+        '--target', plan.gitHead, '--title', `Brume ${plan.version}`,
         '--notes-file', 'target/release-notes.md', '--prerelease', '--latest=false', '--draft'],
       { stdio: 'inherit' });
     }

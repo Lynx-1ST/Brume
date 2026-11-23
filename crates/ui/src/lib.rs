@@ -1220,7 +1220,7 @@ impl MessagingUi {
 					voice_channel: None,
 					channel: None,
 					embed: model::Embed {
-						title: Some("Serein community".into()),
+						title: Some("Brume community".into()),
 						..Default::default()
 					},
 				})),

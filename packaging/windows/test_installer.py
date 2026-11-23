@@ -77,12 +77,12 @@ def main():
     compiler = shutil.which("makensis") or r"C:\Program Files (x86)\NSIS\makensis.exe"
     programs = ctypes.create_unicode_buffer(1024)
     ctypes.OleDLL("shell32").SHGetFolderPathW(None, 2, None, 0, programs)
-    shortcut = Path(programs.value) / "Serein.lnk"
-    uninstall_key = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Serein"
-    assert not shortcut.exists(), "Refusing to overwrite an existing Serein shortcut"
+    shortcut = Path(programs.value) / "Brume.lnk"
+    uninstall_key = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Brume"
+    assert not shortcut.exists(), "Refusing to overwrite an existing Brume shortcut"
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, uninstall_key):
-            raise AssertionError("Refusing to overwrite an existing Serein installation")
+            raise AssertionError("Refusing to overwrite an existing Brume installation")
     except FileNotFoundError:
         pass
     with tempfile.TemporaryDirectory(prefix="serein-installer-offline-") as temporary:

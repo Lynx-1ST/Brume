@@ -75,11 +75,9 @@ fn main() {
 				&& labels.iter().any(|text| text == "Themes")
 		);
 		assert!(labels.iter().any(|text| text == &format!("Search {page}")));
-		assert!(
-			!labels
-				.iter()
-				.any(|text| text.contains("Make Serein yours") || text.contains("A new look."))
-		);
+		assert!(!labels.iter().any(|text| text.contains("Make Brume yours")
+			|| text.contains("Make Serein yours")
+			|| text.contains("A new look.")));
 	}
 	messaging.preview_settings("extensions");
 	for width in [320.0, 1120.0] {

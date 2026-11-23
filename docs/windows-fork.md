@@ -133,23 +133,24 @@ head `814a261959c40aab4957979b325f1cec6c717158`. Nhận một số nhãn và nh�
 `vi-VN`; giữ catalog của fork vì đã bao gồm toàn bộ 2.747 khóa trong PR cùng các chuỗi riêng.
 Các mô tả Cài đặt được biên tập ngắn hơn thay vì chép lại toàn bộ bản dịch.
 
-Workflow **Sync upstream** kiểm tra `ViceVerse-cz/Serein:main` mỗi 6 giờ. Có thể chạy ngay
-bằng **Actions → Sync upstream → Run workflow** trên `main`.
+Việc đồng bộ với upstream làm **bằng tay**. Repo này đã rời mạng lưới fork của
+`ViceVerse-cz/Serein`, nên workflow sync cũ không còn dùng được: nó dựa vào endpoint
+`merge-upstream` vốn chỉ chạy cho fork, và từ chối chạy nếu repo không phải fork của upstream.
 
-Nếu có commit mới, GitHub merge vào `main` của fork và giữ các commit riêng. Không dùng
-force push, reset hoặc ghi đè fork bằng upstream. Khi có xung đột, workflow dừng và báo lỗi
-để chủ fork giải quyết; không tự chọn bỏ một phía của xung đột.
+Khi muốn lấy thay đổi mới:
 
-Sau khi sync, workflow chủ động yêu cầu **Serein Fork CI**, vì các thay đổi do `GITHUB_TOKEN`
-tạo không tự kích hoạt workflow `push`. Khi toàn bộ CI qua, **Windows Release** tự build EXE
-và publish bản nightly của đúng commit đã kiểm tra. Nếu không có commit mới và CI đã được
-yêu cầu cho commit hiện tại, không chạy lại CI hoặc tạo release khác.
+```powershell
+git remote add upstream https://github.com/ViceVerse-cz/Serein.git   # chỉ cần một lần
+git fetch upstream
+git merge upstream/main
+```
 
-Nếu merge đã xong nhưng gửi yêu cầu CI bị lỗi, lượt sync tiếp theo sẽ thử gửi lại yêu cầu.
-Nếu CI đã chạy và thất bại, sửa lỗi hoặc chạy lại CI trong Actions; workflow không lặp build
-cùng commit lỗi mỗi 6 giờ. Theo dõi lỗi/xung đột tại tab Actions của fork.
+Xử lý xung đột tại chỗ rồi đẩy lên `main`. Không dùng force push, reset hoặc ghi đè fork bằng
+upstream; khi xung đột thì giải quyết từng chỗ, không bỏ hẳn một phía.
 
-Lịch GitHub Actions có thể chạy trễ và có thể bị tắt khi repo công khai lâu không hoạt động.
+Đẩy lên `main` sẽ kích hoạt **Serein Fork CI**. Khi toàn bộ CI qua, **Windows Release** tự build
+EXE và publish bản nightly của đúng commit đã kiểm tra.
+
 Chỉ đồng bộ code nhánh `main`; không sao chép binary/Release của upstream.
 
 ## Chat, stream và trạng thái

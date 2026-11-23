@@ -86,7 +86,7 @@ Mã nguồn và kiểm thử tổng hợp không chứng minh mọi chức năng
 
 ## Đồng bộ upstream và CI/CD
 
-- **Sync upstream** chỉ chạy khi được gọi tay trong [GitHub Actions](https://github.com/Lynx-1ST/Serein/actions). Lịch 6 giờ/lần đã bỏ: nó chạy bất kể dự án gốc có commit mới hay không, thường trễ cả tiếng, và một lỗi API thoáng qua sẽ hiện thành lần chạy đỏ không có nội dung gì.
+- Fork này **không còn tự đồng bộ** với dự án gốc. Khi muốn lấy thay đổi từ upstream, merge bằng tay: `git fetch upstream && git merge upstream/main`, xử lý xung đột rồi đẩy lên `main`.
 - Có commit mới thì merge vào fork, giữ các thay đổi riêng; gặp xung đột thì dừng để xử lý, không force push.
 - Sau khi sync, **Serein Fork CI** được yêu cầu chạy. Khi CI của `main` thành công, **Windows Release** build và phát hành nightly của đúng commit đã kiểm tra.
 - Khi merge PR, CI có thể dùng lại kết quả thành công trong 24 giờ nếu cây Git trùng hoàn toàn và đủ mọi job bắt buộc. Nếu không xác minh được, CI chạy đầy đủ.

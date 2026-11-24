@@ -1,5 +1,6 @@
 //! Desktop ownership for a bounded set of explicitly selected screen shares. The choice is an
 //! explicit click; frames are decoded off the render thread and never written to disk.
+use crate::gpu_video::Wake;
 use client_core::{Command, Event, State, screen, voice};
 use discord_voice::{Identity, Status};
 use eframe::egui;
@@ -90,6 +91,16 @@ impl Scheduled {
 			.push_back((frame.picture.with_data(data), presentation));
 		true
 	}
+	/// When the ui next has something to show: `None` for now, else the deadline of the
+	/// earliest queued picture.
+	fn due(&self, now: Instant) -> Option<Instant> {
+		if self.latest.as_ref().is_some_and(|(_, fresh)| *fresh) {
+			return None;
+		}
+		let (_, stamp) = self.pending.front()?;
+		let deadline = stamp.deadline(now);
+		(stamp.is_current() && deadline > now).then_some(deadline)
+	}
 	fn advance(&mut self, now: Instant) -> Option<Instant> {
 		while let Some((_, stamp)) = self.pending.front() {
 			if stamp.is_current() && stamp.deadline(now) > now {
@@ -149,14 +160,16 @@ fn present(
 	texture: &mut crate::gpu_video::VideoTexture,
 	view: &mut ui::StreamView,
 	ctx: &egui::Context,
+	wake: &Wake,
 ) -> bool {
 	let Ok(mut slot) = frames.try_lock() else {
 		// The decoder is storing a picture; look again shortly instead of waiting a frame.
-		ctx.request_repaint_after(Duration::from_millis(5));
+		wake.picture_after(Duration::from_millis(5));
 		return false;
 	};
-	if let Some(deadline) = slot.advance(Instant::now()) {
-		ctx.request_repaint_after(deadline.saturating_duration_since(Instant::now()));
+	let now = Instant::now();
+	if let Some(deadline) = slot.advance(now) {
+		wake.picture_after(deadline.saturating_duration_since(now));
 	}
 	if let Some((picture, fresh)) = slot.latest.as_mut()
 		&& std::mem::take(fresh)
@@ -362,6 +375,40 @@ struct Live {
 	task: JoinHandle<()>,
 	events: watch::Receiver<Option<Notice>>,
 	frames: Arc<Mutex<Scheduled>>,
+	wake: Wake,
+}
+
+/// Stores the streamer's pictures and asks for a frame when the next one is due. Only the
+/// picture changes then, so the request is for a paint-only frame.
+fn sink(frames: Arc<Mutex<Scheduled>>, streamer: u64, wake: Wake) -> discord_voice::VideoSink {
+	Arc::new(move |frame: discord_voice::RemoteFrame| {
+		if frame.user != streamer {
+			return;
+		}
+		let now = Instant::now();
+		let due = frames
+			.lock()
+			.ok()
+			.and_then(|mut slot| slot.store(frame).then(|| slot.due(now)));
+		match due {
+			Some(Some(deadline)) => wake.picture_after(deadline.saturating_duration_since(now)),
+			Some(None) => wake.picture(),
+			None => {}
+		}
+	})
+}
+
+/// `--demo-call-stream-live`: the offline stream stage receives generated pictures through
+/// the same queue, deadlines and wake-ups as a real stream, so playback can be checked and
+/// measured without a call.
+#[cfg(feature = "demo")]
+fn synthetic_stream() -> bool {
+	static LIVE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+	*LIVE.get_or_init(|| std::env::args().any(|arg| arg == "--demo-call-stream-live"))
+}
+#[cfg(not(feature = "demo"))]
+fn synthetic_stream() -> bool {
+	false
 }
 
 #[derive(Default)]
@@ -370,8 +417,28 @@ pub(super) struct Watch {
 	replay: Option<Replay>,
 	streams: Vec<Stream>,
 	sequence: u64,
+	presenter: Option<eframe::PaintOnlyRequester>,
 }
 impl Watch {
+	/// Hands over the renderer's paint-only handle once it exists; `None` keeps full repaints.
+	pub fn set_presenter(&mut self, presenter: Option<eframe::PaintOnlyRequester>) {
+		if self.presenter.is_none() {
+			self.presenter = presenter;
+		}
+	}
+	/// A stream is being received; its pictures are presented by [`Self::paint_only`].
+	pub fn live(&self) -> bool {
+		self.streams.iter().any(|s| s.live())
+	}
+	/// Shows the stream's due picture in the texture the last ui pass drew, without a ui
+	/// pass. `false` when the ui has to run instead: a first picture or another size.
+	pub fn paint_only(&mut self, ctx: &egui::Context) -> bool {
+		let mut ok = true;
+		for stream in &mut self.streams {
+			ok &= stream.paint_only(ctx);
+		}
+		ok
+	}
 	pub fn stop(&mut self) {
 		#[cfg(feature = "demo")]
 		{
@@ -420,7 +487,15 @@ impl Watch {
 		// remain pending and request another frame instead of losing their commands.
 		for stream in &mut self.streams {
 			stream.sequence = self.sequence;
-			let command = stream.poll(runtime, state, ui, ctx, call.clone(), audio.clone());
+			let command = stream.poll(
+				runtime,
+				state,
+				ui,
+				ctx,
+				call.clone(),
+				audio.clone(),
+				self.presenter.clone(),
+			);
 			self.sequence = stream.sequence;
 			if command.is_some() {
 				ui.voice_stream_views.clear();
@@ -472,6 +547,42 @@ impl Stream {
 			sequence: 0,
 			texture: Default::default(),
 			viewers: None,
+		}
+	}
+	pub fn live(&self) -> bool {
+		self.live.is_some()
+	}
+	pub fn paint_only(&mut self, ctx: &egui::Context) -> bool {
+		let Some(live) = &self.live else {
+			return true;
+		};
+		// The decoder holds the lock only while it copies a picture in; its own wake follows.
+		let Ok(mut slot) = live.frames.try_lock() else {
+			return true;
+		};
+		let now = Instant::now();
+		if let Some(deadline) = slot.advance(now) {
+			live.wake
+				.picture_after(deadline.saturating_duration_since(now));
+		}
+		match slot.latest.as_mut() {
+			Some((picture, fresh)) if *fresh => {
+				if !self.texture.fits_picture(&picture.borrow()) {
+					return false;
+				}
+				*fresh = false;
+				if let Some(texture) = self.texture.upload(
+					ctx,
+					&format!("remote-stream-{}", self.view.user),
+					picture.borrow(),
+				) {
+					self.view.texture = Some(texture);
+					true
+				} else {
+					false
+				}
+			}
+			_ => true,
 		}
 	}
 	pub fn stop(&mut self) {
@@ -579,8 +690,9 @@ impl Stream {
 		});
 		let current = self.context();
 		let mut command = None;
+		let synthetic = state.demo && synthetic_stream();
 		if let Some(context) = current
-			&& (state.demo
+			&& ((state.demo && !synthetic)
 				|| wanted
 					!= Some((
 						context.generation,
@@ -616,7 +728,7 @@ impl Stream {
 				}))
 			});
 		}
-		if state.demo {
+		if state.demo && !synthetic {
 			self.view.status = if wanted.is_some() {
 				"Offline preview · no stream is received"
 			} else {
@@ -624,7 +736,23 @@ impl Stream {
 			};
 			return command;
 		}
-		if let Some((generation, channel, request, streamer)) = wanted
+		#[cfg(feature = "demo")]
+		if synthetic
+			&& let Some((generation, channel, request, streamer)) = wanted
+			&& self.live.is_none()
+		{
+			self.sequence = self.sequence.wrapping_add(1);
+			let context = Context {
+				generation,
+				channel,
+				request,
+				stream_request: self.sequence,
+				streamer,
+			};
+			self.start_synthetic(runtime, context, ctx);
+		}
+		if !synthetic
+			&& let Some((generation, channel, request, streamer)) = wanted
 			&& self.context().is_none()
 			&& command.is_none()
 		{
@@ -678,7 +806,7 @@ impl Stream {
 			.is_some_and(|pending| pending.rtc.is_some() && pending.server.is_some())
 		{
 			let pending = self.pending.take().expect("complete stream negotiation");
-			if let Err(error) = self.start(runtime, pending, ctx) {
+			if let Err(error) = self.start(runtime, pending, ctx, presenter) {
 				self.ended = Some((ui::design::Level::Warning, error));
 			}
 		}
@@ -693,7 +821,13 @@ impl Stream {
 			if live.task.is_finished() && self.ended.is_none() {
 				self.ended = Some((ui::design::Level::Warning, "The stream connection ended"));
 			}
-			if present(&live.frames, &mut self.texture, &mut self.view, ctx) {
+			if present(
+				&live.frames,
+				&mut self.texture,
+				&mut self.view,
+				ctx,
+				&live.wake,
+			) {
 				self.view.status = "Watching the stream";
 			}
 		} else {
@@ -718,6 +852,7 @@ impl Stream {
 		runtime: &Runtime,
 		mut pending: Pending,
 		ctx: &egui::Context,
+		presenter: Option<eframe::PaintOnlyRequester>,
 	) -> Result<(), &'static str> {
 		let (rtc_server, rtc_channel) = pending.rtc.take().ok_or("Missing stream RTC identity")?;
 		let (token, endpoint) = pending.server.take().ok_or("Missing stream server")?;
@@ -735,7 +870,8 @@ impl Stream {
 		};
 		let frames = Arc::new(Mutex::new(Scheduled::default()));
 		let streamer = pending.context.streamer;
-		let sink = frame_sink(frames.clone(), ctx.clone(), streamer.0);
+		let pictures = Wake::new(ctx, presenter);
+		let sink = sink(frames.clone(), streamer.0, pictures.clone());
 		let (send, events) = watch::channel(None);
 		let wake = ctx.clone();
 		let identity = pending.identity;
@@ -779,8 +915,64 @@ impl Stream {
 			task,
 			events,
 			frames,
+			wake: pictures,
 		});
 		Ok(())
+	}
+	/// Generated 1080p60 pictures, stamped 80 ms ahead like a jitter-buffered stream.
+	#[cfg(feature = "demo")]
+	fn start_synthetic(
+		&mut self,
+		runtime: &Runtime,
+		context: Context,
+		ctx: &egui::Context,
+		presenter: Option<eframe::PaintOnlyRequester>,
+	) {
+		use platform::video::{Color, Layout, Picture};
+		const SIZE: (u32, u32) = (1920, 1080);
+		let frames = Arc::new(Mutex::new(Scheduled::default()));
+		let wake = Wake::new(ctx, presenter);
+		let sink = sink(frames.clone(), context.streamer.0, wake.clone());
+		let user = context.streamer.0;
+		let task = runtime.spawn(async move {
+			let (width, height) = (SIZE.0 as usize, SIZE.1 as usize);
+			let mut data = vec![128_u8; width * height * 3 / 2];
+			let mut ticks = tokio::time::interval(Duration::from_micros(16_667));
+			let mut frame = 0_usize;
+			loop {
+				ticks.tick().await;
+				frame = frame.wrapping_add(1);
+				// A diagonal ramp that moves a little every picture.
+				for (y, row) in data[..width * height].chunks_exact_mut(width).enumerate() {
+					let start = (y / 4).wrapping_add(frame.wrapping_mul(3)) as u8;
+					for (x, luma) in row.iter_mut().enumerate() {
+						*luma = start.wrapping_add((x / 8) as u8);
+					}
+				}
+				sink(discord_voice::RemoteFrame {
+					presentation: Some(discord_voice::Presentation::new(
+						Instant::now() + Duration::from_millis(80),
+					)),
+					user,
+					picture: Picture {
+						width: SIZE.0,
+						height: SIZE.1,
+						layout: Layout::Nv12,
+						color: Color::WEBRTC,
+						rotation: 0,
+						data: data.as_slice(),
+					},
+				});
+			}
+		});
+		self.view.status = "Watching the stream";
+		self.live = Some(Live {
+			context,
+			task,
+			events: watch::channel(None).1,
+			frames,
+			wake,
+		});
 	}
 }
 impl Drop for Stream {
@@ -947,6 +1139,7 @@ mod tests {
 					task: runtime.spawn(std::future::pending()),
 					events,
 					frames: Arc::new(Mutex::new(Scheduled::default())),
+					wake: Wake::new(&ctx, None),
 				}),
 				ended: None,
 				sequence: 0,

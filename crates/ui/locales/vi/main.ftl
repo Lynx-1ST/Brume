@@ -320,6 +320,9 @@ attachments-media-menu-unavailable-for-synthetic-attachments = Không dùng đư
 # Context: open_original
 attachments-open-original-open-original = Mở bản gốc…
 # Context: pending_card
+attachments-mark-spoiler = Đánh dấu tệp đính kèm là nội dung tiết lộ
+attachments-remove-spoiler = Bỏ đánh dấu nội dung tiết lộ
+attachments-spoiler-label = Nội dung tiết lộ
 attachments-pending-card-remove-attachment = Xóa tệp đính kèm
 # Context: pending_viewer
 attachments-pending-viewer-full-size-unavailable = Không thể xem trước kích thước đầy đủ
@@ -6151,3 +6154,7 @@ native-login-error-verification-expired = Xác minh đã hết hạn. Vui lòng 
 # Context: interface_tree
 interface-ui-empty = Plugin này chưa có gì để hiển thị.
 
+group-add-title = Thêm bạn bè vào nhóm DM
+group-add-subtitle = Chọn bạn bè để thêm vào nhóm này.
+group-add-full = Nhóm này đã đạt giới hạn 10 người.
+group-add-confirm = Thêm bạn

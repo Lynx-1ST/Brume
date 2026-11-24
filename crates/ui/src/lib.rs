@@ -2413,15 +2413,21 @@ impl MessagingUi {
 													ui.add(image);
 												}
 												if let Some(subtitle) = subtitle {
-													if activities
-														.first()
-														.is_some_and(profiles::is_spotify)
-													{
+													// `subtitle` only falls back to the custom
+													// status when there is no activity, and that
+													// already carries its own emoji above.
+													if let Some(activity) = activities.first() {
+														let spotify =
+															profiles::is_spotify(activity);
 														icons::inline(
 															ui,
-															icons::Icon::Spotify,
+															profiles::activity_glyph(activity),
 															12.0,
-															colors.positive,
+															if spotify {
+																colors.positive
+															} else {
+																colors.muted
+															},
 														);
 													}
 													ui.add(

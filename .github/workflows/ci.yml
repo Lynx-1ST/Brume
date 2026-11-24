@@ -1,7 +1,7 @@
 name: Brume CI
 on:
-  push:
-    branches: [ main ]
+  # Disabled automatic push to main so merges/direct pushes don't block on 30min CI.
+  # Can be triggered manually via Actions tab -> Run workflow.
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch:

@@ -800,12 +800,12 @@ fn activity_row(
 		let mut ui = ui.new_child(UiBuilder::new().max_rect(icon));
 		avatars.show_icon(&mut ui, Some(image.key()), 24.0, demo, &activity.name);
 	} else {
-		let glyph = if is_spotify(activity) {
-			Icon::Spotify
-		} else {
-			Icon::GameController
-		};
-		icons::paint(ui.painter(), glyph, icon.shrink(2.0), muted);
+		icons::paint(
+			ui.painter(),
+			activity_glyph(activity),
+			icon.shrink(2.0),
+			muted,
+		);
 	}
 	let chevron = Rect::from_center_size(
 		pos2(rect.right() - 18.0, rect.center().y),
@@ -1700,6 +1700,21 @@ fn with_local_activity<'a>(
 
 pub(crate) fn is_spotify(activity: &model::RichActivity) -> bool {
 	activity.kind == 2 && activity.name.eq_ignore_ascii_case("Spotify")
+}
+
+/// Stands in for an activity that has no artwork of its own, which is every activity the client
+/// detects locally rather than receiving as Rich Presence. The kinds match `activity_verb`.
+pub(crate) fn activity_glyph(activity: &model::RichActivity) -> Icon {
+	if is_spotify(activity) {
+		return Icon::Spotify;
+	}
+	match activity.kind {
+		1 => Icon::ScreenShare,
+		2 => Icon::Headphones,
+		3 => Icon::Eye,
+		5 => Icon::Crown,
+		_ => Icon::GameController,
+	}
 }
 
 fn activity_verb(activity: &model::RichActivity) -> String {

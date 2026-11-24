@@ -674,6 +674,7 @@ impl Stream {
 		ctx: &egui::Context,
 		call: Option<super::screen::Call<'_>>,
 		audio: Option<std::sync::mpsc::SyncSender<discord_voice::PlaybackFrame>>,
+		presenter: Option<eframe::PaintOnlyRequester>,
 	) -> Option<Command> {
 		let streamer = self.view.user;
 		let wanted = state.voice.active.as_ref().and_then(|active| {
@@ -749,7 +750,7 @@ impl Stream {
 				stream_request: self.sequence,
 				streamer,
 			};
-			self.start_synthetic(runtime, context, ctx);
+			self.start_synthetic(runtime, context, ctx, presenter.clone());
 		}
 		if !synthetic
 			&& let Some((generation, channel, request, streamer)) = wanted
@@ -1043,6 +1044,7 @@ mod tests {
 			stream_request,
 		};
 		let mut owner = Watch::default();
+		let ctx = egui::Context::default();
 		for (user, token) in [(Id(3), 10), (Id(7), 11)] {
 			let mut stream = Stream::new(user);
 			stream.viewers = Some((
@@ -1057,6 +1059,7 @@ mod tests {
 				task: runtime.spawn(std::future::pending()),
 				events: watch::channel(None).1,
 				frames: Arc::new(Mutex::new(Scheduled::default())),
+				wake: Wake::new(&ctx, None),
 			});
 			owner.streams.push(stream);
 		}
@@ -1078,7 +1081,6 @@ mod tests {
 		});
 		owner.observe(&state, &mut event);
 		let mut ui = ui::MessagingUi::default();
-		let ctx = egui::Context::default();
 		assert!(matches!(
 			owner.poll(&runtime, &mut state, &mut ui, &ctx, None, None),
 			Some(Command::Voice(voice::Command::StopWatching {
@@ -1172,7 +1174,7 @@ mod tests {
 				state.voice.active.as_mut().unwrap().phase = phase;
 				assert!(
 					watch
-						.poll(&runtime, &mut state, &mut ui, &ctx, None, None)
+						.poll(&runtime, &mut state, &mut ui, &ctx, None, None, None)
 						.is_none()
 				);
 				assert!(watch.live.is_some());
@@ -1187,7 +1189,7 @@ mod tests {
 				state.stop_watching();
 			}
 			assert!(matches!(
-				watch.poll(&runtime, &mut state, &mut ui, &ctx, None, None),
+				watch.poll(&runtime, &mut state, &mut ui, &ctx, None, None, None),
 				Some(Command::Voice(voice::Command::StopWatching {
 					channel, request, stream_request: 2,
 				})) if channel == context.channel && request == context.request

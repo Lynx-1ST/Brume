@@ -116,41 +116,10 @@ impl Scheduled {
 	}
 }
 
-/// Decoder output: keep the watched user's pictures and wake the UI when one is due.
-///
-/// Pictures are decoded ahead of their presentation time. Waking the UI on decode as well
-/// ran a full UI pass that had nothing new to show, doubling the passes per stream frame.
-fn frame_sink(
-	slot: Arc<Mutex<Scheduled>>,
-	wake: egui::Context,
-	streamer: u64,
-) -> discord_voice::VideoSink {
-	frame_sink_at(slot, wake, streamer, Instant::now)
-}
-
-fn frame_sink_at(
-	slot: Arc<Mutex<Scheduled>>,
-	wake: egui::Context,
-	streamer: u64,
-	now: impl Fn() -> Instant + Send + Sync + 'static,
-) -> discord_voice::VideoSink {
-	Arc::new(move |frame: discord_voice::RemoteFrame| {
-		if frame.user != streamer && frame.user != 0 {
-			return;
-		}
-		let now = now();
-		let due = frame
-			.presentation
-			.as_ref()
-			.map(|presentation| presentation.deadline(now).saturating_duration_since(now));
-		if slot.lock().is_ok_and(|mut slot| slot.store(frame)) {
-			match due {
-				Some(delay) => wake.request_repaint_after(delay),
-				None => wake.request_repaint(),
-			}
-		}
-	})
-}
+// `frame_sink` and `frame_sink_at` lived here and did the job `sink` below now does. The
+// merge brought upstream's version, which wakes the UI through `Wake` for a paint-only frame
+// instead of a full pass, so the two coexisted and behaved differently depending on which
+// feature flags were on. Only `sink` remains.
 
 /// Moves due pictures forward and uploads the newest one; true when a new picture is shown.
 /// Uploading copies the planes into GPU staging, so it runs under the slot lock and the
@@ -232,7 +201,7 @@ impl Watch {
 				.unwrap_or(30);
 			let frames = Arc::new(Mutex::new(Scheduled::default()));
 			let wake = Wake::new(ctx, self.presenter.clone());
-			let sink = frame_sink(frames.clone(), ctx.clone(), streamer.0);
+			let sink = sink(frames.clone(), streamer.0, wake.clone());
 			let (stop, decoded) = (
 				Arc::new(AtomicBool::new(false)),
 				Arc::new(AtomicU64::new(0)),
@@ -669,6 +638,9 @@ impl Stream {
 			}
 		}
 	}
+	// Upstream's `poll` reaches the presenter through `self`; this fork takes it per call so a
+	// caller can start a stream before the field is set. That is one argument past the lint.
+	#[allow(clippy::too_many_arguments)]
 	pub fn poll(
 		&mut self,
 		runtime: &Runtime,
@@ -1226,30 +1198,10 @@ mod tests {
 
 	/// Decoding runs ahead of presentation; waking the UI on decode too ran a full UI pass
 	/// with nothing new to show, doubling the passes per stream frame.
-	#[test]
-	fn decoded_pictures_wake_the_ui_when_due_not_when_decoded() {
-		let ctx = egui::Context::default();
-		let delays = Arc::new(Mutex::new(Vec::new()));
-		let seen = delays.clone();
-		ctx.set_request_repaint_callback(move |info| seen.lock().unwrap().push(info.delay));
-		let now = Instant::now();
-		let sink = frame_sink_at(Arc::default(), ctx.clone(), 7, move || now);
-		let data = i420(4, 4, 9);
-		let mut scheduled = frame(4, 4, &data);
-		scheduled.presentation = Some(discord_voice::Presentation::new(
-			now + Duration::from_millis(80),
-		));
-		sink(scheduled);
-		let mut other = frame(4, 4, &data);
-		other.user = 8;
-		sink(other);
-		let requested = std::mem::take(&mut *delays.lock().unwrap());
-		assert_eq!(requested.len(), 1, "{requested:?}");
-		assert!(requested[0] > Duration::ZERO, "{requested:?}");
-		// Pictures without a presentation time are shown as soon as they arrive.
-		sink(frame(4, 4, &data));
-		assert_eq!(*delays.lock().unwrap(), [Duration::ZERO]);
-	}
+	// The fork's `decoded_pictures_wake_the_ui_when_due_not_when_decoded` stood here. It
+	// exercised `frame_sink_at`, which no longer exists, and covered the same ground as
+	// upstream's `decoded_stream_pictures_wait_for_presentation_and_pressure_skips_only_decoded_frames`
+	// below, which tests the implementation that survived.
 
 	#[test]
 	fn watch_reuses_the_frame_buffer_and_flags_only_updates() {

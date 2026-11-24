@@ -487,6 +487,7 @@ mod tests {
 			discriminator: 0,
 			primary_guild: None,
 			cosmetics: None,
+			username: None,
 		};
 		let owner = make_user(1);
 		let friend = make_user(2);

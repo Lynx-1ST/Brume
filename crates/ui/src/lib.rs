@@ -46,6 +46,7 @@ mod extension_server_actions;
 mod extensions_ui;
 mod interface_tweaks;
 mod interface_ui;
+pub mod loading_screen;
 mod new_message;
 pub mod proxy_auth;
 mod rich_presence;

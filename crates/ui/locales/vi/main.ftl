@@ -1729,6 +1729,8 @@ main-restoring-screen-serein = Brume
 main-restoring-screen-use-a-different-account = Sử dụng một tài khoản khác
 # Context: restoring_screen
 main-restoring-screen-welcome-back = Chào mừng trở lại
+main-restoring-step-credentials = Phiên đã lưu
+main-restoring-step-gateway = Máy chủ Discord
 # Context: sign_in_accounts
 main-sign-in-accounts-saved-accounts = Tài khoản đã lưu
 # Context: sign_in_consent

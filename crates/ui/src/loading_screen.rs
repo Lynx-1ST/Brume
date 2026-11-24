@@ -30,7 +30,7 @@ fn ease_in_out_cubic(t: f32) -> f32 {
 
 pub fn elapsed_seconds(ctx: &egui::Context) -> f32 {
 	let now = ctx.input(|i| i.time);
-	let id = egui::Id::new("brume-restore-clock");
+	let id = egui::Id::unique("brume-restore-clock");
 	let start = ctx.data_mut(|data| {
 		let start = match data.get_temp::<(f64, f64)>(id) {
 			Some((start, last_seen)) if now >= last_seen && now - last_seen <= 0.5 => start,
@@ -571,7 +571,7 @@ mod tests {
 				paint_backdrop(ui, rect, elapsed);
 				egui::CentralPanel::default()
 					.frame(Frame::NONE)
-					.show_inside(ui, |ui| {
+					.show(ui, |ui| {
 						stage_card(ui, 420.0, elapsed, |ui| {
 							brand_lockup(ui, "Brume", elapsed);
 							account_pill(ui, "Alice Example", Some("alice"));

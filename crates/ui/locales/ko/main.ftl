@@ -315,6 +315,9 @@ attachments-media-menu-unavailable-for-synthetic-attachments = 테스트용 첨�
 # Context: open_original
 attachments-open-original-open-original = 원본 열기…
 # Context: pending_card
+attachments-mark-spoiler = 첨부 파일을 스포일러로 표시
+attachments-remove-spoiler = 첨부 파일의 스포일러 표시 해제
+attachments-spoiler-label = 스포일러
 attachments-pending-card-remove-attachment = 첨부 파일 제거
 # Context: pending_viewer
 attachments-pending-viewer-full-size-unavailable = 전체 크기 미리보기를 사용할 수 없음
@@ -6067,3 +6070,8 @@ native-login-about-storage = 메시지와 임시 저장본은 이 기기에 캐�
 ## crates/ui/src/interface_ui.rs
 # Context: interface_tree
 interface-ui-empty = 이 플러그인은 아직 표시할 항목이 없습니다.
+
+group-add-title = DM에 친구 추가
+group-add-subtitle = 이 그룹에 추가할 친구를 선택하세요.
+group-add-full = 이 그룹은 최대 인원인 10명에 도달했습니다.
+group-add-confirm = 친구 추가

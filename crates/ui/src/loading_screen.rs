@@ -562,7 +562,8 @@ mod tests {
 			egui::Visuals::light()
 		});
 		let rect = Rect::from_min_size(Pos2::ZERO, size);
-		let _ = ctx.run_ui(
+		// Fonts upload a texture on the first frame; epaint panics if that delta is dropped.
+		let mut output = ctx.run_ui(
 			egui::RawInput {
 				screen_rect: Some(rect),
 				..Default::default()
@@ -581,6 +582,7 @@ mod tests {
 					});
 			},
 		);
+		output.textures_delta.clear();
 	}
 
 	#[test]
@@ -601,7 +603,7 @@ mod tests {
 		let ctx = egui::Context::default();
 		let step_time = |time: f64| -> f32 {
 			let mut out = 0.0;
-			let _ = ctx.run_ui(
+			let mut output = ctx.run_ui(
 				egui::RawInput {
 					time: Some(time),
 					..Default::default()
@@ -610,6 +612,7 @@ mod tests {
 					out = elapsed_seconds(ui.ctx());
 				},
 			);
+			output.textures_delta.clear();
 			out
 		};
 

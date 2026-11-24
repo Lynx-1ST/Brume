@@ -315,6 +315,9 @@ attachments-media-menu-unavailable-for-synthetic-attachments = Unavailable for s
 # Context: open_original
 attachments-open-original-open-original = Open original…
 # Context: pending_card
+attachments-mark-spoiler = Mark attachment as spoiler
+attachments-remove-spoiler = Remove attachment spoiler
+attachments-spoiler-label = Spoiler
 attachments-pending-card-remove-attachment = Remove attachment
 # Context: pending_viewer
 attachments-pending-viewer-full-size-unavailable = Full-size preview unavailable
@@ -6074,3 +6077,7 @@ native-login-error-verification-expired = Verification expired. Start the check 
 # Context: interface_tree
 interface-ui-empty = This plugin has nothing to show yet.
 
+group-add-title = Add Friends to DM
+group-add-subtitle = Choose a friend to add to this group.
+group-add-full = This group has reached the 10-person limit.
+group-add-confirm = Add Friend

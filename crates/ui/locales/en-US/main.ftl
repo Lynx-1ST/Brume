@@ -1724,6 +1724,8 @@ main-restoring-screen-serein = Brume
 main-restoring-screen-use-a-different-account = Use a different account
 # Context: restoring_screen
 main-restoring-screen-welcome-back = Welcome back
+main-restoring-step-credentials = Saved login
+main-restoring-step-gateway = Discord gateway
 # Context: sign_in_accounts
 main-sign-in-accounts-saved-accounts = Saved accounts
 # Context: sign_in_disclosures

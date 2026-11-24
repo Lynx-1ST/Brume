@@ -18,7 +18,8 @@ SetCompressor /SOLID lzma
 !define PRODUCT_NAME "Brume"
 !define PRODUCT_PUBLISHER "Brume contributors"
 !define PRODUCT_WEB_SITE "https://github.com/Lynx-1ST/Brume"
-!define APP_EXE "serein.exe"
+!define APP_EXE "brume.exe"
+!define LEGACY_APP_EXE "serein.exe"
 !define APP_ID "cz.viceverse.serein"
 
 !ifndef VERSION
@@ -42,11 +43,17 @@ SetCompressor /SOLID lzma
 !endif
 
 Name "${PRODUCT_NAME} ${VERSION}"
-OutFile "${OUTPUT_DIR}\serein-${VERSION}-setup.exe"
+OutFile "${OUTPUT_DIR}\brume-${VERSION}-setup.exe"
 InstallDir "$LOCALAPPDATA\Programs\Brume"
 InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_ID}" "InstallLocation"
 
-!if /FileExists "packaging\windows\Serein.ico"
+!if /FileExists "packaging\windows\Brume.ico"
+  !define MUI_ICON "packaging\windows\Brume.ico"
+  !define MUI_UNICON "packaging\windows\Brume.ico"
+!else if /FileExists "${__FILEDIR__}\Brume.ico"
+  !define MUI_ICON "${__FILEDIR__}\Brume.ico"
+  !define MUI_UNICON "${__FILEDIR__}\Brume.ico"
+!else if /FileExists "packaging\windows\Serein.ico"
   !define MUI_ICON "packaging\windows\Serein.ico"
   !define MUI_UNICON "packaging\windows\Serein.ico"
 !else if /FileExists "${__FILEDIR__}\Serein.ico"
@@ -200,9 +207,10 @@ Section "MainSection" SEC01
 
   ; Copy all package payload files
   File /r /x install-notifications.ps1 /x setup.ps1 "${DIST_DIR}\*.*"
-  ; Remove legacy installer utilities when upgrading an existing installation.
+  ; Remove legacy installer utilities and legacy executable when upgrading an existing installation.
   Delete "$INSTDIR\install-notifications.ps1"
   Delete "$INSTDIR\setup.ps1"
+  Delete "$INSTDIR\${LEGACY_APP_EXE}"
 
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"

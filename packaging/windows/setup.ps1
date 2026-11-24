@@ -20,7 +20,7 @@ $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) "$appName.lnk"
 $legacyShortcut = Join-Path ([Environment]::GetFolderPath('Programs')) "$legacyAppName.lnk"
 
 # Check if Brume/serein is currently running
-$running = Get-Process serein -ErrorAction SilentlyContinue
+$running = Get-Process brume, serein -ErrorAction SilentlyContinue
 if ($running) {
     if ($Quiet) {
         $running | Stop-Process -Force
@@ -60,14 +60,19 @@ if ($Uninstall) {
 
 # Install
 $distDir = $PSScriptRoot
-$executable = Join-Path $distDir 'serein.exe'
+$executableName = if (Test-Path -LiteralPath (Join-Path $distDir 'brume.exe')) { 'brume.exe' } else { 'serein.exe' }
+$executable = Join-Path $distDir $executableName
 if (!(Test-Path -LiteralPath $executable)) {
-    $candidate = Join-Path (Join-Path $distDir '..\..\dist') 'serein.exe'
+    $candidate = Join-Path (Join-Path $distDir '..\..\dist') 'brume.exe'
+    if (!(Test-Path -LiteralPath $candidate)) {
+        $candidate = Join-Path (Join-Path $distDir '..\..\dist') 'serein.exe'
+    }
     if (Test-Path -LiteralPath $candidate) {
         $distDir = (Resolve-Path (Join-Path $distDir '..\..\dist')).Path
         $executable = $candidate
+        $executableName = Split-Path -Leaf $candidate
     } else {
-        throw "serein.exe not found in $distDir. Run this script from the release package directory or build the project first."
+        throw "Neither brume.exe nor serein.exe found in $distDir. Run this script from the release package directory or build the project first."
     }
 }
 
@@ -88,7 +93,7 @@ if (Test-Path -LiteralPath $notificationScript) {
 # Determine version
 $version = '0.1.0'
 try {
-    $versionInfo = (Get-Item -LiteralPath (Join-Path $installDir 'serein.exe')).VersionInfo.ProductVersion
+    $versionInfo = (Get-Item -LiteralPath (Join-Path $installDir $executableName)).VersionInfo.ProductVersion
     if ($versionInfo) { $version = $versionInfo }
 } catch {}
 
@@ -101,7 +106,7 @@ $uninstallCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$inst
 Set-ItemProperty -LiteralPath $uninstallKey -Name 'DisplayName' -Value $appName
 Set-ItemProperty -LiteralPath $uninstallKey -Name 'DisplayVersion' -Value $version
 Set-ItemProperty -LiteralPath $uninstallKey -Name 'Publisher' -Value $publisher
-Set-ItemProperty -LiteralPath $uninstallKey -Name 'DisplayIcon' -Value "$installDir\serein.exe,0"
+Set-ItemProperty -LiteralPath $uninstallKey -Name 'DisplayIcon' -Value "$installDir\$executableName,0"
 Set-ItemProperty -LiteralPath $uninstallKey -Name 'InstallLocation' -Value $installDir
 Set-ItemProperty -LiteralPath $uninstallKey -Name 'UninstallString' -Value $uninstallCmd
 Set-ItemProperty -LiteralPath $uninstallKey -Name 'QuietUninstallString' -Value "$uninstallCmd -Quiet"

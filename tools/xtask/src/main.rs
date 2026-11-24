@@ -337,6 +337,10 @@ fn package() -> Result<(), String> {
 		std::fs::rename(&staging, &destination).map_err(|e| e.to_string())?;
 	} else {
 		std::fs::copy(&source, &destination).map_err(|e| e.to_string())?;
+		if cfg!(windows) {
+			let brume_dest = root.join("brume.exe");
+			std::fs::copy(&source, &brume_dest).map_err(|e| e.to_string())?;
+		}
 	}
 	for file in [
 		"README.md",

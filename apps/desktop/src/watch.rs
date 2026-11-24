@@ -196,6 +196,7 @@ struct Replay {
 	decoded: Arc<std::sync::atomic::AtomicU64>,
 	uploads: u64,
 	report: (Instant, u64, u64, u64),
+	wake: Wake,
 }
 
 #[cfg(feature = "demo")]
@@ -230,6 +231,7 @@ impl Watch {
 				.filter(|fps| (1..=120).contains(fps))
 				.unwrap_or(30);
 			let frames = Arc::new(Mutex::new(Scheduled::default()));
+			let wake = Wake::new(ctx, self.presenter.clone());
 			let sink = frame_sink(frames.clone(), ctx.clone(), streamer.0);
 			let (stop, decoded) = (
 				Arc::new(AtomicBool::new(false)),
@@ -299,6 +301,7 @@ impl Watch {
 					decoded,
 					uploads: 0,
 					report: (Instant::now(), 0, 0, ctx.cumulative_pass_nr()),
+					wake,
 				});
 			}
 		}
@@ -323,7 +326,7 @@ impl Watch {
 			None => return,
 		};
 		let view = &mut ui.voice_stream_views[index];
-		if present(&replay.frames, &mut replay.texture, view, ctx) {
+		if present(&replay.frames, &mut replay.texture, view, ctx, &replay.wake) {
 			replay.uploads += 1;
 			view.status = "Offline replay · recorded lab stream";
 		}

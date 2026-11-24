@@ -96,7 +96,12 @@ async function main() {
     return JSON.parse(text);
   };
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-  const run = process.env.GITHUB_EVENT_NAME === 'workflow_run'
+  // Checked before it reaches a request path; `releaseSource` stops on an unexpected repository
+  // anyway, so leaving `run` undefined here lets it report that rather than crash.
+  const repository = allowedRepositories.includes(process.env.GITHUB_REPOSITORY)
+    ? process.env.GITHUB_REPOSITORY
+    : undefined;
+  const run = repository && process.env.GITHUB_EVENT_NAME === 'workflow_run'
     ? await api(`/repos/${repository}/actions/runs/${event.workflow_run.id}`) : undefined;
   const result = await releaseSource(api, { repo: process.env.GITHUB_REPOSITORY,
     eventName: process.env.GITHUB_EVENT_NAME, ref: process.env.GITHUB_REF,

@@ -1,4 +1,4 @@
-# Bản Windows — Brume (trước đây là Lynx-1ST/Serein)
+# Bản Windows — Brume (trước đây là Lynx-1ST/Brume)
 
 ## Đổi nhận diện: Serein → Brume
 
@@ -15,7 +15,7 @@ Dự án đã rời mạng lưới fork của `ViceVerse-cz/Serein` để trở 
 
 ## Tải và chọn tiếng Việt
 
-Tải bản Windows x64 từ [GitHub Releases của fork](https://github.com/Lynx-1ST/Serein/releases).
+Tải bản Windows x64 từ [GitHub Releases của fork](https://github.com/Lynx-1ST/Brume/releases).
 Dùng `-Setup.exe` để cài đặt, hoặc giải nén `.zip` để chạy bản portable.
 Bản `.exe` độc lập cũng được đính kèm; gói ZIP có thêm giấy phép và công cụ đăng ký thông báo.
 
@@ -198,7 +198,7 @@ dừng, không force push. CI #13 qua đủ kiểm tra sẽ tự merge và phát
 - CI native chỉ dùng runner Windows x64.
 - **Serein Fork CI** chạy kiểm tra một lần trên mỗi thay đổi vào `main`; không build gói release.
 - **Windows Release** tự merge PR do chủ fork tạo sau khi CI của đúng commit mới nhất qua,
-  rồi build và phát hành EXE. Chỉ nhận PR trong `Lynx-1ST/Serein` nhắm vào `main`, không nhận
+  rồi build và phát hành EXE. Chỉ nhận PR trong `Lynx-1ST/Brume` nhắm vào `main`, không nhận
   PR từ fork khác. Không còn workflow riêng **Publish approved PR**.
   Nếu cây mã sau merge giống bản đã kiểm tra, không chạy lại toàn bộ CI; nếu khác, yêu cầu
   CI cho `main` rồi mới phát hành. Thiếu check, check bị bỏ qua hoặc kết quả quá 24 giờ sẽ dừng.
@@ -215,7 +215,7 @@ dừng, không force push. CI #13 qua đủ kiểm tra sẽ tự merge và phát
   Sync dùng token tích hợp với `contents: write` và `actions: write`; không cần PAT hoặc khóa ký
   macOS trong cấu hình thông thường. Nếu chính sách GitHub chặn merge, workflow báo lỗi thay vì
   tìm cách vượt quyền. Workflow release đa nền tảng của upstream không chạy trong fork.
-- Updater của bản fork chỉ nhận gói từ `Lynx-1ST/Serein`. Nightly thuộc kênh cập nhật nightly;
+- Updater của bản fork chỉ nhận gói từ `Lynx-1ST/Brume`. Nightly thuộc kênh cập nhật nightly;
   bản ổn định thuộc kênh production. Tên ZIP và định dạng checksum giữ tương thích updater.
   Các nút GitHub/báo lỗi trong trang Updates cũng trỏ về fork này.
 

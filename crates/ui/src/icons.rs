@@ -80,7 +80,7 @@ pub enum Icon {
 	Copy,
 	Verified,
 	Calendar,
-	Serein,
+	Brume,
 	File,
 	FileImage,
 	FilePdf,
@@ -137,6 +137,8 @@ pub enum Icon {
 }
 
 impl Icon {
+	#[allow(non_upper_case_globals)]
+	pub const Serein: Icon = Icon::Brume;
 	/// Canonical atlas cells; Forward reuses the mirrored Reply cell.
 	pub const ALL: [Icon; 112] = [
 		Icon::ChevronDown,
@@ -200,7 +202,7 @@ impl Icon {
 		Icon::Copy,
 		Icon::Verified,
 		Icon::Calendar,
-		Icon::Serein,
+		Icon::Brume,
 		Icon::File,
 		Icon::FileImage,
 		Icon::FilePdf,
@@ -319,7 +321,7 @@ impl Icon {
 			Icon::Copy => "copy",
 			Icon::Verified => "seal-check",
 			Icon::Calendar => "calendar-blank",
-			Icon::Serein => "serein-mark",
+			Icon::Brume => "serein-mark",
 			Icon::File => "file",
 			Icon::FileImage => "file-image",
 			Icon::FilePdf => "file-pdf",

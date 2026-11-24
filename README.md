@@ -4,14 +4,14 @@
 
 Giao diện chính chạy native; đăng nhập sử dụng trang Discord chính thức trong WebView2 tạm thời.
 
-[**Tải bản Windows**](https://github.com/Lynx-1ST/Serein/releases) · [Hướng dẫn chi tiết](docs/windows-fork.md) · [Báo lỗi](https://github.com/Lynx-1ST/Serein/issues) · [Dự án gốc](https://github.com/ViceVerse-cz/Serein)
+[**Tải bản Windows**](https://github.com/Lynx-1ST/Brume/releases) · [Hướng dẫn chi tiết](docs/windows-fork.md) · [Báo lỗi](https://github.com/Lynx-1ST/Brume/issues) · [Dự án gốc](https://github.com/ViceVerse-cz/Serein)
 
 <p align="center">
   <img src="docs/preview.png" alt="Giao diện Brume — ảnh minh họa từ dự án gốc" width="900" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/Lynx-1ST/Serein/releases"><img src="https://img.shields.io/github/v/release/Lynx-1ST/Serein?include_prereleases&label=Windows%20release" alt="Bản phát hành Windows" /></a>
+  <a href="https://github.com/Lynx-1ST/Brume/releases"><img src="https://img.shields.io/github/v/release/Lynx-1ST/Brume?include_prereleases&label=Windows%20release" alt="Bản phát hành Windows" /></a>
   <a href=".github/workflows/ci.yml"><img src="https://img.shields.io/badge/platform-Windows%20x64-blue" alt="Windows x64" /></a>
   <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.99.1-orange?logo=rust" alt="Rust 1.99.1" /></a>
   <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green" alt="MIT hoặc Apache-2.0" /></a>
@@ -22,7 +22,7 @@ Giao diện chính chạy native; đăng nhập sử dụng trang Discord chính
 
 ## Tải và cài đặt
 
-Fork này chỉ phát hành **Windows x64**. Mở [GitHub Releases của Lynx-1ST/Serein](https://github.com/Lynx-1ST/Serein/releases) và chọn gói phù hợp:
+Fork này chỉ phát hành **Windows x64**. Mở [GitHub Releases của Lynx-1ST/Brume](https://github.com/Lynx-1ST/Brume/releases) và chọn gói phù hợp:
 
 | Gói | Cách dùng |
 | --- | --- |
@@ -37,7 +37,7 @@ Fork này chỉ phát hành **Windows x64**. Mở [GitHub Releases của Lynx-1S
 
 ### Cập nhật trong ứng dụng
 
-Updater của fork lấy bản phát hành từ **Lynx-1ST/Serein**. Vào phần **Cập nhật** trong cài đặt để kiểm tra; chọn kênh **nightly** nếu đang dùng các bản `-nightly`, hoặc kênh **production** cho bản ổn định.
+Updater của fork lấy bản phát hành từ **Lynx-1ST/Brume**. Vào phần **Cập nhật** trong cài đặt để kiểm tra; chọn kênh **nightly** nếu đang dùng các bản `-nightly`, hoặc kênh **production** cho bản ổn định.
 
 Bản cài từ upstream hoặc bản fork cũ chưa đổi địa chỉ updater cần được thay bằng bản EXE của fork trước. Bản portable cần nằm trong thư mục có quyền ghi để cập nhật được.
 
@@ -98,7 +98,7 @@ Mã nguồn và kiểm thử tổng hợp không chứng minh mọi chức năng
 Cần Git, Rust theo [toolchain đã ghim](rust-toolchain.toml), Visual Studio C++ Build Tools với Windows SDK, CMake và libclang. Đăng nhập cần WebView2. Xem thêm [yêu cầu nền tảng](docs/platform-support.md).
 
 ```powershell
-git clone https://github.com/Lynx-1ST/Serein.git
+git clone https://github.com/Lynx-1ST/Brume.git
 cd Serein
 
 # Xem giao diện bằng dữ liệu tổng hợp
@@ -122,7 +122,7 @@ Build từ source dùng thư mục dữ liệu `serein-development`, tách khỏ
 - [Đăng nhập](docs/authentication.md) · [Tương thích Discord](docs/discord-compatibility.md)
 - [Kiến trúc](docs/architecture.md) · [Voice](docs/voice.md) · [Extension](docs/extensions.md)
 - [Lưu trữ dữ liệu](docs/storage-policy.md) · [Mô hình bảo mật](docs/threat-model.md)
-- [Báo lỗi cho fork](https://github.com/Lynx-1ST/Serein/issues): ghi phiên bản, phiên bản Windows, các bước tái hiện và ảnh nếu cần. Không gửi token hoặc thông tin đăng nhập.
+- [Báo lỗi cho fork](https://github.com/Lynx-1ST/Brume/issues): ghi phiên bản, phiên bản Windows, các bước tái hiện và ảnh nếu cần. Không gửi token hoặc thông tin đăng nhập.
 
 ## Ghi công và giấy phép
 

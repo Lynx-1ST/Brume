@@ -28,7 +28,7 @@ impl Monitor {
 		let watched = state.clone();
 		runtime.spawn(async move {
 			if let Err(error) = watch(&watched, &wake).await {
-				eprintln!("Session end monitor unavailable ({error}); logout may wait for Serein.");
+				eprintln!("Session end monitor unavailable ({error}); logout may wait for Brume.");
 			}
 		});
 		Some(Self { state })

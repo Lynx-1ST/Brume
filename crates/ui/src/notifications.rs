@@ -82,7 +82,7 @@ fn direct_call(state: &State) -> Option<Id> {
 }
 
 fn home_request_label(friends: u32, messages: u32) -> String {
-	let mut parts = vec!["Direct Messages".to_owned()];
+	let mut parts = vec![crate::i18n::translate("direct-messages")];
 	if friends > 0 {
 		parts.push(if friends == 1 {
 			"1 friend request".into()
@@ -347,7 +347,7 @@ impl MessagingUi {
 				);
 				crate::icons::paint(
 					ui.painter(),
-					crate::icons::Icon::Serein,
+					crate::icons::Icon::Brume,
 					rect.shrink(9.0),
 					colors.text.lerp_to_gamma(colors.accent_text, lit),
 				);

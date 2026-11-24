@@ -198,15 +198,17 @@ fn installation() -> Result<PathBuf, String> {
 		let root = exe
 			.parent()
 			.ok_or("Cannot locate the installed application folder.")?;
-		if exe.file_name().is_none_or(|name| name != "serein.exe")
+		if exe
+			.file_name()
+			.is_none_or(|name| name != "serein.exe" && name != "brume.exe")
 			|| !root.join("THIRD_PARTY_NOTICES.md").is_file()
 			|| !root.join("licenses").is_dir()
 		{
-			return Err("Run Serein from an extracted release package to install updates; source builds cannot replace themselves.".into());
+			return Err("Run Brume from an extracted release package to install updates; source builds cannot replace themselves.".into());
 		}
 		Ok(root.to_owned())
 	} else {
-		Err("Use your package manager to update Serein on Linux.".into())
+		Err("Use your package manager to update Brume on Linux.".into())
 	}
 }
 
@@ -231,7 +233,7 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 		.open(&lock_path)
 		.map_err(|_| "The installation folder is not writable.".to_owned())?;
 	lock.try_lock()
-		.map_err(|_| "Another Serein instance is preparing update storage.".to_owned())?;
+		.map_err(|_| "Another Brume instance is preparing update storage.".to_owned())?;
 	// One bounded staging directory per installation; discard leftovers only after their owner exits.
 	let mut count = 0;
 	for entry in
@@ -239,7 +241,7 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 	{
 		count += 1;
 		if count > 16_384 {
-			return Err("The installation folder contains too many entries. Move Serein into its own folder.".into());
+			return Err("The installation folder contains too many entries. Move Brume into its own folder.".into());
 		}
 		let entry = entry.map_err(|_| "Cannot inspect update storage.".to_owned())?;
 		let name = entry.file_name();
@@ -265,7 +267,7 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 			.is_some_and(process_alive);
 		if helper_alive || (pid != std::process::id() && process_alive(pid)) {
 			return Err(
-				"Another Serein instance is preparing an update. Close it and try again.".into(),
+				"Another Brume instance is preparing an update. Close it and try again.".into(),
 			);
 		}
 		if fs::read(entry.path().join("owner")).ok().as_deref() != Some(b"serein-updater-v1") {
@@ -302,7 +304,7 @@ pub(super) fn create_stage() -> Result<Staged, String> {
 		use std::os::unix::fs::DirBuilderExt;
 		builder.mode(0o700);
 	}
-	builder.create(&directory).map_err(|_| "The installation folder is not writable. Move Serein to a writable folder and try again.".to_owned())?;
+	builder.create(&directory).map_err(|_| "The installation folder is not writable. Move Brume to a writable folder and try again.".to_owned())?;
 	fs::write(directory.join("owner"), b"serein-updater-v1")
 		.map_err(|_| "Cannot mark update storage ownership.".to_owned())?;
 	Ok(Staged {
@@ -711,7 +713,8 @@ pub(super) fn unpack(
 			return Err("The update does not contain Serein.app.".into());
 		}
 		verify_mac(&destination.join("Serein.app"), installed)?;
-	} else if !destination.join("serein.exe").is_file()
+	} else if (!destination.join("serein.exe").is_file()
+		&& !destination.join("brume.exe").is_file())
 		|| !destination.join("licenses").is_dir()
 		|| !destination.join("THIRD_PARTY_NOTICES.md").is_file()
 	{
@@ -892,7 +895,7 @@ pub(super) fn prepare_restart(
 		}
 		let _ = child.kill();
 		let _ = child.wait();
-		Err("The update helper did not start. Serein will remain open.".into())
+		Err("The update helper did not start. Brume will remain open.".into())
 	}
 }
 
@@ -981,11 +984,15 @@ try {
     Move-Item -LiteralPath $source -Destination $target
     $replaced.Add($name)
   }
-  $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Serein'
+  $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Brume'
+  if (!(Test-Path -LiteralPath $uninstallKey)) {
+    $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Serein'
+  }
   if ($plan.version -and (Test-Path -LiteralPath $uninstallKey)) {
     Set-ItemProperty -LiteralPath $uninstallKey -Name 'DisplayVersion' -Value ([string]$plan.version) -ErrorAction SilentlyContinue
   }
-  Start-Process -FilePath (Join-Path $installation 'serein.exe') -WorkingDirectory $installation
+  $exeName = if (Test-Path -LiteralPath (Join-Path $installation 'brume.exe')) { 'brume.exe' } else { 'serein.exe' }
+  Start-Process -FilePath (Join-Path $installation $exeName) -WorkingDirectory $installation
 } catch {
   foreach ($name in $replaced) {
     $target = Join-Path $installation $name
@@ -994,7 +1001,8 @@ try {
   foreach ($name in $moved) {
     Move-Item -LiteralPath (Join-Path $backup $name) -Destination (Join-Path $installation $name) -ErrorAction SilentlyContinue
   }
-  Start-Process -FilePath (Join-Path $installation 'serein.exe') -WorkingDirectory $installation -ErrorAction SilentlyContinue
+  $exeName = if (Test-Path -LiteralPath (Join-Path $installation 'brume.exe')) { 'brume.exe' } else { 'serein.exe' }
+  Start-Process -FilePath (Join-Path $installation $exeName) -WorkingDirectory $installation -ErrorAction SilentlyContinue
   exit 1
 }
 try {

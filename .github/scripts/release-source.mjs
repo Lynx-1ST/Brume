@@ -1,7 +1,7 @@
 import { appendFileSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-const repository = 'Lynx-1ST/Serein';
+const allowedRepositories = ['Lynx-1ST/Brume', 'Lynx-1ST/Serein'];
 const requiredJobs = ['verified-source', 'preflight', 'native (windows-latest)',
   'fork-automation', 'extension-sdk', 'security', 'licenses', 'fuzz'];
 const validSha = sha => /^[a-f0-9]{40}$/.test(sha ?? '');
@@ -9,16 +9,16 @@ const stopped = note => ({ ready: false, verified: false, note });
 
 // Only trusted default-branch code runs here. Never execute a PR script with merge permissions.
 export async function releaseSource(api, { repo, eventName, ref, sha, run, now = Date.now() }) {
-  if (repo !== repository) return stopped('Unexpected repository.');
+  if (!allowedRepositories.includes(repo)) return stopped('Unexpected repository.');
   if (eventName !== 'workflow_run') {
     if (!validSha(sha) || !(ref === 'refs/heads/main' || ref?.startsWith('refs/tags/v')))
       return stopped('Manual releases require main or a version tag.');
     return { ready: true, verified: false, sha, note: 'Manual release: workspace validation is required.' };
   }
-  const root = `/repos/${repository}`;
+  const root = `/repos/${repo}`;
   const workflow = await api(`${root}/actions/workflows/ci.yml`);
   if (run?.workflow_id !== workflow.id || run.path !== '.github/workflows/ci.yml'
-      || run.repository?.full_name !== repository || run.head_repository?.full_name !== repository
+      || !allowedRepositories.includes(run.repository?.full_name) || !allowedRepositories.includes(run.head_repository?.full_name)
       || !validSha(run.head_sha) || run.status !== 'completed' || run.conclusion !== 'success')
     return stopped('No successful CI from this repository.');
   let source = run.head_sha;
@@ -37,12 +37,12 @@ export async function releaseSource(api, { repo, eventName, ref, sha, run, now =
       return stopped('PR checks are stale.');
     const pulls = await api(`${root}/commits/${source}/pulls?per_page=100`);
     const candidate = pulls.find(pr => pr.head?.sha === source && pr.base?.ref === 'main'
-      && pr.head.repo?.full_name === repository && pr.base.repo?.full_name === repository
+      && allowedRepositories.includes(pr.head.repo?.full_name) && allowedRepositories.includes(pr.base.repo?.full_name)
       && pr.user?.login?.toLowerCase() === 'lynx-1st' && !pr.draft);
     if (!candidate) return stopped('No owner-authored PR from this fork targets main.');
     const pr = await api(`${root}/pulls/${candidate.number}`);
-    if (pr.head?.sha !== source || pr.head.repo?.full_name !== repository
-        || pr.base?.ref !== 'main' || pr.base.repo?.full_name !== repository
+    if (pr.head?.sha !== source || !allowedRepositories.includes(pr.head.repo?.full_name)
+        || pr.base?.ref !== 'main' || !allowedRepositories.includes(pr.base.repo?.full_name)
         || pr.user?.login?.toLowerCase() !== 'lynx-1st' || pr.draft)
       return stopped('PR source or scope changed.');
     if (pr.merged) {

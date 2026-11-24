@@ -3367,12 +3367,12 @@ impl Desktop {
 					None
 				}
 				Command::Website => {
-					ctx.open_url(egui::OpenUrl::new_tab("https://github.com/Lynx-1ST/Serein"));
+					ctx.open_url(egui::OpenUrl::new_tab("https://github.com/Lynx-1ST/Brume"));
 					None
 				}
 				Command::ReportIssue => {
 					ctx.open_url(egui::OpenUrl::new_tab(
-						"https://github.com/Lynx-1ST/Serein/issues/new/choose",
+						"https://github.com/Lynx-1ST/Brume/issues/new/choose",
 					));
 					None
 				}
@@ -6928,7 +6928,7 @@ impl eframe::App for Desktop {
 						ui.painter().rect_filled(rect, 8, p.accent);
 						ui::icons::paint(
 							ui.painter(),
-							ui::icons::Icon::Serein,
+							ui::icons::Icon::Brume,
 							rect.shrink(7.0),
 							p.accent_text,
 						);

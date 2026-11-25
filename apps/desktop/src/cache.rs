@@ -515,8 +515,8 @@ fn coalesce_pending(
 			continue;
 		}
 		if let Operation::DeleteMessages { channel, ids } = operation {
-			if let Some(last) = batch.last_mut()
-				&& batch.len() > barrier_index
+			if batch.len() > barrier_index
+				&& let Some(last) = batch.last_mut()
 				&& last.account == account
 				&& let Operation::DeleteMessages {
 					channel: prev_channel,
@@ -550,7 +550,7 @@ fn coalesce_pending(
 			&& let Some(prev) = batch[barrier_index..]
 				.iter_mut()
 				.rev()
-				.find(|item| coalesce_key(item.account, &item.operation) == Some(key))
+				.find(|item| coalesce_key(item.account, &item.operation).as_ref() == Some(&key))
 		{
 			prev.extra_generations.push(prev.generation);
 			prev.generation = generation;

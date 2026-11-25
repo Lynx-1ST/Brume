@@ -355,28 +355,11 @@ impl Desktop {
 			.is_some()
 			.then(|| ui::i18n::translate("main-restoring-connecting-to-discord"))
 	}
-	/// Restore screen for returning accounts: no sign-in controls, just the stage,
-	/// a two-step progress indicator and a way out to the welcome screen.
+	/// Restore screen for returning accounts: clean centered brand splash,
+	/// a single animated progress line, and a way out to the welcome screen.
 	pub(super) fn restoring_screen(&mut self, ui: &mut egui::Ui, stage: &str) {
 		let p = ui::design::palette(ui);
 		let screen = self.extensions.start_screen();
-		let checking_store = self
-			.store
-			.as_ref()
-			.is_some_and(|store| store.remaining(std::time::Instant::now()).is_some())
-			|| (cfg!(feature = "demo")
-				&& self.fixture_only
-				&& std::env::args().any(|arg| arg == "--demo-restoring"));
-		let step = if checking_store {
-			ui::loading_screen::RestoreStep::CheckingLogin
-		} else {
-			ui::loading_screen::RestoreStep::Connecting
-		};
-		let returning_account = self
-			.switching
-			.and_then(|id| self.messaging.accounts.iter().find(|saved| saved.id == id))
-			.or_else(|| self.messaging.accounts.first())
-			.map(|saved| (saved.label().to_owned(), saved.handle().map(str::to_owned)));
 		let brand = ui::i18n::translate("main-restoring-screen-serein");
 		egui::CentralPanel::default()
 			.frame(egui::Frame::NONE.fill(ui::design::window_palette(ui).canvas))
@@ -417,67 +400,49 @@ impl Desktop {
 							);
 						});
 					});
-				let card_half = if returning_account.is_some() {
-					195.0
-				} else {
-					165.0
-				};
 				ui.vertical_centered(|ui| {
 					ui.add_space(
-						(ui.available_height() * 0.5 - card_half - self.start_screen.lift())
-							.max(12.0),
+						(ui.available_height() * 0.5 - 120.0 - self.start_screen.lift()).max(24.0),
 					);
-					let card_width = screen
-						.as_ref()
-						.and_then(|s| s.screen().window)
-						.map_or(400.0, |w| f32::from(w.width).clamp(388.0, 560.0));
-					ui::loading_screen::stage_card(ui, card_width, elapsed, |ui| {
-						ui.vertical_centered(|ui| {
-							// A granted plugin's screen replaces the mark and copy with its own images
-							// and text; the progress steps and the way out below always stay.
-							self.start_screen.header(
+					// A granted plugin's screen replaces the mark and copy with its own images
+					// and text; the progress line and the way out below always stay.
+					self.start_screen.header(
+						ui,
+						screen,
+						|ui| ui::loading_screen::brand_lockup(ui, &brand, elapsed),
+						&ui::i18n::translate("main-restoring-screen-welcome-back"),
+						&format!("{stage}…"),
+					);
+					ui.add_space(22.0);
+					let bar_width = ui.available_width().min(240.0);
+					ui::loading_screen::progress_line(ui, bar_width, elapsed);
+					ui.add_space(28.0);
+					ui.allocate_ui_with_layout(
+						egui::vec2(ui.available_width().min(240.0), 0.0),
+						egui::Layout::top_down(egui::Align::Center),
+						|ui| {
+							if ui::design::secondary_button(
 								ui,
-								screen,
-								|ui| ui::loading_screen::brand_lockup(ui, &brand, elapsed),
-								&ui::i18n::translate("main-restoring-screen-welcome-back"),
-								&format!("{stage}…"),
-							);
-							if let Some((name, handle)) = &returning_account {
-								ui.add_space(18.0);
-								ui::loading_screen::account_pill(ui, name, handle.as_deref());
+								&ui::i18n::translate(
+									"main-restoring-screen-use-a-different-account",
+								),
+							)
+							.clicked()
+							{
+								if let Some(store) = &mut self.store {
+									store.cancel_load();
+								}
+								self.connection = None;
+								self.pending_save = None;
+								self.pending_account_save = None;
+								self.state.auth = AuthState::Unauthenticated;
+								self.state.status = "Disconnected";
+								self.credential_status = "";
 							}
-							ui.add_space(22.0);
-							let bar_width = ui.available_width().min(300.0);
-							ui::loading_screen::progress_steps(ui, bar_width, step, elapsed);
-							ui.add_space(22.0);
-							ui.allocate_ui_with_layout(
-								egui::vec2(ui.available_width().min(260.0), 0.0),
-								egui::Layout::top_down(egui::Align::Center),
-								|ui| {
-									if ui::design::secondary_button(
-										ui,
-										&ui::i18n::translate(
-											"main-restoring-screen-use-a-different-account",
-										),
-									)
-									.clicked()
-									{
-										if let Some(store) = &mut self.store {
-											store.cancel_load();
-										}
-										self.connection = None;
-										self.pending_save = None;
-										self.pending_account_save = None;
-										self.state.auth = AuthState::Unauthenticated;
-										self.state.status = "Disconnected";
-										self.credential_status = "";
-									}
-								},
-							);
-							// Sizes plugin images so the button keeps clear padding below it.
-							self.start_screen.end(ui);
-						});
-					});
+						},
+					);
+					// Sizes plugin images so the button keeps clear padding below it.
+					self.start_screen.end(ui);
 				});
 			});
 	}

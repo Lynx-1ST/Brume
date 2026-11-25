@@ -1,18 +1,9 @@
-use crate::design::{
-	has_window_background, medium, mix, paint_avatar, palette, semibold_family, window_palette,
-};
-use crate::i18n::translate;
+use crate::design::{palette, semibold_family};
 use crate::icons::{self, Icon};
 use egui::{
-	Color32, CornerRadius, FontId, Frame, Margin, Mesh, Pos2, Rect, Sense, Shadow, Shape, Stroke,
-	StrokeKind, Ui, UiBuilder, Vec2, epaint::Vertex, pos2, vec2,
+	Color32, FontId, Mesh, Pos2, Rect, Sense, Shape, Stroke, StrokeKind, Ui, Vec2, epaint::Vertex,
+	pos2, vec2,
 };
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RestoreStep {
-	CheckingLogin,
-	Connecting,
-}
 
 fn ease_out_cubic(t: f32) -> f32 {
 	let t = t.clamp(0.0, 1.0);
@@ -99,7 +90,7 @@ pub fn paint_backdrop(ui: &Ui, rect: Rect, elapsed: f32) {
 	let center = pos2(rect.center().x, rect.center().y - 20.0);
 	let rx = (rect.width() * 0.38).clamp(220.0, 460.0);
 	let ry = (rect.height() * 0.36).clamp(160.0, 320.0);
-	let primary_alpha = (if dark { 0.13 } else { 0.07 }) * intro * breath;
+	let primary_alpha = (if dark { 0.14 } else { 0.075 }) * intro * breath;
 	paint_elliptical_glow(
 		&painter,
 		center,
@@ -107,222 +98,68 @@ pub fn paint_backdrop(ui: &Ui, rect: Rect, elapsed: f32) {
 		p.accent.gamma_multiply(primary_alpha),
 	);
 
-	let secondary_center = pos2(center.x + rx * 0.26, center.y - ry * 0.20);
-	let secondary_alpha = (if dark { 0.05 } else { 0.035 }) * intro;
+	let secondary_center = pos2(center.x + rx * 0.24, center.y - ry * 0.18);
+	let secondary_alpha = (if dark { 0.055 } else { 0.035 }) * intro;
 	paint_elliptical_glow(
 		&painter,
 		secondary_center,
 		vec2(rx * 0.52, ry * 0.52),
 		p.link.gamma_multiply(secondary_alpha),
 	);
-
-	if !has_window_background(ui) && rect.width() >= 760.0 && rect.height() >= 480.0 {
-		let fill = p
-			.muted
-			.gamma_multiply((if dark { 0.05 } else { 0.07 }) * intro);
-		let line = p
-			.border
-			.gamma_multiply((if dark { 0.35 } else { 0.45 }) * intro);
-		let stroke = Stroke::new(1.0, line);
-
-		let rail_right = rect.left() + 68.0;
-		let sidebar_right = rect.left() + 296.0;
-		let header_bottom = rect.top() + 48.0;
-
-		// Server rail
-		painter.line_segment(
-			[
-				pos2(rail_right, rect.top()),
-				pos2(rail_right, rect.bottom()),
-			],
-			stroke,
-		);
-		painter.rect_filled(
-			Rect::from_min_size(
-				pos2(rect.left() + 14.0, rect.top() + 14.0),
-				vec2(40.0, 40.0),
-			),
-			12.0,
-			fill,
-		);
-		painter.line_segment(
-			[
-				pos2(rect.left() + 18.0, rect.top() + 64.0),
-				pos2(rect.left() + 50.0, rect.top() + 64.0),
-			],
-			stroke,
-		);
-		for i in 0..5 {
-			let cy = rect.top() + 94.0 + i as f32 * 52.0;
-			let alpha = (1.0 - i as f32 * 0.16).max(0.2);
-			painter.circle_filled(
-				pos2(rect.left() + 34.0, cy),
-				20.0,
-				fill.gamma_multiply(alpha),
-			);
-		}
-
-		// Channel sidebar
-		painter.line_segment(
-			[
-				pos2(sidebar_right, rect.top()),
-				pos2(sidebar_right, rect.bottom()),
-			],
-			stroke,
-		);
-		painter.rect_filled(
-			Rect::from_min_size(
-				pos2(rect.left() + 84.0, rect.top() + 18.0),
-				vec2(120.0, 12.0),
-			),
-			6.0,
-			fill,
-		);
-		painter.line_segment(
-			[
-				pos2(rail_right, header_bottom),
-				pos2(sidebar_right, header_bottom),
-			],
-			stroke,
-		);
-
-		let sidebar_bars: &[(f32, f32, f32)] = &[
-			(66.0, 76.0, 8.0),
-			(86.0, 140.0, 10.0),
-			(114.0, 112.0, 10.0),
-			(142.0, 156.0, 10.0),
-			(170.0, 128.0, 10.0),
-			(206.0, 88.0, 8.0),
-			(226.0, 148.0, 10.0),
-			(254.0, 118.0, 10.0),
-			(282.0, 134.0, 10.0),
-		];
-		for &(y_off, w, h) in sidebar_bars {
-			painter.rect_filled(
-				Rect::from_min_size(pos2(rect.left() + 84.0, rect.top() + y_off), vec2(w, h)),
-				h * 0.5,
-				fill,
-			);
-		}
-
-		let account_top = rect.bottom() - 52.0;
-		painter.rect_filled(
-			Rect::from_min_max(
-				pos2(rail_right, account_top),
-				pos2(sidebar_right, rect.bottom()),
-			),
-			0.0,
-			fill,
-		);
-		painter.line_segment(
-			[
-				pos2(rail_right, account_top),
-				pos2(sidebar_right, account_top),
-			],
-			stroke,
-		);
-
-		// Main pane
-		painter.line_segment(
-			[
-				pos2(sidebar_right, header_bottom),
-				pos2(rect.right(), header_bottom),
-			],
-			stroke,
-		);
-		let composer = Rect::from_min_max(
-			pos2(rect.left() + 316.0, rect.bottom() - 60.0),
-			pos2(rect.right() - 20.0, rect.bottom() - 16.0),
-		);
-		painter.rect_stroke(composer, 10.0, stroke, StrokeKind::Inside);
-	}
-}
-
-pub fn stage_card<R>(
-	ui: &mut Ui,
-	max_width: f32,
-	elapsed: f32,
-	add: impl FnOnce(&mut Ui) -> R,
-) -> R {
-	let dark = ui.visuals().dark_mode;
-	let p = palette(ui);
-	let intro = ease_out_cubic((elapsed / 0.65).clamp(0.0, 1.0));
-	let card_width = max_width.min((ui.available_width() - 32.0).max(240.0));
-	let surface = mix(
-		window_palette(ui).surface.to_opaque(),
-		p.raised.to_opaque(),
-		0.25,
-	);
-
-	let response = Frame::new()
-		.fill(surface)
-		.corner_radius(CornerRadius::same(20))
-		.stroke(Stroke::new(1.0, p.border))
-		.shadow(Shadow {
-			offset: [0, 12],
-			blur: 32,
-			spread: 0,
-			color: Color32::from_black_alpha(if dark { 110 } else { 28 }),
-		})
-		.inner_margin(Margin::symmetric(32, 28))
-		.show(ui, |ui| {
-			ui.set_width((card_width - 64.0).max(160.0));
-			add(ui)
-		});
-
-	let card_rect = response.response.rect;
-	if card_rect.width() > 40.0 {
-		let highlight = p
-			.accent
-			.gamma_multiply((if dark { 0.35 } else { 0.22 }) * intro);
-		ui.painter().line_segment(
-			[
-				pos2(card_rect.left() + 20.0, card_rect.top() + 0.5),
-				pos2(card_rect.right() - 20.0, card_rect.top() + 0.5),
-			],
-			Stroke::new(1.0, highlight),
-		);
-	}
-
-	response.inner
 }
 
 pub fn brand_lockup(ui: &mut Ui, brand: &str, elapsed: f32) {
 	let p = palette(ui);
-	let font_id = FontId::new(25.0, semibold_family(ui.ctx()));
+	let intro = ease_out_cubic((elapsed / 0.45).clamp(0.0, 1.0));
+	let lift = (1.0 - intro) * 8.0;
+	let font_id = FontId::new(28.0, semibold_family(ui.ctx()));
 	let measure = ui
 		.painter()
 		.layout_no_wrap(brand.to_uppercase(), font_id.clone(), p.text_strong);
 	let word_w = measure.size().x;
 
+	let mark_size = 64.0;
+	let gap = 16.0;
 	let mut expand = ease_in_out_cubic(((elapsed - 0.18) / 0.68).clamp(0.0, 1.0));
-	if 56.0 + 14.0 + word_w > ui.available_width() {
+	if mark_size + gap + word_w > ui.available_width() {
 		expand = 0.0;
 	}
 
-	let total_w = 56.0 + (14.0 + word_w) * expand;
+	let total_w = mark_size + (gap + word_w) * expand;
 	let avail = ui.available_width();
-	let (outer, _) = ui.allocate_exact_size(vec2(avail.max(total_w), 64.0), Sense::hover());
-	let row = Rect::from_center_size(outer.center(), vec2(total_w, 64.0));
-	let mark = Rect::from_min_size(pos2(row.left(), row.center().y - 28.0), vec2(56.0, 56.0));
+	let (outer, _) = ui.allocate_exact_size(vec2(avail.max(total_w), 72.0), Sense::hover());
+	let row = Rect::from_center_size(
+		pos2(outer.center().x, outer.center().y + lift),
+		vec2(total_w, 72.0),
+	);
+	let mark = Rect::from_min_size(
+		pos2(row.left(), row.center().y - mark_size * 0.5),
+		vec2(mark_size, mark_size),
+	);
 
 	let halo = mark.expand(4.0 + 1.5 * (elapsed * 2.0).sin().abs());
 	ui.painter().rect_stroke(
 		halo,
-		17.0,
-		Stroke::new(1.0, p.accent.gamma_multiply(0.28)),
+		19.0,
+		Stroke::new(1.0, p.accent.gamma_multiply(0.28 * intro)),
 		StrokeKind::Outside,
 	);
-	ui.painter().rect_filled(mark, 14.0, p.accent);
-	icons::paint(ui.painter(), Icon::Brume, mark.shrink(13.0), p.accent_text);
+	ui.painter()
+		.rect_filled(mark, 16.0, p.accent.gamma_multiply(intro));
+	icons::paint(
+		ui.painter(),
+		Icon::Brume,
+		mark.shrink(14.0),
+		p.accent_text.gamma_multiply(intro),
+	);
 
 	if (0.30..=1.15).contains(&elapsed) {
 		let t = ((elapsed - 0.30) / (1.15 - 0.30)).clamp(0.0, 1.0);
 		let cx = egui::lerp((mark.left() - 28.0)..=(mark.right() + 28.0), t);
 		let shine_painter = ui.painter().with_clip_rect(mark);
-		let peak = Color32::from_white_alpha(95);
+		let peak = Color32::from_white_alpha(105);
 		let half_w = 14.0;
-		let tilt = 9.0;
+		let tilt = 10.0;
 		let mut mesh = Mesh::default();
 		for &(y, shift) in &[(mark.top(), tilt), (mark.bottom(), -tilt)] {
 			for &(dx, color) in &[
@@ -347,174 +184,31 @@ pub fn brand_lockup(ui: &mut Ui, brand: &str, elapsed: f32) {
 
 	if expand > 0.01 {
 		let clip = Rect::from_min_max(
-			pos2(mark.right() + 14.0, row.top()),
-			pos2(mark.right() + 14.0 + word_w * expand, row.bottom()),
+			pos2(mark.right() + gap, row.top()),
+			pos2(mark.right() + gap + word_w * expand, row.bottom()),
 		);
-		let text_color = p.text_strong.gamma_multiply(expand);
+		let text_color = p.text_strong.gamma_multiply(expand * intro);
 		let galley = ui
 			.painter()
 			.layout_no_wrap(brand.to_uppercase(), font_id, text_color);
-		let pos = pos2(mark.right() + 14.0, row.center().y - galley.size().y * 0.5);
+		let pos = pos2(mark.right() + gap, row.center().y - galley.size().y * 0.5);
 		ui.painter()
 			.with_clip_rect(clip)
 			.galley(pos, galley, text_color);
 	}
 }
 
-pub fn account_pill(ui: &mut Ui, name: &str, handle: Option<&str>) {
+pub fn progress_line(ui: &mut Ui, width: f32, elapsed: f32) {
 	let p = palette(ui);
-	let pill_w = ui.available_width().min(296.0);
-	let avail = ui.available_width();
-	let (outer, _) = ui.allocate_exact_size(vec2(avail.max(pill_w), 48.0), Sense::hover());
-	let rect = Rect::from_center_size(outer.center(), vec2(pill_w, 48.0));
-
-	ui.painter().rect(
-		rect,
-		12.0,
-		p.base,
-		Stroke::new(1.0, p.border),
-		StrokeKind::Inside,
-	);
-
-	let avatar_rect = Rect::from_min_size(
-		pos2(rect.left() + 10.0, rect.center().y - 15.0),
-		vec2(30.0, 30.0),
-	);
-	paint_avatar(ui, name, 30.0, avatar_rect);
-
-	let dot_center = pos2(avatar_rect.right() - 3.0, avatar_rect.bottom() - 3.0);
-	ui.painter().circle_filled(dot_center, 5.5, p.base);
-	ui.painter().circle_filled(dot_center, 3.5, p.accent);
-
-	let text_left = rect.left() + 50.0;
-	let text_right = (rect.right() - 14.0).max(text_left);
-	let handle = handle.filter(|h| !h.is_empty());
-
-	let text_height = if handle.is_some() { 34.0 } else { 18.0 };
-	let text_rect = Rect::from_min_max(
-		pos2(text_left, rect.center().y - text_height * 0.5),
-		pos2(text_right, rect.center().y + text_height * 0.5),
-	);
-
-	ui.scope_builder(UiBuilder::new().max_rect(text_rect), |ui| {
-		ui.spacing_mut().item_spacing.y = 0.0;
-		ui.add(egui::Label::new(medium(ui, name, 14.0).color(p.text_strong)).truncate());
-		if let Some(h) = handle {
-			ui.add(
-				egui::Label::new(
-					egui::RichText::new(format!("@{h}"))
-						.size(12.0)
-						.color(p.muted),
-				)
-				.truncate(),
-			);
-		}
-	});
-}
-
-pub fn progress_steps(ui: &mut Ui, width: f32, step: RestoreStep, elapsed: f32) {
-	let p = palette(ui);
+	let dark = ui.visuals().dark_mode;
 	let width = width.min(ui.available_width()).max(120.0);
 	let avail = ui.available_width();
+	let height = 3.5;
 
-	let step1_text = translate("main-restoring-step-credentials");
-	let step2_text = translate("main-restoring-step-gateway");
-	let font_id = FontId::proportional(12.0);
-	let pulse = 0.72 + 0.28 * (elapsed * 3.0).sin().abs();
-
-	let step1_color = match step {
-		RestoreStep::CheckingLogin => p.text_strong,
-		RestoreStep::Connecting => p.text,
-	};
-	let step2_color = match step {
-		RestoreStep::CheckingLogin => p.muted,
-		RestoreStep::Connecting => p.text_strong,
-	};
-
-	let galley1 = ui
-		.painter()
-		.layout_no_wrap(step1_text, font_id.clone(), step1_color);
-	let galley2 = ui
-		.painter()
-		.layout_no_wrap(step2_text, font_id, step2_color);
-
-	let badge_icon_w = 16.0;
-	let step1_w = badge_icon_w + galley1.size().x;
-	let step2_w = badge_icon_w + galley2.size().x;
-	let connector_gap = 8.0;
-	let connector_len = 14.0;
-	let combined_w = step1_w + connector_gap * 2.0 + connector_len + step2_w;
-
-	let (row1_outer, _) = ui.allocate_exact_size(vec2(avail.max(width), 18.0), Sense::hover());
-
-	let paint_step1 = |painter: &egui::Painter, left: f32, cy: f32| {
-		match step {
-			RestoreStep::Connecting => {
-				let icon_rect = Rect::from_center_size(pos2(left + 6.0, cy), vec2(12.0, 12.0));
-				icons::paint(painter, Icon::Check, icon_rect, p.positive);
-			}
-			RestoreStep::CheckingLogin => {
-				painter.circle_filled(pos2(left + 6.0, cy), 3.0, p.accent.gamma_multiply(pulse));
-			}
-		}
-		let text_pos = pos2(left + badge_icon_w, cy - galley1.size().y * 0.5);
-		painter.galley(text_pos, galley1, step1_color);
-	};
-
-	let paint_step2 = |painter: &egui::Painter, left: f32, cy: f32| {
-		match step {
-			RestoreStep::Connecting => {
-				painter.circle_filled(pos2(left + 6.0, cy), 3.0, p.accent.gamma_multiply(pulse));
-			}
-			RestoreStep::CheckingLogin => {
-				painter.circle_filled(pos2(left + 6.0, cy), 2.5, p.muted.gamma_multiply(0.45));
-			}
-		}
-		let text_pos = pos2(left + badge_icon_w, cy - galley2.size().y * 0.5);
-		painter.galley(text_pos, galley2, step2_color);
-	};
-
-	let cy = row1_outer.center().y;
-	let row1_painter = ui.painter().with_clip_rect(row1_outer);
-	if combined_w <= width {
-		let start_x = row1_outer.center().x - combined_w * 0.5;
-		paint_step1(&row1_painter, start_x, cy);
-		let conn_start = start_x + step1_w + connector_gap;
-		let conn_end = conn_start + connector_len;
-		let conn_color = if step == RestoreStep::Connecting {
-			p.accent.gamma_multiply(0.6)
-		} else {
-			p.border
-		};
-		row1_painter.line_segment(
-			[pos2(conn_start, cy), pos2(conn_end, cy)],
-			Stroke::new(1.5, conn_color),
-		);
-		paint_step2(&row1_painter, conn_end + connector_gap, cy);
-	} else {
-		match step {
-			RestoreStep::CheckingLogin => {
-				let start_x = row1_outer.center().x - step1_w * 0.5;
-				paint_step1(&row1_painter, start_x, cy);
-			}
-			RestoreStep::Connecting => {
-				let start_x = row1_outer.center().x - step2_w * 0.5;
-				paint_step2(&row1_painter, start_x, cy);
-			}
-		}
-	}
-
-	ui.add_space(10.0);
-
-	let (track_outer, _) = ui.allocate_exact_size(vec2(avail.max(width), 5.0), Sense::hover());
-	let track = Rect::from_center_size(track_outer.center(), vec2(width, 5.0));
-	ui.painter().rect(
-		track,
-		3.0,
-		p.base,
-		Stroke::new(1.0, p.border.gamma_multiply(0.5)),
-		StrokeKind::Inside,
-	);
+	let (track_outer, _) = ui.allocate_exact_size(vec2(avail.max(width), height), Sense::hover());
+	let track = Rect::from_center_size(track_outer.center(), vec2(width, height));
+	let track_bg = p.muted.gamma_multiply(if dark { 0.18 } else { 0.14 });
+	ui.painter().rect_filled(track, height * 0.5, track_bg);
 
 	let phase = 0.5 - 0.5 * (elapsed * 2.2).cos();
 	let span = track.width() * 0.42;
@@ -545,15 +239,16 @@ pub fn progress_steps(ui: &mut Ui, width: f32, step: RestoreStep, elapsed: f32) 
 		mesh.add_triangle(col, col + 5, col + 4);
 	}
 	clip_painter.add(Shape::mesh(mesh));
-	clip_painter.circle_filled(pos2(inner_a, track.center().y), 2.5, p.accent);
-	clip_painter.circle_filled(pos2(inner_b, track.center().y), 2.5, p.link);
+	clip_painter.circle_filled(pos2(inner_a, track.center().y), height * 0.5, p.accent);
+	clip_painter.circle_filled(pos2(inner_b, track.center().y), height * 0.5, p.link);
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use egui::Frame;
 
-	fn run_scene(dark: bool, size: Vec2, step: RestoreStep, elapsed: f32) {
+	fn run_scene(dark: bool, size: Vec2, elapsed: f32) {
 		let ctx = egui::Context::default();
 		crate::design::apply(&ctx);
 		ctx.set_visuals(if dark {
@@ -573,12 +268,8 @@ mod tests {
 				egui::CentralPanel::default()
 					.frame(Frame::NONE)
 					.show(ui, |ui| {
-						stage_card(ui, 420.0, elapsed, |ui| {
-							brand_lockup(ui, "Brume", elapsed);
-							account_pill(ui, "Alice Example", Some("alice"));
-							account_pill(ui, "Bob", None);
-							progress_steps(ui, 296.0, step, elapsed);
-						});
+						brand_lockup(ui, "Brume", elapsed);
+						progress_line(ui, 240.0, elapsed);
 					});
 			},
 		);
@@ -586,13 +277,11 @@ mod tests {
 	}
 
 	#[test]
-	fn renders_across_themes_sizes_steps_and_times() {
+	fn renders_across_themes_sizes_and_times() {
 		for dark in [false, true] {
 			for size in [vec2(320.0, 360.0), vec2(1280.0, 800.0)] {
-				for step in [RestoreStep::CheckingLogin, RestoreStep::Connecting] {
-					for elapsed in [0.0, 0.5, 2.0] {
-						run_scene(dark, size, step, elapsed);
-					}
+				for elapsed in [0.0, 0.5, 2.0] {
+					run_scene(dark, size, elapsed);
 				}
 			}
 		}

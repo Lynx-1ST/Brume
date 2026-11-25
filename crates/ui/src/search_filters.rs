@@ -113,22 +113,49 @@ pub struct Draft {
 	error: Option<&'static str>,
 }
 
+fn upsert_user<'a>(users: &mut std::collections::BTreeMap<Id, &'a User>, user: &'a User) {
+	if let Some(entry) = users.get_mut(&user.id) {
+		if entry.username.is_none() && user.username.is_some() {
+			*entry = user;
+		}
+	} else {
+		users.insert(user.id, user);
+	}
+}
+
+fn upsert_member_user<'a>(
+	users: &mut std::collections::BTreeMap<Id, (&'a User, Option<&'a str>)>,
+	user: &'a User,
+	nick: Option<&'a str>,
+) {
+	if let Some(entry) = users.get_mut(&user.id) {
+		if entry.0.username.is_none() && user.username.is_some() {
+			entry.0 = user;
+		}
+		if entry.1.is_none() && nick.is_some() {
+			entry.1 = nick;
+		}
+	} else {
+		users.insert(user.id, (user, nick));
+	}
+}
+
 pub fn users(state: &State) -> Vec<&User> {
 	let mut users = std::collections::BTreeMap::new();
 	let channel_id = state.selected;
 	let guild_id = guild(state);
 
 	if let Some(owner) = &state.user {
-		users.entry(owner.id).or_insert(owner);
+		upsert_user(&mut users, owner);
 	}
 	if let Some(ch_id) = channel_id {
 		if let Some(ch) = state.channel(ch_id) {
 			for user in &ch.recipients {
-				users.entry(user.id).or_insert(user);
+				upsert_user(&mut users, user);
 			}
 		}
 		for member in state.known_members(ch_id) {
-			users.entry(member.user.id).or_insert(&member.user);
+			upsert_user(&mut users, &member.user);
 		}
 	}
 	if let Some(list) = &state.members
@@ -136,7 +163,7 @@ pub fn users(state: &State) -> Vec<&User> {
 	{
 		for slot in list.slots.iter().flatten() {
 			if let model::MemberSlot::Person(member) = slot {
-				users.entry(member.user.id).or_insert(&member.user);
+				upsert_user(&mut users, &member.user);
 			}
 		}
 	}
@@ -144,29 +171,29 @@ pub fn users(state: &State) -> Vec<&User> {
 		for ch in &state.channels {
 			if ch.guild == Some(guild_id) && Some(ch.id) != channel_id {
 				for member in state.known_members(ch.id) {
-					users.entry(member.user.id).or_insert(&member.user);
+					upsert_user(&mut users, &member.user);
 				}
 			}
 		}
 	}
 	for view in &state.member_search {
 		for member in &view.rows {
-			users.entry(member.user.id).or_insert(&member.user);
+			upsert_user(&mut users, &member.user);
 		}
 	}
 	for entry in &state.voice.roster {
 		if let Some(member) = &entry.member
 			&& (guild_id.is_none() || Some(entry.guild) == guild_id)
 		{
-			users.entry(member.user.id).or_insert(&member.user);
+			upsert_user(&mut users, &member.user);
 		}
 	}
 	for msg in state.timeline.iter().rev() {
 		let msg_guild = state.channel(msg.channel).and_then(|c| c.guild);
 		if channel_id == Some(msg.channel) || (guild_id.is_some() && msg_guild == guild_id) {
-			users.entry(msg.author.id).or_insert(&msg.author);
+			upsert_user(&mut users, &msg.author);
 			for user in &msg.mentions {
-				users.entry(user.id).or_insert(user);
+				upsert_user(&mut users, user);
 			}
 		}
 	}
@@ -200,25 +227,23 @@ pub fn matching_users<'a>(
 		.or_else(|| guild(state));
 
 	if let Some(owner) = &state.user {
-		users.entry(owner.id).or_insert((owner, None));
+		upsert_member_user(&mut users, owner, None);
 	}
 	if let Some(ch_id) = channel_id {
 		if let Some(ch) = state.channel(ch_id) {
 			for user in &ch.recipients {
-				users.entry(user.id).or_insert((user, None));
+				upsert_member_user(&mut users, user, None);
 			}
 		}
 		for member in state.known_members(ch_id) {
-			users
-				.entry(member.user.id)
-				.or_insert((&member.user, member.nick.as_deref()));
+			upsert_member_user(&mut users, &member.user, member.nick.as_deref());
 		}
 		for msg in state.timeline.iter().rev() {
 			let msg_guild = state.channel(msg.channel).and_then(|c| c.guild);
 			if msg.channel == ch_id || (current_guild.is_some() && msg_guild == current_guild) {
-				users.entry(msg.author.id).or_insert((&msg.author, None));
+				upsert_member_user(&mut users, &msg.author, None);
 				for user in &msg.mentions {
-					users.entry(user.id).or_insert((user, None));
+					upsert_member_user(&mut users, user, None);
 				}
 			}
 		}
@@ -228,9 +253,7 @@ pub fn matching_users<'a>(
 	{
 		for slot in list.slots.iter().flatten() {
 			if let model::MemberSlot::Person(member) = slot {
-				users
-					.entry(member.user.id)
-					.or_insert((&member.user, member.nick.as_deref()));
+				upsert_member_user(&mut users, &member.user, member.nick.as_deref());
 			}
 		}
 	}
@@ -238,33 +261,29 @@ pub fn matching_users<'a>(
 		for ch in &state.channels {
 			if ch.guild == Some(guild_id) && Some(ch.id) != channel_id {
 				for member in state.known_members(ch.id) {
-					users
-						.entry(member.user.id)
-						.or_insert((&member.user, member.nick.as_deref()));
+					upsert_member_user(&mut users, &member.user, member.nick.as_deref());
 				}
 			}
 		}
 	}
 	for view in &state.member_search {
 		for member in &view.rows {
-			users
-				.entry(member.user.id)
-				.or_insert((&member.user, member.nick.as_deref()));
+			upsert_member_user(&mut users, &member.user, member.nick.as_deref());
 		}
 	}
 	for entry in &state.voice.roster {
 		if let Some(member) = &entry.member
 			&& (current_guild.is_none() || Some(entry.guild) == current_guild)
 		{
-			users
-				.entry(member.user.id)
-				.or_insert((&member.user, member.nick.as_deref()));
+			upsert_member_user(&mut users, &member.user, member.nick.as_deref());
 		}
 	}
 
 	let query_clean = query.trim();
-	// Normalized once here: every candidate below ranks up to four names against it.
-	let query_norm = crate::mentions::normalize(query_clean);
+	let at_only = query_clean.starts_with('@');
+	let query_target = query_clean.trim_start_matches('@');
+	// Normalized once here: every candidate below ranks up to five names against it.
+	let query_norm = crate::mentions::normalize(query_target);
 	let mut candidates = Vec::new();
 
 	for (user, nick) in users.into_values() {
@@ -273,29 +292,34 @@ pub fn matching_users<'a>(
 			.map(str::to_owned)
 			.unwrap_or_else(|| state.user_display_name(user).to_owned());
 
-		let rank =
-			if query_clean.is_empty() {
-				Some(0)
+		let rank = if query_clean.is_empty() {
+			Some(0)
+		} else {
+			let handle = user_handle(user);
+			let handle_match = handle.as_deref().and_then(|h| {
+				crate::mentions::rank_with(&query_norm, query_target, &h[1..], user.id)
+			});
+			let username_match =
+				crate::mentions::rank_with(&query_norm, query_target, user.username(), user.id);
+			if at_only {
+				username_match.into_iter().chain(handle_match).min()
 			} else {
-				crate::mentions::rank_with(&query_norm, query_clean, &display_name, user.id)
+				crate::mentions::rank_with(&query_norm, query_target, &display_name, user.id)
 					.into_iter()
 					.chain(crate::mentions::rank_with(
 						&query_norm,
-						query_clean,
+						query_target,
 						&user.name,
 						user.id,
 					))
-					.chain(crate::mentions::rank_with(
-						&query_norm,
-						query_clean,
-						user.username(),
-						user.id,
-					))
+					.chain(username_match)
+					.chain(handle_match)
 					.chain(nick.and_then(|n| {
-						crate::mentions::rank_with(&query_norm, query_clean, n, user.id)
+						crate::mentions::rank_with(&query_norm, query_target, n, user.id)
 					}))
 					.min()
-			};
+			}
+		};
 
 		if let Some(r) = rank {
 			candidates.push(UserCandidate {
@@ -306,8 +330,16 @@ pub fn matching_users<'a>(
 		}
 	}
 
+	let typed_lower = query_target.to_lowercase();
 	// Cached keys: comparing with `to_lowercase()` allocated two strings per comparison.
-	candidates.sort_by_cached_key(|c| (c.rank, c.display_name.to_lowercase(), c.user.id));
+	candidates.sort_by_cached_key(|c| {
+		(
+			!exact_username_match(c.user, &typed_lower),
+			c.rank,
+			c.display_name.to_lowercase(),
+			c.user.id,
+		)
+	});
 
 	candidates
 }
@@ -413,6 +445,42 @@ pub fn label(name: &str) -> String {
 		.collect()
 }
 
+fn user_handle(user: &User) -> Option<String> {
+	let username = label(user.username.as_deref()?);
+	if username.is_empty() {
+		return None;
+	}
+	Some(if user.discriminator == 0 {
+		format!("@{username}")
+	} else {
+		format!("@{username}#{:04}", user.discriminator)
+	})
+}
+
+pub fn user_label(user: &User) -> String {
+	user_handle(user).unwrap_or_else(|| {
+		let display = label(&user.name);
+		if display.starts_with('@') {
+			user.id.to_string()
+		} else {
+			display
+		}
+	})
+}
+
+fn exact_username_match(user: &User, typed: &str) -> bool {
+	if typed.is_empty() {
+		return false;
+	}
+	if typed.contains('#') {
+		user_handle(user).is_some_and(|handle| handle[1..].to_lowercase() == typed)
+	} else {
+		user.username
+			.as_deref()
+			.is_some_and(|username| label(username).to_lowercase() == typed)
+	}
+}
+
 /// Names picked from suggestions, so the field can show `from:name` while search sends IDs.
 #[derive(Default)]
 pub struct Labels(Vec<(&'static str, String, Id)>);
@@ -420,11 +488,33 @@ pub struct Labels(Vec<(&'static str, String, Id)>);
 impl Labels {
 	const LIMIT: usize = 64;
 
-	pub fn remember(&mut self, kind: &'static str, label: &str, id: Id) {
-		self.0
-			.retain(|(k, l, i)| *k != kind || (*i != id && !l.eq_ignore_ascii_case(label)));
+	pub fn remember(&mut self, kind: &'static str, label: &str, id: Id, query: &str) {
+		if kind == "user" && label.parse::<u64>().is_ok() {
+			return;
+		}
+		let normalized = label.to_lowercase();
+		self.0.retain(|(k, l, i)| {
+			*k != kind || (l.to_lowercase() != normalized && (kind == "user" || *i != id))
+		});
 		if self.0.len() >= Self::LIMIT {
-			self.0.remove(0);
+			// Keep the aliases on the current query even when the recent-label cache is full.
+			let Some(index) = self.0.iter().position(|(kind, label, _)| {
+				let normalized = label.to_lowercase();
+				!query.split_whitespace().any(|token| {
+					token.split_once(':').is_some_and(|(key, value)| {
+						matches!(
+							(*kind, key),
+							(
+								"user",
+								"from" | "từ" | "mentions" | "đề cập" | "để cập" | "de cap"
+							) | ("channel", "in" | "trong")
+						) && value.to_lowercase() == normalized
+					})
+				})
+			}) else {
+				return;
+			};
+			self.0.remove(index);
 		}
 		self.0.push((kind, label.to_owned(), id));
 	}
@@ -434,6 +524,20 @@ impl Labels {
 			.rev()
 			.find(|(k, l, _)| *k == kind && l.to_lowercase() == label.to_lowercase())
 			.map(|(_, _, id)| *id)
+	}
+	pub fn user_token(&self, name: String, id: Id, users: &[&User]) -> String {
+		let normalized = name.to_lowercase();
+		if name.is_empty()
+			|| name.parse::<u64>().is_ok()
+			|| self.id("user", &name).is_some_and(|other| other != id)
+			|| users
+				.iter()
+				.any(|user| user.id != id && user_label(user).to_lowercase() == normalized)
+		{
+			id.to_string()
+		} else {
+			name
+		}
 	}
 	fn label(&self, kind: &str, id: Id) -> Option<&str> {
 		self.0
@@ -454,14 +558,20 @@ fn user_id(value: &str, state: &State, labels: &Labels) -> Option<Id> {
 		.or_else(|| {
 			let value_lower = value.to_lowercase();
 			let all_users = users(state);
+			let username = value_lower.trim_start_matches('@');
+			let mut exact = all_users
+				.iter()
+				.filter(|user| exact_username_match(user, username));
+			if let Some(user) = exact.next() {
+				// A bare legacy username can belong to more than one account.
+				return exact.next().is_none().then_some(user.id);
+			}
+			if value_lower.starts_with('@') {
+				return None;
+			}
 			all_users
 				.iter()
-				.find(|user| user.username().to_lowercase() == value_lower)
-				.or_else(|| {
-					all_users
-						.iter()
-						.find(|user| label(&user.name).to_lowercase() == value_lower)
-				})
+				.find(|user| label(&user.name).to_lowercase() == value_lower)
 				.or_else(|| {
 					all_users
 						.iter()
@@ -542,6 +652,7 @@ pub fn display(query: &str, state: &State, labels: &mut Labels) -> String {
 	let mut tokens = Vec::new();
 	let during = date_picker::during_date(query);
 	let mut emitted_during = false;
+	let mut search_users = None;
 	for token in query.split_whitespace() {
 		if let Some(date) = during
 			&& date_picker::is_bound(token)
@@ -556,13 +667,19 @@ pub fn display(query: &str, state: &State, labels: &mut Labels) -> String {
 		let next = token.split_once(':').and_then(|(key, value)| match key {
 			"from" | "mentions" => {
 				let id = numeric(value)?;
+				let candidates = search_users.get_or_insert_with(|| users(state));
 				let name = labels.label("user", id).map(str::to_owned).or_else(|| {
-					users(state)
-						.into_iter()
+					candidates
+						.iter()
+						.copied()
 						.find(|user| user.id == id)
-						.map(|user| label(&user.name))
+						.map(user_label)
 				})?;
-				labels.remember("user", &name, id);
+				let name = labels.user_token(name, id, candidates);
+				if name == value {
+					return None;
+				}
+				labels.remember("user", &name, id, query);
 				Some(format!("{key}:{name}"))
 			}
 			"in" => {
@@ -571,7 +688,7 @@ pub fn display(query: &str, state: &State, labels: &mut Labels) -> String {
 					.channel(id)
 					.map(|channel| label(&channel.name))
 					.or_else(|| labels.label("channel", id).map(str::to_owned))?;
-				labels.remember("channel", &name, id);
+				labels.remember("channel", &name, id, query);
 				Some(format!("in:{name}"))
 			}
 			"before_id" | "after_id" => Some(format!(
@@ -883,22 +1000,50 @@ fn user_picker(
 					)),
 			);
 			let mut count = 0;
+			let needle_trimmed = needle.trim();
+			let at_only = needle_trimmed.starts_with('@');
+			let needle_target = needle_trimmed.trim_start_matches('@');
 			// Normalized once here: this filter re-runs for every user on every frame.
-			let needle_norm = crate::mentions::normalize(needle);
+			let needle_norm = crate::mentions::normalize(needle_target);
 			for user in users.iter().filter(|user| {
-				if needle.is_empty() {
+				if needle_target.is_empty() {
 					true
 				} else {
-					let display = state.user_display_name(user);
-					crate::mentions::rank_with(&needle_norm, needle, display, user.id).is_some()
-						|| crate::mentions::rank_with(&needle_norm, needle, &user.name, user.id)
+					let username_match =
+						crate::mentions::rank_with(
+							&needle_norm,
+							needle_target,
+							user.username(),
+							user.id,
+						)
+						.is_some() || user_handle(user).as_deref().is_some_and(|handle| {
+							crate::mentions::rank_with(
+								&needle_norm,
+								needle_target,
+								&handle[1..],
+								user.id,
+							)
+							.is_some()
+						});
+					if at_only {
+						username_match
+					} else {
+						let display = state.user_display_name(user);
+						username_match
+							|| crate::mentions::rank_with(
+								&needle_norm,
+								needle_target,
+								display,
+								user.id,
+							)
 							.is_some() || crate::mentions::rank_with(
-						&needle_norm,
-						needle,
-						user.username(),
-						user.id,
-					)
-					.is_some()
+							&needle_norm,
+							needle_target,
+							&user.name,
+							user.id,
+						)
+						.is_some()
+					}
 				}
 			}) {
 				count += 1;
@@ -1379,6 +1524,114 @@ mod tests {
 		assert_eq!(
 			super::wire("from:igwnz", &state, &super::Labels::default()).unwrap(),
 			"from:1"
+		);
+		assert_eq!(
+			super::wire("from:@igwnz", &state, &super::Labels::default()).unwrap(),
+			"from:1"
+		);
+		assert!(super::matching_users(&state, Some(channel_id), "@viec").is_empty());
+		assert_eq!(
+			super::matching_users(&state, Some(channel_id), "@igwnz")[0]
+				.user
+				.id,
+			model::Id(1)
+		);
+	}
+
+	#[test]
+	fn retained_authors_upgrade_usernames_from_members_and_labels_keep_active_aliases() {
+		let channel = model::Id(20);
+		let mut state = super::State::default();
+		let mut cached_msg = test_support::message(1001, channel);
+		cached_msg.author.id = model::Id(2);
+		cached_msg.author.username = None;
+		state.timeline.insert(cached_msg, true, false).unwrap();
+
+		let mut member_user = test_support::message(1, channel).author;
+		member_user.id = model::Id(2);
+		member_user.username = Some("robin".into());
+		state.members = Some(model::MemberList {
+			guild: None,
+			channel,
+			request: 0,
+			start: 0,
+			slots: vec![Some(model::MemberSlot::Person(model::Member {
+				user: member_user,
+				roles: vec![],
+				nick: None,
+				status: None,
+				custom_status: None,
+				activities: vec![],
+				status_emoji: None,
+				clients: Default::default(),
+			}))],
+			total: 1,
+			lazy: false,
+			freshness: model::Freshness::Fresh,
+			groups: vec![],
+			ranges: vec![],
+		});
+		let users = super::users(&state);
+		assert_eq!(
+			users
+				.iter()
+				.find(|u| u.id == model::Id(2))
+				.unwrap()
+				.username
+				.as_deref(),
+			Some("robin")
+		);
+		assert_eq!(
+			super::matching_users(&state, Some(channel), "@robin")[0]
+				.user
+				.id,
+			model::Id(2)
+		);
+
+		let mut labels = super::Labels::default();
+		labels.remember("user", "Robin", model::Id(2), "");
+		for id in 100..100 + (super::Labels::LIMIT as u64 - 1) {
+			labels.remember("user", &format!("@user_{id}"), model::Id(id), "");
+		}
+		let query = "from:rOBIN mentions:@quiet";
+		labels.remember("user", "@quiet", model::Id(2), query);
+		assert_eq!(
+			super::wire(query, &state, &labels).unwrap(),
+			"from:2 mentions:2"
+		);
+		assert_eq!(labels.0.len(), super::Labels::LIMIT);
+	}
+
+	#[test]
+	fn wire_resolves_legacy_usernames_and_rejects_ambiguous_bare_handles() {
+		let channel = model::Id(20);
+		let mut state = super::State {
+			selected: Some(channel),
+			..Default::default()
+		};
+		let mut legacy = test_support::message(1001, channel);
+		legacy.author.id = model::Id(2);
+		legacy.author.username = Some("alice".into());
+		legacy.author.discriminator = 1234;
+		let mut display_match = test_support::message(1002, channel);
+		display_match.author.id = model::Id(3);
+		display_match.author.username = Some("another".into());
+		display_match.author.name = "Alice".into();
+		state.timeline.insert(legacy.clone(), true, false).unwrap();
+		state.timeline.insert(display_match, true, false).unwrap();
+		let labels = super::Labels::default();
+		assert_eq!(
+			super::wire("from:alice weather mentions:@Alice#1234", &state, &labels).unwrap(),
+			"from:2 weather mentions:2"
+		);
+		legacy.id = model::Id(1003);
+		legacy.author.id = model::Id(4);
+		legacy.author.discriminator = 5678;
+		state.timeline.insert(legacy, true, false).unwrap();
+		assert!(super::wire("from:alice weather", &state, &labels).is_err());
+		assert_eq!(
+			super::wire("from:alice#5678 mentions:2", &state, &labels).unwrap(),
+			"from:4 mentions:2"
 		);
 	}
 

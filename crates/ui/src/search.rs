@@ -626,12 +626,19 @@ impl SearchUi {
 									submit = state.can_search();
 								}
 								if let Some((label, id)) = chosen {
+									let label = if key == "in" {
+										label
+									} else {
+										let candidates = filters::users(state);
+										self.labels.user_token(label, id, &candidates)
+									};
 									let query = format!("{}{key}:{label} ", &self.query[..start]);
 									if model::valid_search_query(&query) {
 										self.labels.remember(
 											if key == "in" { "channel" } else { "user" },
 											&label,
 											id,
+											&query,
 										);
 										self.query = query;
 										self.filters_open = false;
@@ -721,6 +728,7 @@ impl SearchUi {
 														"user",
 														&label,
 														candidate.user.id,
+														&query,
 													);
 													self.query = query;
 													self.filters_open = false;
@@ -770,6 +778,7 @@ impl SearchUi {
 														"user",
 														&label,
 														candidate.user.id,
+														&query,
 													);
 													self.query = query;
 													self.filters_open = false;
@@ -2560,14 +2569,14 @@ mod tests {
 			.clone();
 		original.name = "123".into();
 		let mut labels = filters::Labels::default();
-		labels.remember("channel", "123", original.id);
+		labels.remember("channel", "123", original.id, "");
 		let other_old = state
 			.channels
 			.iter()
 			.find(|entry| entry.guild == original.guild && entry.id != original.id)
 			.unwrap()
 			.id;
-		labels.remember("channel", "old-only", other_old);
+		labels.remember("channel", "old-only", other_old, "");
 		let mut selected = original.clone();
 		selected.id = Id(800);
 		selected.guild = Some(Id(700));
@@ -2619,7 +2628,7 @@ mod tests {
 		state.selected = Some(target.id);
 		state.channels.push(target);
 		let mut labels = filters::Labels::default();
-		labels.remember("channel", "123", original.id);
+		labels.remember("channel", "123", original.id, "");
 		for denied_history in [false, true] {
 			state
 				.channels

@@ -33,6 +33,7 @@ async fn connect(
 	listener: &TcpListener,
 	delivery: &crate::test_mls::Delivery,
 	user: u64,
+	drop_first_probe: bool,
 ) -> (TestSocket, UdpSocket, SocketAddr, Vec<u8>, bool) {
 	let (tcp, _) = listener.accept().await.unwrap();
 	let mut ws = tokio_tungstenite::accept_async(tcp).await.unwrap();
@@ -48,6 +49,14 @@ async fn connect(
 	let mut probe = [0; 74];
 	let (length, client) = udp.recv_from(&mut probe).await.unwrap();
 	assert_eq!(length, 74);
+	if drop_first_probe {
+		let (retry_len, retry_client) = udp.recv_from(&mut probe).await.unwrap();
+		assert_eq!(retry_len, 74);
+		assert_eq!(retry_client, client);
+		assert_eq!(probe[..4], [0, 1, 0, 70]);
+		let ssrc = u32::from_be_bytes(probe[4..8].try_into().unwrap());
+		assert!(ssrc == (40 + user) as u32 || ssrc == (50 + user) as u32);
+	}
 	probe[..4].copy_from_slice(&[0, 2, 0, 70]);
 	probe[8..17].copy_from_slice(b"127.0.0.1");
 	probe[72..].copy_from_slice(&client.port().to_be_bytes());
@@ -150,7 +159,7 @@ async fn exchange(rekey_timeout: bool) {
 	});
 	let delivery = crate::test_mls::Delivery::new();
 	let (mut send_ws, send_udp, send_addr, _, mut soundshare) =
-		connect(&listener, &delivery, 1).await;
+		connect(&listener, &delivery, 1, !rekey_timeout).await;
 	let (playback_tx, playback_rx) = std::sync::mpsc::sync_channel(8);
 	let (picture_tx, picture_rx) = std::sync::mpsc::sync_channel(1);
 	let sink: VideoSink = Arc::new(move |frame| {
@@ -176,7 +185,8 @@ async fn exchange(rekey_timeout: bool) {
 		)
 		.await
 	});
-	let (mut view_ws, view_udp, view_addr, package, _) = connect(&listener, &delivery, 2).await;
+	let (mut view_ws, view_udp, view_addr, package, _) =
+		connect(&listener, &delivery, 2, !rekey_timeout).await;
 	// An external MLS Add needs only the existing group ID and epoch; both clients
 	// negotiate their actual commit/welcome rather than receiving precomputed media keys.
 	let mut group = Dave::new(1, Some(2), 3).unwrap();

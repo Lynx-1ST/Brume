@@ -158,6 +158,7 @@ impl UserDto {
 			self.collectibles,
 			self.display_name_styles,
 		);
+		let username: String = self.username.chars().take(128).collect();
 		User {
 			kind: if self.bot && (self.public_flags | self.flags) & (1 << 16) != 0 {
 				model::AccountKind::VerifiedBot
@@ -169,11 +170,7 @@ impl UserDto {
 			id: self.id,
 			name: self
 				.global_name
-				.as_ref()
-				.unwrap_or(&self.username)
-				.chars()
-				.take(128)
-				.collect(),
+				.map_or_else(|| username.clone(), |name| name.chars().take(128).collect()),
 			avatar: self.avatar.filter(|hash| model::valid_avatar_hash(hash)),
 			webhook: false,
 			discriminator: self
@@ -184,7 +181,7 @@ impl UserDto {
 				.unwrap_or(0),
 			primary_guild,
 			cosmetics,
-			username: Some(self.username),
+			username: (!username.is_empty()).then_some(username),
 		}
 	}
 }
@@ -1525,6 +1522,7 @@ mod tests {
 			let message=decode::<MessageDto>(br#"{"id":"1","channel_id":"2","author":{"id":"3","username":"author"},"content":"<@4>","mentions":[{"id":"4","username":"user","global_name":"Display name"}]}"#).unwrap().into_model();
 			assert_eq!(message.mentions[0].id, Id(4));
 			assert_eq!(message.mentions[0].name, "Display name");
+			assert_eq!(message.mentions[0].username.as_deref(), Some("user"));
 			assert!(matches!(
 				decode::<PatchDto>(br#"{"id":"1","channel_id":"2"}"#)
 					.unwrap()

@@ -454,28 +454,28 @@ struct BatchItem {
 
 #[derive(PartialEq, Eq)]
 enum CoalesceKey {
-	SaveDraft(Id, Id),
-	SaveAppPreferences,
-	SaveAppearance,
-	SaveThemeVariant,
-	SaveReadingPreferences,
-	SaveGameActivity,
-	SaveMinimizeToTray,
-	SaveChannelPreferences(Id),
-	SaveAccountPresence(Id),
+	Draft(Id, Id),
+	AppPreferences,
+	Appearance,
+	ThemeVariant,
+	ReadingPreferences,
+	GameActivity,
+	MinimizeToTray,
+	ChannelPreferences(Id),
+	AccountPresence(Id),
 }
 
 fn coalesce_key(account: Id, operation: &Operation) -> Option<CoalesceKey> {
 	match operation {
-		Operation::SaveDraft { channel, .. } => Some(CoalesceKey::SaveDraft(account, *channel)),
-		Operation::SaveAppPreferences(_) => Some(CoalesceKey::SaveAppPreferences),
-		Operation::SaveAppearance(_) => Some(CoalesceKey::SaveAppearance),
-		Operation::SaveThemeVariant(_) => Some(CoalesceKey::SaveThemeVariant),
-		Operation::SaveReadingPreferences(_) => Some(CoalesceKey::SaveReadingPreferences),
-		Operation::SaveGameActivity(_) => Some(CoalesceKey::SaveGameActivity),
-		Operation::SaveMinimizeToTray(_) => Some(CoalesceKey::SaveMinimizeToTray),
-		Operation::SaveChannelPreferences(_) => Some(CoalesceKey::SaveChannelPreferences(account)),
-		Operation::SaveAccountPresence(_) => Some(CoalesceKey::SaveAccountPresence(account)),
+		Operation::SaveDraft { channel, .. } => Some(CoalesceKey::Draft(account, *channel)),
+		Operation::SaveAppPreferences(_) => Some(CoalesceKey::AppPreferences),
+		Operation::SaveAppearance(_) => Some(CoalesceKey::Appearance),
+		Operation::SaveThemeVariant(_) => Some(CoalesceKey::ThemeVariant),
+		Operation::SaveReadingPreferences(_) => Some(CoalesceKey::ReadingPreferences),
+		Operation::SaveGameActivity(_) => Some(CoalesceKey::GameActivity),
+		Operation::SaveMinimizeToTray(_) => Some(CoalesceKey::MinimizeToTray),
+		Operation::SaveChannelPreferences(_) => Some(CoalesceKey::ChannelPreferences(account)),
+		Operation::SaveAccountPresence(_) => Some(CoalesceKey::AccountPresence(account)),
 		_ => None,
 	}
 }

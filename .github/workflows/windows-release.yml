@@ -217,41 +217,18 @@ jobs:
           } catch { $changes = '' }
           if (-not $changes) { $changes = '- No commit-level changes were recorded for this build.' }
           $notes = @"
-          Windows x64 build of this fork at commit $env:SOURCE_SHA.
+          Windows x64 build of Brume at commit $env:SOURCE_SHA.
 
           ### Changes in this build
 
           $changes
-
-          ### What this fork changes
-
-          - Vietnamese: a complete catalog, the input processing panel and DeepFilterNet labels included.
-          - Vietnamese terminology follows Discord's own usage; dates and times are localized.
-          - DeepFilterNet noise suppression, falling back to RNNoise when the machine cannot keep up.
-          - Automatic microphone sensitivity, advanced voice activity, and a confirmation before switching voice channels.
-          - The silent-microphone warning measures the raw device signal, so suppression and the activity gate no longer make it fire while you are simply not speaking.
-          - Watch up to four streams at once, with a draggable, resizable Picture-in-Picture.
-          - Change stream resolution and FPS while sharing without dropping the call.
-          - Stream audio is no longer discarded when the voice loop runs late, which is what made it drop out several times in a row on a loaded machine.
-          - Stream audio plays in stereo. Call speech stays mono, as Discord sends it.
-          - Choose the video memory budget for artwork in Settings > Storage; the 96 MB default is the behaviour this client always had.
-          - Animated avatars and stickers drawn smaller than their source no longer upload a texture per frame that nothing draws.
-          - Chat inside voice channels, guild tags for voice participants, and a resizable member sidebar.
-          - Sharper emoji at high DPI, and mention suggestions that use the right per-server nickname.
-
-          ### Worth knowing
-
-          - The local cache schema is 30. Older schema-29 clients cannot reopen an upgraded cache.
-          - Signing in needs the Microsoft Edge WebView2 Runtime.
-          - These binaries are unsigned, so Windows SmartScreen will warn the first time you run one.
-          - Brume is unofficial and not endorsed by Discord.
 
           ### Download
 
           | File | When to take it |
           | --- | --- |
           | **-Setup.exe** | Installs for the current Windows account. Right for most people. |
-          | **.zip** | Portable. Extract somewhere writable and run ``serein.exe``. |
+          | **.zip** | Portable. Extract somewhere writable and run ``brume.exe``. |
           | **.exe** | Runs as it is, no install. Take the ``.zip`` for the bundled docs and tools. |
           | **SHA256SUMS.txt** | Check what you downloaded. |
 

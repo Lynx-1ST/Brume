@@ -13,6 +13,7 @@ use std::{
 const MAX_FILES: usize = 8192;
 const MAX_UNPACKED: u64 = 1024 * 1024 * 1024;
 const WINDOWS_FILES: &[&str] = &[
+	"brume.exe",
 	"serein.exe",
 	"README.md",
 	"LICENSE-MIT",

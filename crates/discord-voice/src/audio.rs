@@ -226,7 +226,7 @@ impl Audio {
 				let mut streams: Option<(u64, Streams)> = None;
 				let mut echo = echo::Echo::new();
 				let mut opened_at: Option<Instant> = None;
-				let mut last_selection: Option<Devices> = None;
+				let mut current = selected.borrow_and_update().clone();
 				let mut opened_once = false;
 				// Unplugged headphones or a changed system default reopen devices instead of
 				// ending the call; only a persistent failure is reported.
@@ -235,10 +235,12 @@ impl Audio {
 				let mut next_input_retry = Instant::now() + Duration::from_secs(2);
 				'audio: while !worker_gate.stopped.load(Ordering::Acquire) {
 					let revision = worker_gate.revision.load(Ordering::Acquire);
-					let current = selected.borrow_and_update().clone();
-					if last_selection.as_ref() != Some(&current) {
-						last_selection = Some(current.clone());
-						recovery_attempts = 0;
+					if selected.has_changed().unwrap_or(false) {
+						let updated = selected.borrow_and_update();
+						if *updated != current {
+							current = updated.clone();
+							recovery_attempts = 0;
+						}
 					}
 					if streams.is_some()
 						&& opened_at.is_some_and(|at| at.elapsed() >= Duration::from_secs(5))
@@ -1129,8 +1131,7 @@ impl Playback {
 		} else {
 			let gain = f32::from(gate.output_gain.load(Ordering::Relaxed)) / 100.0;
 			for (n, frame) in data.chunks_mut(channels).enumerate() {
-				let at = at + Duration::from_secs_f64(n as f64 / f64::from(self.rate));
-				let (left, right) = self.sample_at(Some(at));
+				let (left, right) = self.sample_at(Some((at, n)));
 				let (left, right) = (amplify(left, gain), amplify(right, gain));
 				// The echo canceller models one speaker signal, and a mono device plays one, so
 				// both take the downmix. A mono frame has right == left, leaving calls unchanged.
@@ -1191,7 +1192,7 @@ impl Playback {
 		self.next = (0.0, 0.0);
 		self.phase = 1.0;
 	}
-	fn pull(&mut self, at: Option<Instant>) -> (f32, f32) {
+	fn pull(&mut self, timing: Option<(Instant, usize)>) -> (f32, f32) {
 		if self.index == 960 {
 			self.frame = [0.0; 960];
 			self.right = None;
@@ -1204,7 +1205,12 @@ impl Playback {
 					self.gaps[1] += 1;
 					continue;
 				}
-				if let Some(at) = at {
+				if let Some((base, n)) = timing {
+					let at = if n == 0 {
+						base
+					} else {
+						base + Duration::from_secs_f64(n as f64 / f64::from(self.rate))
+					};
 					for tag in frame.presentations() {
 						tag.played(at);
 					}
@@ -1216,7 +1222,7 @@ impl Playback {
 			self.index = 0;
 		}
 		let left = self.frame[self.index];
-		let right = self.right.map_or(left, |right| right[self.index]);
+		let right = self.right.as_ref().map_or(left, |right| right[self.index]);
 		self.index += 1;
 		let bound = |value: f32| {
 			if value.is_finite() {
@@ -1231,10 +1237,10 @@ impl Playback {
 	fn sample(&mut self) -> f32 {
 		self.sample_at(None).0
 	}
-	fn sample_at(&mut self, at: Option<Instant>) -> (f32, f32) {
+	fn sample_at(&mut self, timing: Option<(Instant, usize)>) -> (f32, f32) {
 		while self.phase >= 1.0 {
 			self.previous = self.next;
-			self.next = self.pull(at);
+			self.next = self.pull(timing);
 			self.phase -= 1.0;
 		}
 		let phase = self.phase as f32;
@@ -1810,10 +1816,10 @@ mod tests {
 		send.push(call).unwrap();
 		let mut playback = Playback::new(48_000, receive, rtrb::RingBuffer::new(8).0);
 		for _ in 0..960 {
-			assert_eq!(playback.pull(Some(now)), (0.5, 0.5));
+			assert_eq!(playback.pull(Some((now, 0))), (0.5, 0.5));
 		}
 		for _ in 0..960 {
-			assert_eq!(playback.pull(Some(now)), (0.2, 0.2));
+			assert_eq!(playback.pull(Some((now, 0))), (0.2, 0.2));
 		}
 		assert_eq!(playback.gaps, [0, 1]);
 		// Invalidated timing metadata cannot move the new stream's output clock.

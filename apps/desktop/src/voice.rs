@@ -329,6 +329,22 @@ fn store_remote_frame(
 	true
 }
 
+fn take_remote_buffer(buffers: &mut [(u64, Vec<u8>)], user: u64) -> Vec<u8> {
+	buffers
+		.iter_mut()
+		.find(|(id, _)| *id == user)
+		.map(|(_, data)| std::mem::take(data))
+		.unwrap_or_default()
+}
+
+fn return_remote_buffer(buffers: &mut Vec<(u64, Vec<u8>)>, user: u64, data: Vec<u8>) {
+	if let Some((_, slot)) = buffers.iter_mut().find(|(id, _)| *id == user) {
+		*slot = data;
+	} else if buffers.len() < MAX_REMOTE_VIDEO {
+		buffers.push((user, data));
+	}
+}
+
 #[allow(clippy::chunks_exact_to_as_chunks)] // Matches egui's allocation fallback loop.
 fn store_camera_frame(picture: &mut CameraPicture, rgb: &[u8]) -> bool {
 	let size = [discord_voice::camera::WIDTH, discord_voice::camera::HEIGHT];
@@ -424,6 +440,9 @@ pub struct Voice {
 	camera_scan: Option<mpsc::Receiver<Result<discord_voice::camera::DeviceList, &'static str>>>,
 	/// Remote camera textures behind `ui.voice_remote_video`, by user.
 	remote_textures: Vec<(Id, crate::gpu_video::VideoTexture)>,
+	/// Spare plane buffers swapped with `live.remote_video` so uploads run outside the lock
+	/// without losing buffer reuse across frames.
+	remote_buffers: Vec<(u64, Vec<u8>)>,
 	/// Asks the renderer for a frame that only presents a new picture.
 	presenter: Option<eframe::PaintOnlyRequester>,
 	/// A joined call failed; the next poll plays the leave cue a hangup would.
@@ -456,27 +475,37 @@ impl Voice {
 		let Some(live) = &self.live else {
 			return true;
 		};
-		// The decoder holds the lock only while it copies a picture in; its own wake follows.
-		let Ok(mut slot) = live.remote_video.try_lock() else {
-			return true;
-		};
-		let textures = &mut self.remote_textures;
-		let fits = slot.iter().all(|(user, picture, dirty)| {
-			!*dirty
-				|| textures
-					.iter()
-					.any(|(id, texture)| id.0 == *user && texture.fits_picture(&picture.borrow()))
-		});
-		if !fits {
-			return false;
+		let mut pending: Vec<(u64, platform::video::Picture)> = Vec::new();
+		{
+			// The decoder holds the lock only while it copies a picture in; its own wake follows.
+			let Ok(mut slot) = live.remote_video.try_lock() else {
+				return true;
+			};
+			let textures = &self.remote_textures;
+			let fits = slot.iter().all(|(user, picture, dirty)| {
+				!*dirty
+					|| textures.iter().any(|(id, texture)| {
+						id.0 == *user && texture.fits_picture(&picture.borrow())
+					})
+			});
+			if !fits {
+				return false;
+			}
+			for (user, picture, dirty) in slot.iter_mut() {
+				if std::mem::take(dirty) && textures.iter().any(|(id, _)| id.0 == *user) {
+					let spare = take_remote_buffer(&mut self.remote_buffers, *user);
+					let data = std::mem::replace(&mut picture.data, spare);
+					pending.push((*user, picture.with_data(data)));
+				}
+			}
 		}
-		for (user, picture, dirty) in slot.iter_mut() {
-			if std::mem::take(dirty)
-				&& let Some((_, texture)) = textures.iter_mut().find(|(id, _)| id.0 == *user)
+		for (user, picture) in pending {
+			if let Some((_, texture)) = self.remote_textures.iter_mut().find(|(id, _)| id.0 == user)
 			{
 				let name = format!("remote-camera-{user}");
 				texture.upload(ctx, &name, picture.borrow());
 			}
+			return_remote_buffer(&mut self.remote_buffers, user, picture.data);
 		}
 		true
 	}
@@ -486,6 +515,7 @@ impl Voice {
 		// Logout stops polling; the next poll (or `MessagingUi::clear`) drops the borrowed
 		// ids before a frame paints, and disposal waits for the current frame.
 		self.remote_textures.clear();
+		self.remote_buffers.clear();
 		self.screen.stop();
 		self.watch.stop();
 		self.pending = None;
@@ -1383,7 +1413,7 @@ impl Voice {
 			ui.voice_no_input_detected =
 				live.no_input
 					.poll(Instant::now(), monitor_input, live.audio.device_level_db());
-			if monitor_input {
+			if live.no_input.0.is_some() && !ui.voice_no_input_detected {
 				ctx.request_repaint_after(Duration::from_secs(1));
 			}
 			ui.voice_suppression_fell_back |= live.audio.suppression_fell_back();
@@ -1459,53 +1489,72 @@ impl Voice {
 					ctx.request_repaint();
 				}
 			}
-			// Uploading is a plane copy into GPU staging, so it runs under the slot lock
-			// instead of cloning each picture out first.
+			// Swap dirty pictures out under the slot lock, then convert/upload outside it.
+			let mut pending: Vec<(u64, platform::video::Picture)> = Vec::new();
 			if let Ok(mut slot) = live.remote_video.try_lock() {
 				for (user, picture, dirty) in slot.iter_mut() {
-					if !std::mem::take(dirty) {
+					if !*dirty {
 						continue;
 					}
-					let user = Id(*user);
-					let index = match self.remote_textures.iter().position(|(id, _)| *id == user) {
-						Some(index) => index,
-						None if self.remote_textures.len() < MAX_REMOTE_VIDEO => {
-							self.remote_textures.push((user, Default::default()));
-							self.remote_textures.len() - 1
+					let id = Id(*user);
+					if !self
+						.remote_textures
+						.iter()
+						.any(|(existing, _)| *existing == id)
+					{
+						if self.remote_textures.len() >= MAX_REMOTE_VIDEO {
+							continue;
 						}
-						None => continue,
-					};
-					let name = format!("remote-camera-{}", user.0);
-					let Some(texture) =
-						self.remote_textures[index]
-							.1
-							.upload(ctx, &name, picture.borrow())
-					else {
-						continue;
-					};
-					match ui.voice_remote_video.iter_mut().find(|(id, _)| *id == user) {
-						Some((_, shown)) => *shown = texture,
-						None => ui.voice_remote_video.push((user, texture)),
+						self.remote_textures.push((id, Default::default()));
 					}
+					*dirty = false;
+					let spare = take_remote_buffer(&mut self.remote_buffers, *user);
+					let data = std::mem::replace(&mut picture.data, spare);
+					pending.push((*user, picture.with_data(data)));
 				}
 			}
+			for (user, picture) in pending {
+				let id = Id(user);
+				if let Some((_, texture)) = self
+					.remote_textures
+					.iter_mut()
+					.find(|(existing, _)| *existing == id)
+				{
+					let name = format!("remote-camera-{user}");
+					if let Some(texture) = texture.upload(ctx, &name, picture.borrow()) {
+						match ui
+							.voice_remote_video
+							.iter_mut()
+							.find(|(existing, _)| *existing == id)
+						{
+							Some((_, shown)) => *shown = texture,
+							None => ui.voice_remote_video.push((id, texture)),
+						}
+					}
+				}
+				return_remote_buffer(&mut self.remote_buffers, user, picture.data);
+			}
 			// Cameras announced off, or participants who left, release their textures.
-			let visible: Vec<Id> = state
-				.voice
-				.active
-				.as_ref()
-				.map(|call| {
-					call.participants
-						.iter()
-						.filter(|participant| participant.video)
-						.map(|participant| participant.user)
-						.collect()
-				})
-				.unwrap_or_default();
-			ui.voice_remote_video.retain(|(id, _)| visible.contains(id));
-			self.remote_textures.retain(|(id, _)| visible.contains(id));
-			if let Ok(mut pictures) = live.remote_video.try_lock() {
-				pictures.retain(|(id, _, _)| visible.contains(&Id(*id)));
+			if !ui.voice_remote_video.is_empty() || !self.remote_textures.is_empty() {
+				let visible: Vec<Id> = state
+					.voice
+					.active
+					.as_ref()
+					.map(|call| {
+						call.participants
+							.iter()
+							.filter(|participant| participant.video)
+							.map(|participant| participant.user)
+							.collect()
+					})
+					.unwrap_or_default();
+				ui.voice_remote_video.retain(|(id, _)| visible.contains(id));
+				self.remote_textures.retain(|(id, _)| visible.contains(id));
+				self.remote_buffers
+					.retain(|(id, _)| visible.contains(&Id(*id)));
+				if let Ok(mut pictures) = live.remote_video.try_lock() {
+					pictures.retain(|(id, _, _)| visible.contains(&Id(*id)));
+				}
 			}
 		}
 		if failure.is_none()

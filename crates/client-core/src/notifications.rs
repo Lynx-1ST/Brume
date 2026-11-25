@@ -75,12 +75,104 @@ impl Activity {
 		self.notifications.retain(|n| n.channel != channel);
 	}
 	pub(crate) fn delete(&mut self, channel: Id, message: Id) {
-		self.observed
-			.retain(|(c, id, ..)| (*c, *id) != (channel, message));
+		if self.observed.is_empty() && self.notifications.is_empty() {
+			return;
+		}
+		let observed_counts = &mut self.observed_counts;
+		self.observed.retain(|&(c, id, mention, covered, _)| {
+			let keep = (c, id) != (channel, message);
+			if !keep && !covered {
+				Self::decrement_observed(observed_counts, c, mention);
+			}
+			keep
+		});
 		self.notifications
 			.retain(|n| (n.channel, n.message) != (channel, message));
-		if self.observed_counts.contains_key(&channel) {
-			self.recount(channel);
+	}
+	pub(crate) fn delete_batch(&mut self, channel: Id, messages: &[Id]) {
+		if messages.is_empty() || (self.observed.is_empty() && self.notifications.is_empty()) {
+			return;
+		}
+		if messages.len() == 1 {
+			self.delete(channel, messages[0]);
+			return;
+		}
+		let mut sorted = messages.to_vec();
+		sorted.sort_unstable();
+		sorted.dedup();
+		let observed_counts = &mut self.observed_counts;
+		self.observed.retain(|&(c, id, mention, covered, _)| {
+			let keep = c != channel || sorted.binary_search(&id).is_err();
+			if !keep && !covered {
+				Self::decrement_observed(observed_counts, c, mention);
+			}
+			keep
+		});
+		self.notifications
+			.retain(|n| n.channel != channel || sorted.binary_search(&n.message).is_err());
+	}
+	pub(crate) fn forget_batch(&mut self, channels: &BTreeSet<Id>) {
+		if channels.is_empty() {
+			return;
+		}
+		if channels.len() == 1
+			&& let Some(&channel) = channels.first()
+		{
+			self.forget(channel);
+			return;
+		}
+		if channels.len() > self.high_water.len() {
+			self.high_water.retain(|c, _| !channels.contains(c));
+		} else {
+			for channel in channels {
+				self.high_water.remove(channel);
+			}
+		}
+		self.revoke_batch(channels);
+	}
+	pub(crate) fn revoke_batch(&mut self, channels: &BTreeSet<Id>) {
+		if channels.is_empty() {
+			return;
+		}
+		if channels.len() == 1
+			&& let Some(&channel) = channels.first()
+		{
+			self.revoke(channel);
+			return;
+		}
+		if channels.len() > self.counts.len() {
+			self.counts.retain(|c, _| !channels.contains(c));
+		} else {
+			for channel in channels {
+				self.counts.remove(channel);
+			}
+		}
+		if channels.len() > self.observed_counts.len() {
+			self.observed_counts.retain(|c, _| !channels.contains(c));
+		} else {
+			for channel in channels {
+				self.observed_counts.remove(channel);
+			}
+		}
+		if !self.observed.is_empty() {
+			self.observed.retain(|(c, ..)| !channels.contains(c));
+		}
+		if !self.notifications.is_empty() {
+			self.notifications
+				.retain(|n| !channels.contains(&n.channel));
+		}
+	}
+	fn decrement_observed(
+		observed_counts: &mut BTreeMap<Id, (u32, u32)>,
+		channel: Id,
+		mention: bool,
+	) {
+		if let Some(counts) = observed_counts.get_mut(&channel) {
+			counts.0 = counts.0.saturating_sub(1);
+			counts.1 = counts.1.saturating_sub(u32::from(mention));
+			if counts.0 == 0 {
+				observed_counts.remove(&channel);
+			}
 		}
 	}
 	pub(crate) fn observe_latest(&mut self, channel: Id, message: Id) {
@@ -93,11 +185,16 @@ impl Activity {
 	/// Prune read observations/alerts and count only proven service contributions removed.
 	fn retain_unread(&mut self, channel: Id, message: Option<Id>) -> u32 {
 		let mut acknowledged = 0;
+		let observed_counts = &mut self.observed_counts;
 		self.observed
-			.retain(|(c, id, _, covered, service_mention)| {
-				let keep = *c != channel || message.is_none_or(|read| *id > read);
-				if !keep && *covered && *service_mention {
-					acknowledged += 1;
+			.retain(|&(c, id, mention, covered, service_mention)| {
+				let keep = c != channel || message.is_none_or(|read| id > read);
+				if !keep {
+					if covered && service_mention {
+						acknowledged += 1;
+					} else if !covered {
+						Self::decrement_observed(observed_counts, c, mention);
+					}
 				}
 				keep
 			});
@@ -105,11 +202,13 @@ impl Activity {
 			.retain(|n| n.channel != channel || message.is_none_or(|read| n.message > read));
 		acknowledged
 	}
-
-	/// HTTP success removes known acknowledged mentions without discarding unknown service
-	/// activity. The monotonic high water prevents stale latest metadata clearing the baseline.
-	pub(crate) fn ack_local(&mut self, channel: Id, message: Id, latest: Option<Id>) {
-		let acknowledged = self.retain_unread(channel, Some(message));
+	fn apply_local_ack_counts(
+		&mut self,
+		channel: Id,
+		message: Id,
+		latest: Option<Id>,
+		acknowledged: u32,
+	) {
 		if let Some(count) = self.counts.get_mut(&channel) {
 			*count = count.saturating_sub(acknowledged);
 		}
@@ -117,32 +216,114 @@ impl Activity {
 		if latest.is_some_and(|latest| latest <= message) {
 			self.counts.remove(&channel);
 		}
-		self.recount(channel);
+	}
+
+	/// HTTP success removes known acknowledged mentions without discarding unknown service
+	/// activity. The monotonic high water prevents stale latest metadata clearing the baseline.
+	pub(crate) fn ack_local(&mut self, channel: Id, message: Id, latest: Option<Id>) {
+		let acknowledged = self.retain_unread(channel, Some(message));
+		self.apply_local_ack_counts(channel, message, latest, acknowledged);
+	}
+
+	pub(crate) fn ack_local_batch(&mut self, acks: &[(Id, Id, Option<Id>)]) {
+		if acks.is_empty() {
+			return;
+		}
+		if acks.len() == 1 {
+			let (channel, message, latest) = acks[0];
+			self.ack_local(channel, message, latest);
+			return;
+		}
+		if self.observed.is_empty() && self.notifications.is_empty() {
+			for &(channel, message, latest) in acks {
+				self.apply_local_ack_counts(channel, message, latest, 0);
+			}
+			return;
+		}
+		let mut batch: Vec<(Id, Id, Option<Id>, u32)> = acks
+			.iter()
+			.map(|&(channel, message, latest)| (channel, message, latest, 0))
+			.collect();
+		batch.sort_unstable_by_key(|(channel, ..)| *channel);
+		batch.dedup_by(|later, earlier| {
+			if later.0 == earlier.0 {
+				earlier.1 = earlier.1.max(later.1);
+				earlier.2 = earlier.2.max(later.2);
+				true
+			} else {
+				false
+			}
+		});
+		let observed_counts = &mut self.observed_counts;
+		self.observed
+			.retain(|&(c, id, mention, covered, service_mention)| {
+				let Ok(index) = batch.binary_search_by_key(&c, |(ch, ..)| *ch) else {
+					return true;
+				};
+				let keep = id > batch[index].1;
+				if !keep {
+					if covered && service_mention {
+						batch[index].3 += 1;
+					} else if !covered {
+						Self::decrement_observed(observed_counts, c, mention);
+					}
+				}
+				keep
+			});
+		self.notifications.retain(|n| {
+			match batch.binary_search_by_key(&n.channel, |(ch, ..)| *ch) {
+				Ok(index) => n.message > batch[index].1,
+				Err(_) => true,
+			}
+		});
+		for (channel, message, latest, acknowledged) in batch {
+			self.apply_local_ack_counts(channel, message, latest, acknowledged);
+		}
 	}
 
 	/// Apply a Gateway count while retaining bounded per-message evidence for later local reads.
 	pub(crate) fn ack(&mut self, channel: Id, message: Option<Id>, count: Option<u32>) {
-		self.retain_unread(channel, message);
+		self.notifications
+			.retain(|n| n.channel != channel || message.is_none_or(|read| n.message > read));
 		// The service count includes messages after this ACK. Avoid counting those twice.
 		if let Some(count) = count {
 			self.counts.insert(channel, count);
-			for (c, _, _, covered, _) in &mut self.observed {
-				if *c == channel {
-					*covered = true;
+			self.observed_counts.remove(&channel);
+			self.observed.retain_mut(|(c, id, _, covered, _)| {
+				if *c != channel {
+					return true;
 				}
-			}
+				if message.is_some_and(|read| *id <= read) {
+					return false;
+				}
+				*covered = true;
+				true
+			});
 		} else {
 			// Without a refreshed service count, only retained observed messages are countable.
 			self.counts.remove(&channel);
-			for (c, _, _, covered, _) in &mut self.observed {
-				if *c == channel {
-					*covered = false;
+			let mut counts = (0u32, 0u32);
+			self.observed.retain_mut(|(c, id, mention, covered, _)| {
+				if *c != channel {
+					return true;
 				}
+				if message.is_some_and(|read| *id <= read) {
+					return false;
+				}
+				*covered = false;
+				counts.0 += 1;
+				counts.1 += u32::from(*mention);
+				true
+			});
+			if counts.0 == 0 {
+				self.observed_counts.remove(&channel);
+			} else {
+				self.observed_counts.insert(channel, counts);
 			}
 		}
-		self.recount(channel);
 	}
 	/// Count only activity not already represented by the current service baseline.
+	#[cfg(test)]
 	fn recount(&mut self, channel: Id) {
 		let mut counts = (0, 0);
 		for (c, _, mention, covered, _) in &self.observed {
@@ -182,7 +363,9 @@ pub struct Setting {
 	pub suppress_everyone: Option<bool>,
 	pub suppress_roles: Option<bool>,
 	pub hide_muted_channels: Option<bool>,
+	/// Channel overrides, sorted by channel ID.
 	pub channels: Vec<(Id, Option<bool>, Option<u8>)>,
+	/// Channel mute expiry timestamps, sorted by channel ID.
 	pub channel_mute_until: Vec<(Id, i64)>,
 	/// Guild settings flags; unknown until a full settings row is admitted.
 	pub flags: Option<u32>,
@@ -207,6 +390,15 @@ impl Setting {
 			+ self.channel_mute_until.capacity() * size_of::<(Id, i64)>()
 			+ self.channel_flags.capacity() * size_of::<(Id, u32)>()
 	}
+	fn channel(&self, channel: Id) -> Option<(Option<bool>, Option<u8>)> {
+		self.channels
+			.binary_search_by_key(&channel, |(id, ..)| *id)
+			.ok()
+			.map(|index| {
+				let (_, muted, level) = self.channels[index];
+				(muted, level)
+			})
+	}
 	/// Flags for one channel override, when this row's overrides are known.
 	pub(crate) fn channel_flags(&self, channel: Id) -> Option<u32> {
 		match self
@@ -219,8 +411,8 @@ impl Setting {
 	}
 	fn mute_expired(&self, channel: Id) -> bool {
 		self.channel_mute_until
-			.iter()
-			.any(|(id, until)| *id == channel && *until <= State::permission_time())
+			.binary_search_by_key(&channel, |(id, _)| *id)
+			.is_ok_and(|index| self.channel_mute_until[index].1 <= State::permission_time())
 	}
 }
 pub enum Event {
@@ -407,12 +599,7 @@ impl State {
 	pub fn guild_channel_muted(&self, channel: Id) -> Option<bool> {
 		let guild = self.channel(channel)?.guild?;
 		let setting = self.notification_preferences.setting(Some(guild));
-		let muted = setting.and_then(|s| {
-			s.channels
-				.iter()
-				.find(|(id, ..)| *id == channel)
-				.and_then(|(_, muted, _)| *muted)
-		});
+		let muted = setting.and_then(|s| s.channel(channel).and_then(|(muted, _)| muted));
 		if muted == Some(true) && setting.is_some_and(|s| s.mute_expired(channel)) {
 			return Some(false);
 		}
@@ -422,10 +609,8 @@ impl State {
 		let guild = self.channel(channel)?.guild?;
 		let setting = self.notification_preferences.setting(Some(guild))?;
 		setting
-			.channels
-			.iter()
-			.find(|(id, ..)| *id == channel)
-			.and_then(|(_, _, level)| *level)
+			.channel(channel)
+			.and_then(|(_, level)| level)
 			.or(Some(3))
 	}
 	pub(crate) fn confirm_channel_mute_timer(
@@ -440,14 +625,23 @@ impl State {
 		let Some(setting) = self.notification_preferences.settings.get_mut(&Some(guild)) else {
 			return Ok(());
 		};
-		setting.channel_mute_until.retain(|(id, _)| *id != channel);
+		let pos = setting
+			.channel_mute_until
+			.binary_search_by_key(&channel, |(id, _)| *id);
 		if muted == Some(true)
 			&& let Some(until) = until
 		{
-			if setting.channel_mute_until.len() >= MAX_NAV {
-				return Err("Mute timers exceed safe capacity");
+			match pos {
+				Ok(index) => setting.channel_mute_until[index].1 = until,
+				Err(index) => {
+					if setting.channel_mute_until.len() >= MAX_NAV {
+						return Err("Mute timers exceed safe capacity");
+					}
+					setting.channel_mute_until.insert(index, (channel, until));
+				}
 			}
-			setting.channel_mute_until.push((channel, until));
+		} else if let Ok(index) = pos {
+			setting.channel_mute_until.remove(index);
 		}
 		self.check_notification_capacity()
 	}
@@ -464,7 +658,7 @@ impl State {
 		if existing.is_none() && preferences.settings.len() >= MAX_NAV {
 			return Err("Notification settings exceed safe capacity");
 		}
-		if !existing.is_some_and(|s| s.channels.iter().any(|(id, ..)| *id == channel))
+		if !existing.is_some_and(|s| s.channel(channel).is_some())
 			&& preferences
 				.settings
 				.values()
@@ -481,19 +675,27 @@ impl State {
 				guild: Some(guild),
 				..initial
 			});
-		if let Some((_, m, l)) = setting.channels.iter_mut().find(|(id, ..)| *id == channel) {
-			if muted.is_some() {
-				*m = muted;
+		match setting
+			.channels
+			.binary_search_by_key(&channel, |(id, ..)| *id)
+		{
+			Ok(index) => {
+				let (_, m, l) = &mut setting.channels[index];
+				if muted.is_some() {
+					*m = muted;
+				}
+				if level.is_some() {
+					*l = level;
+				}
 			}
-			if level.is_some() {
-				*l = level;
-			}
-		} else {
-			setting.channels.push((
-				channel,
-				muted.or(setting.overrides_known.then_some(false)),
-				level.or(setting.overrides_known.then_some(3)),
-			));
+			Err(index) => setting.channels.insert(
+				index,
+				(
+					channel,
+					muted.or(setting.overrides_known.then_some(false)),
+					level.or(setting.overrides_known.then_some(3)),
+				),
+			),
 		}
 		self.read_state.activity.clear_notifications();
 		self.check_notification_capacity()
@@ -514,7 +716,7 @@ impl State {
 		let added = write
 			.channels
 			.iter()
-			.filter(|(id, _)| !existing.is_some_and(|s| s.channels.iter().any(|(c, ..)| c == id)))
+			.filter(|(id, _)| !existing.is_some_and(|s| s.channel(*id).is_some()))
 			.count();
 		if preferences
 			.settings
@@ -541,10 +743,14 @@ impl State {
 		}
 		let known = setting.overrides_known;
 		for (channel, flags) in &write.channels {
-			if !setting.channels.iter().any(|(id, ..)| id == channel) {
-				setting
-					.channels
-					.push((*channel, known.then_some(false), known.then_some(3)));
+			if let Err(index) = setting
+				.channels
+				.binary_search_by_key(channel, |(id, ..)| *id)
+			{
+				setting.channels.insert(
+					index,
+					(*channel, known.then_some(false), known.then_some(3)),
+				);
 			}
 			match setting
 				.channel_flags
@@ -611,15 +817,13 @@ impl State {
 			return self.demo.then_some(false);
 		};
 		setting
-			.channels
-			.iter()
-			.find(|(id, ..)| *id == channel)
-			.map(|(_, muted, _)| {
+			.channel(channel)
+			.map(|(muted, _)| {
 				// Expired timed mutes keep `muted: true` on the service.
-				if *muted == Some(true) && setting.mute_expired(channel) {
+				if muted == Some(true) && setting.mute_expired(channel) {
 					Some(false)
 				} else {
-					*muted
+					muted
 				}
 			})
 			.unwrap_or_else(|| (self.demo || setting.muted.is_some()).then_some(false))
@@ -629,11 +833,9 @@ impl State {
 		let Some(setting) = self.notification_preferences.settings.get(&None) else {
 			return (self.demo || self.notification_preferences.complete).then_some(false);
 		};
-		match setting.channels.iter().find(|(id, ..)| *id == channel) {
-			Some((_, muted, _)) if *muted == Some(true) && setting.mute_expired(channel) => {
-				Some(false)
-			}
-			Some((_, muted, _)) => *muted,
+		match setting.channel(channel) {
+			Some((Some(true), _)) if setting.mute_expired(channel) => Some(false),
+			Some((muted, _)) => muted,
 			None => {
 				(self.demo || setting.overrides_known || self.notification_preferences.complete)
 					.then_some(false)
@@ -646,7 +848,7 @@ impl State {
 		muted: bool,
 	) -> Result<(), &'static str> {
 		let existing = self.notification_preferences.settings.get(&None);
-		if !existing.is_some_and(|s| s.channels.iter().any(|(id, ..)| *id == channel))
+		if !existing.is_some_and(|s| s.channel(channel).is_some())
 			&& self
 				.notification_preferences
 				.settings
@@ -662,13 +864,20 @@ impl State {
 			.settings
 			.entry(None)
 			.or_default();
-		if let Some((_, value, _)) = setting.channels.iter_mut().find(|(id, ..)| *id == channel) {
-			*value = Some(muted);
-		} else {
-			setting.channels.push((channel, Some(muted), None));
+		match setting
+			.channels
+			.binary_search_by_key(&channel, |(id, ..)| *id)
+		{
+			Ok(index) => setting.channels[index].1 = Some(muted),
+			Err(index) => setting.channels.insert(index, (channel, Some(muted), None)),
 		}
 		// DM mute writes are untimed, so a stale expiry must not unmute them.
-		setting.channel_mute_until.retain(|(id, _)| *id != channel);
+		if let Ok(index) = setting
+			.channel_mute_until
+			.binary_search_by_key(&channel, |(id, _)| *id)
+		{
+			setting.channel_mute_until.remove(index);
+		}
 		self.read_state.activity.clear_notifications();
 		self.check_notification_capacity()
 	}
@@ -740,9 +949,7 @@ impl State {
 			)
 			.filter(|channel| !self.can_view(*channel))
 			.collect();
-		for channel in revoked {
-			self.read_state.activity.revoke(channel);
-		}
+		self.read_state.activity.revoke_batch(&revoked);
 	}
 	pub fn take_notification(&mut self) -> Option<Notification> {
 		while let Some(notification) = self.read_state.activity.notifications.pop_front() {
@@ -815,9 +1022,7 @@ impl State {
 			};
 		}
 		for id in [channel.parent_id, Some(channel.id)].into_iter().flatten() {
-			if let Some((_, muted, override_level)) =
-				setting.channels.iter().find(|(c, ..)| *c == id)
-			{
+			if let Some((muted, override_level)) = setting.channel(id) {
 				let pending = if channel.guild.is_none() && id == channel.id {
 					self.pending_dm_muted(id)
 				} else {
@@ -826,7 +1031,7 @@ impl State {
 				let muted = pending.or(if setting.mute_expired(id) {
 					Some(false)
 				} else {
-					*muted
+					muted
 				});
 				if muted == Some(true) || (channel.guild.is_some() && muted != Some(false)) {
 					return false;
@@ -835,7 +1040,7 @@ impl State {
 					return false;
 				}
 				if override_level.is_some_and(|l| l != 3) {
-					level = *override_level;
+					level = override_level;
 				}
 			}
 		}
@@ -916,6 +1121,10 @@ impl State {
 				}
 				for mut setting in entries {
 					setting.overrides_known = true;
+					setting.channels.sort_unstable_by_key(|(id, ..)| *id);
+					setting
+						.channel_mute_until
+						.sort_unstable_by_key(|(id, _)| *id);
 					setting.channel_flags.sort_unstable_by_key(|(id, _)| *id);
 					self.notification_preferences
 						.settings
@@ -1127,13 +1336,9 @@ impl State {
 					> MAX_OBSERVED_BYTES
 			{
 				if let Some((channel, _, mention, covered, _)) = activity.observed.pop_front()
-					&& !covered && let Some(counts) = activity.observed_counts.get_mut(&channel)
+					&& !covered
 				{
-					counts.0 -= 1;
-					counts.1 -= u32::from(mention);
-					if counts.0 == 0 {
-						activity.observed_counts.remove(&channel);
-					}
+					Activity::decrement_observed(&mut activity.observed_counts, channel, mention);
 				}
 			}
 			activity.observed.push_back((

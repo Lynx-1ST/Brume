@@ -101,7 +101,7 @@ pub(super) fn run() {
 			// Lose the middle fragment, retaining the later marker.
 			assert!(
 				receiver
-					.push(42, rtp.sequence, rtp.timestamp, rtp.marker, &rtp.payload)
+					.push(42, rtp.sequence, rtp.timestamp, rtp.marker, rtp.payload)
 					.is_none()
 			);
 		}
@@ -125,7 +125,7 @@ pub(super) fn run() {
 		let (ssrc, sequence) = receiver.restore_rtx(rtp.ssrc, &mut rtp.payload).unwrap();
 		assert_eq!((ssrc, sequence), (42, *original));
 		if let Some((_, frame)) =
-			receiver.push(ssrc, sequence, rtp.timestamp, rtp.marker, &rtp.payload)
+			receiver.push(ssrc, sequence, rtp.timestamp, rtp.marker, rtp.payload)
 		{
 			repaired = Some(frame);
 		}

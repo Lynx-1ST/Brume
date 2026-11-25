@@ -2750,25 +2750,30 @@ impl TimelineView {
 			&& state.history_before.is_some()
 			&& state.timeline.display_iter().next().is_some();
 		let mut layout_changed = false;
+		let mut cached_keys = None;
 		if self.revision != state.revision {
 			// Member/presence and other unrelated updates must not restore the scroll
 			// anchor or reintroduce estimates for already settled message geometry.
 			let mut fingerprint = DefaultHasher::new();
 			let mut previous = None;
+			let mut keys = Vec::with_capacity(self.row_keys.len());
 			for message in
 				starter
 					.into_iter()
 					.chain(display_rows(state, hide_blocked, hide_ignored))
 			{
 				let deleted = state.timeline.is_deleted(message.id);
+				let base_key = row_key(message, previous, self.unread_boundary, state);
 				message.id.hash(&mut fingerprint);
-				row_key(message, previous, self.unread_boundary, state).hash(&mut fingerprint);
+				base_key.hash(&mut fingerprint);
 				deleted.hash(&mut fingerprint);
+				keys.push(base_key ^ u64::from(deleted));
 				previous = Some(message);
 			}
 			let fingerprint = fingerprint.finish();
 			layout_changed = self.layout_fingerprint != fingerprint;
 			self.layout_fingerprint = fingerprint;
+			cached_keys = Some(keys);
 		}
 		let changed = self.revision == u64::MAX
 			|| layout_changed
@@ -2827,10 +2832,16 @@ impl TimelineView {
 			self.rows = starter
 				.into_iter()
 				.chain(display_rows(state, hide_blocked, hide_ignored))
-				.map(|m| {
+				.enumerate()
+				.map(|(index, m)| {
 					let prior = previous;
-					let deleted = state.timeline.is_deleted(m.id);
-					let key = row_height_key(m, prior, self.unread_boundary, state, deleted);
+					let key = cached_keys
+						.as_ref()
+						.and_then(|keys| keys.get(index).copied())
+						.unwrap_or_else(|| {
+							let deleted = state.timeline.is_deleted(m.id);
+							row_height_key(m, prior, self.unread_boundary, state, deleted)
+						});
 					row_keys.insert(m.id, key);
 					previous = Some(m);
 					let lines = m

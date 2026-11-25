@@ -268,12 +268,18 @@ impl State {
 					self.remember_voice_member(request.guild, member);
 				}
 				if request.slot == 1 {
-					for member in &rows {
-						self.timeline.apply_author_membership(
-							member.user.id,
-							&member.roles,
-							member.nick.as_deref(),
-						);
+					let memberships: std::collections::BTreeMap<Id, (&[Id], Option<&str>)> = rows
+						.iter()
+						.map(|member| {
+							(
+								member.user.id,
+								(member.roles.as_slice(), member.nick.as_deref()),
+							)
+						})
+						.collect();
+					if !memberships.is_empty() {
+						self.timeline
+							.apply_author_memberships(|id| memberships.get(&id).copied());
 					}
 				}
 				self.member_search[request.slot].rows = rows;

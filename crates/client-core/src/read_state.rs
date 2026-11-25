@@ -171,6 +171,53 @@ impl ReadState {
 			self.cancel();
 		}
 	}
+	pub(crate) fn forget_batch(&mut self, channels: &std::collections::BTreeSet<Id>) {
+		if channels.is_empty() {
+			return;
+		}
+		if channels.len() == 1
+			&& let Some(&channel) = channels.first()
+		{
+			self.forget(channel);
+			return;
+		}
+		if channels.len() > self.entries.len() {
+			self.entries.retain(|id, _| !channels.contains(id));
+		} else {
+			for channel in channels {
+				self.entries.remove(channel);
+			}
+		}
+		self.activity.forget_batch(channels);
+		if self.status.is_some_and(|(id, _)| channels.contains(&id)) {
+			self.status = None;
+		}
+		let cancel = match self.pending.as_mut() {
+			Some(Pending::Channel {
+				channel: pending, ..
+			}) => channels.contains(pending),
+			Some(Pending::Guild {
+				channels: pending, ..
+			}) => {
+				pending.retain(|(id, ..)| !channels.contains(id));
+				pending.is_empty()
+			}
+			Some(Pending::All {
+				channels: pending, ..
+			}) => {
+				for slot in pending.iter_mut() {
+					if slot.is_some_and(|(id, ..)| channels.contains(&id)) {
+						*slot = None;
+					}
+				}
+				pending.iter().all(Option::is_none)
+			}
+			None => false,
+		};
+		if cancel {
+			self.cancel();
+		}
+	}
 }
 impl State {
 	pub fn read_marker(&self, channel: Id) -> Option<Option<Id>> {
@@ -326,9 +373,10 @@ impl State {
 				.selected
 				.is_some_and(|channel| self.can_read_history(channel))
 			&& self.forward_cursor().is_some_and(|last| {
-				self.channels.iter().any(|channel| {
-					Some(channel.id) == self.selected
-						&& channel.last_message.map_or(
+				self.selected
+					.and_then(|id| self.channel(id))
+					.is_some_and(|channel| {
+						channel.last_message.map_or(
 							self.newer_may_have_more
 								|| (self.history_targeted && self.history_after.is_none()),
 							|latest| {
@@ -338,7 +386,7 @@ impl State {
 										|| self.history_after.is_none())
 							},
 						)
-				})
+					})
 			})
 	}
 	pub fn newer_history(&mut self) -> Option<crate::Command> {
@@ -768,9 +816,8 @@ impl State {
 				version,
 			} => {
 				if !self
-					.channels
-					.iter()
-					.any(|c| c.id == channel && (c.supports_text() || matches!(c.kind, 15 | 16)))
+					.channel(channel)
+					.is_some_and(|c| c.supports_text() || matches!(c.kind, 15 | 16))
 					|| matches!((self.read_state.version,version),(Some(old),Some(new)) if new<old)
 				{
 					return Ok(());
@@ -890,7 +937,7 @@ impl State {
 				}
 				match result {
 					Ok(()) => {
-						if self.channels.iter().any(|c| c.id == channel)
+						if self.channel(channel).is_some()
 							&& self
 								.read_state
 								.entries
@@ -1002,6 +1049,7 @@ impl State {
 			Ok(()) => {
 				self.read_state.revision = self.read_state.revision.wrapping_add(1);
 				let revision = self.read_state.revision;
+				let mut acks = Vec::with_capacity(channels.len());
 				for (channel, epoch, message) in channels {
 					if !self.read_state.entries.contains_key(&channel)
 						&& self.read_state.entries.len() >= crate::MAX_NAV
@@ -1018,11 +1066,12 @@ impl State {
 						continue;
 					}
 					let latest = self.channel(channel).and_then(|c| c.last_message);
-					self.read_state.activity.ack_local(channel, message, latest);
 					self.read_state
 						.entries
 						.insert(channel, (Some(message), revision));
+					acks.push((channel, message, latest));
 				}
+				self.read_state.activity.ack_local_batch(&acks);
 				self.read_state.status = None;
 			}
 			Err(failure) => {

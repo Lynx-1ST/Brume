@@ -953,9 +953,11 @@ fn caption(query: &str, key: &str, names: &[(Id, &str)], placeholder: &str) -> S
 		.filter_map(|token| {
 			let (k, value) = token.split_once(':')?;
 			(k == key).then(|| {
-				names
-					.iter()
-					.find(|(id, _)| id.to_string() == value)
+				value
+					.parse::<u64>()
+					.ok()
+					.map(Id)
+					.and_then(|target| names.iter().find(|(id, _)| *id == target))
 					.map_or_else(|| value.to_owned(), |(_, name)| (*name).to_owned())
 			})
 		})
@@ -1005,66 +1007,75 @@ fn user_picker(
 			let needle_target = needle_trimmed.trim_start_matches('@');
 			// Normalized once here: this filter re-runs for every user on every frame.
 			let needle_norm = crate::mentions::normalize(needle_target);
-			for user in users.iter().filter(|user| {
-				if needle_target.is_empty() {
-					true
-				} else {
-					let username_match =
-						crate::mentions::rank_with(
-							&needle_norm,
-							needle_target,
-							user.username(),
-							user.id,
-						)
-						.is_some() || user_handle(user).as_deref().is_some_and(|handle| {
-							crate::mentions::rank_with(
-								&needle_norm,
-								needle_target,
-								&handle[1..],
-								user.id,
-							)
-							.is_some()
-						});
-					if at_only {
-						username_match
-					} else {
+			egui::ScrollArea::vertical()
+				.max_height(260.0)
+				.show(ui, |ui| {
+					for user in users
+						.iter()
+						.filter(|user| {
+							if needle_target.is_empty() {
+								true
+							} else {
+								let username_match = crate::mentions::rank_with(
+									&needle_norm,
+									needle_target,
+									user.username(),
+									user.id,
+								)
+								.is_some() || user_handle(user)
+									.as_deref()
+									.is_some_and(|handle| {
+										crate::mentions::rank_with(
+											&needle_norm,
+											needle_target,
+											&handle[1..],
+											user.id,
+										)
+										.is_some()
+									});
+								if at_only {
+									username_match
+								} else {
+									let display = state.user_display_name(user);
+									username_match
+										|| crate::mentions::rank_with(
+											&needle_norm,
+											needle_target,
+											display,
+											user.id,
+										)
+										.is_some() || crate::mentions::rank_with(
+										&needle_norm,
+										needle_target,
+										&user.name,
+										user.id,
+									)
+									.is_some()
+								}
+							}
+						})
+						.take(50)
+					{
+						count += 1;
+						let id = user.id.to_string();
 						let display = state.user_display_name(user);
-						username_match
-							|| crate::mentions::rank_with(
-								&needle_norm,
-								needle_target,
-								display,
-								user.id,
-							)
-							.is_some() || crate::mentions::rank_with(
-							&needle_norm,
-							needle_target,
-							&user.name,
-							user.id,
+						let sub = format!("@{}", user.username());
+						if user_row(
+							ui,
+							user,
+							display,
+							Some(&sub),
+							UserRowIcon::None,
+							avatars,
+							demo,
+							selected(query, key, &id),
 						)
-						.is_some()
+						.clicked()
+						{
+							replace(query, key, &id, true);
+						}
 					}
-				}
-			}) {
-				count += 1;
-				let id = user.id.to_string();
-				let display = state.user_display_name(user);
-				let sub = format!("@{}", user.username());
-				if user_row(
-					ui,
-					user,
-					display,
-					Some(&sub),
-					UserRowIcon::None,
-					avatars,
-					demo,
-					selected(query, key, &id),
-				)
-				.clicked()
-				{
-					replace(query, key, &id, true);
-				}
-			}
+				});
 			if count == 0 {
 				ui.label(crate::i18n::translate(
 					"search-filters-user-picker-no-matching-users",

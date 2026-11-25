@@ -25,6 +25,15 @@ pub struct Menu {
 	range: Range<usize>,
 	query: String,
 	kind: Option<Kind>,
+	revision: u64,
+	cached_hide_nitro_emojis: bool,
+	cached_editing: bool,
+	member_search_len: usize,
+	member_search_channel: Option<Id>,
+	member_search_query: Option<String>,
+	users_fingerprint: u64,
+	channels_len: usize,
+	emoji_fingerprint: u64,
 	candidates: Vec<Candidate>,
 	selected: usize,
 	dismissed: bool,
@@ -194,8 +203,9 @@ pub(super) fn known_users_with_search(
 	searched: &[model::Member],
 ) -> Vec<User> {
 	let mut users = Vec::new();
+	let mut seen = std::collections::HashSet::new();
 	let mut add = |user: &User| {
-		if users.len() < 256 && !users.iter().any(|u: &User| u.id == user.id) {
+		if users.len() < 256 && seen.insert(user.id) {
 			users.push(user.clone());
 		}
 	};
@@ -533,6 +543,26 @@ fn push_emoji(out: &mut Vec<Ranked>, key: (u8, u8, u64), candidate: impl FnOnce(
 		out.insert(index, (key, candidate()));
 	}
 }
+fn users_fingerprint(users: &[User]) -> u64 {
+	let mut hasher = std::hash::DefaultHasher::new();
+	users.len().hash(&mut hasher);
+	for user in users {
+		user.id.hash(&mut hasher);
+	}
+	hasher.finish()
+}
+
+fn emoji_fingerprint(state: &State) -> u64 {
+	let mut hasher = std::hash::DefaultHasher::new();
+	state.premium_type.hash(&mut hasher);
+	state.guilds.len().hash(&mut hasher);
+	for guild in &state.guilds {
+		guild.id.hash(&mut hasher);
+		guild.emojis.as_ref().map(Vec::len).hash(&mut hasher);
+	}
+	hasher.finish()
+}
+
 impl Menu {
 	/// Whether [`Self::keys`] accepts Tab, so the composer must keep it from focus navigation.
 	pub fn claims_tab(&self) -> bool {
@@ -587,19 +617,56 @@ impl Menu {
 			};
 			return;
 		};
-		if kind == Kind::Game
-			&& self.kind == Some(kind)
+		let member_search = &state.member_search[0];
+		let member_search_len = member_search.rows.len();
+		let member_search_request = member_search
+			.request
+			.as_ref()
+			.map(|r| (r.channel, r.query.as_str()));
+		let common_unchanged = self.kind == Some(kind)
 			&& self.channel == Some(channel)
 			&& self.generation == state.generation
 			&& self.range == range
-			&& self.query == query
-			&& self.catalog_revision == state.game_mentions.revision
-			&& self.game_status == state.game_mentions.status
-		{
+			&& self.query == query;
+		let unchanged = match kind {
+			Kind::Game => {
+				common_unchanged
+					&& self.catalog_revision == state.game_mentions.revision
+					&& self.game_status == state.game_mentions.status
+			}
+			Kind::User | Kind::Channel | Kind::Emoji => {
+				common_unchanged
+					&& self.revision == state.revision
+					&& self.cached_hide_nitro_emojis == self.hide_nitro_emojis
+					&& self.cached_editing == self.editing
+					&& self.member_search_len == member_search_len
+					&& self.member_search_channel == member_search_request.map(|(ch, _)| ch)
+					&& self.member_search_query.as_deref() == member_search_request.map(|(_, q)| q)
+					&& match kind {
+						Kind::User => self.users_fingerprint == users_fingerprint(users),
+						Kind::Channel => self.channels_len == state.channels.len(),
+						Kind::Emoji => self.emoji_fingerprint == emoji_fingerprint(state),
+						Kind::Game => unreachable!(),
+					}
+			}
+		};
+		if unchanged {
 			return;
 		}
 		self.catalog_revision = state.game_mentions.revision;
 		self.game_status = state.game_mentions.status;
+		self.revision = state.revision;
+		self.cached_hide_nitro_emojis = self.hide_nitro_emojis;
+		self.cached_editing = self.editing;
+		self.member_search_len = member_search_len;
+		self.member_search_channel = member_search_request.map(|(ch, _)| ch);
+		self.member_search_query = member_search_request.map(|(_, q)| q.to_owned());
+		match kind {
+			Kind::User => self.users_fingerprint = users_fingerprint(users),
+			Kind::Channel => self.channels_len = state.channels.len(),
+			Kind::Emoji => self.emoji_fingerprint = emoji_fingerprint(state),
+			Kind::Game => {}
+		}
 		if self.channel != Some(channel)
 			|| self.generation != state.generation
 			|| self.range != range

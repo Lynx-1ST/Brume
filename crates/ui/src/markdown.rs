@@ -2714,6 +2714,12 @@ impl Formatted {
 			let available = kept.saturating_sub(written).min(text.len());
 			written += available;
 			let text = &text[..available];
+			if line.is_none() && shared.is_none() {
+				if !text.is_empty() {
+					job.append(text, 0.0, format);
+				}
+				continue;
+			}
 			let mut start = 0;
 			let mut offset = 0;
 			while offset < text.len() {

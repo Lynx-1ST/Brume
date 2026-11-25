@@ -1887,11 +1887,10 @@ impl State {
 		if before.is_none() && after.is_none() {
 			self.history_targeted = false;
 		}
-		let Some(channel) = self.selected.filter(|id| {
-			self.channels
-				.iter()
-				.any(|channel| channel.id == *id && channel.supports_text())
-		}) else {
+		let Some(channel) = self
+			.selected
+			.filter(|id| self.channel(*id).is_some_and(Channel::supports_text))
+		else {
 			self.arrived_home();
 			self.search_target = None;
 			self.reply = None;
@@ -3134,15 +3133,23 @@ impl State {
 				Ok(())
 			}
 			Event::UserAction(event) => {
-				let friendship = matches!(
+				let relationship = matches!(
 					&event,
 					user_actions::Event::Friends(_)
 						| user_actions::Event::Friend { .. }
 						| user_actions::Event::Relationship { .. }
+						| user_actions::Event::Relationships(_)
+						| user_actions::Event::Written {
+							action: user_actions::Action::ProfileFriend { friend: false, .. }
+								| user_actions::Action::Block { .. },
+							result: Ok(()),
+							..
+						}
 				);
 				let result = self.apply_user_action(event);
-				// A new friend's direct presence is authoritative; drop any shared-guild stand-in.
-				if friendship && !self.shared_presence_users.is_empty() {
+				// Relationship changes can add or remove direct-presence eligibility or drop
+				// shared-guild stand-ins for new friends.
+				if relationship && !self.direct_presences.is_empty() {
 					self.prune_direct_presence();
 				}
 				result
@@ -3374,7 +3381,12 @@ impl State {
 					if let Some(latest) = self.channels[index].last_message {
 						self.read_state.activity.observe_latest(channel.id, latest);
 					}
+					let dm_replaced = self.channels[index].guild.is_none()
+						&& matches!(self.channels[index].kind, 1 | 3);
 					self.channels[index] = channel;
+					if dm_replaced && !self.direct_presences.is_empty() {
+						self.prune_direct_presence();
+					}
 				} else {
 					let id = channel.id;
 					self.navigation_index
@@ -3408,6 +3420,8 @@ impl State {
 				}
 				if let Some(index) = self.channel_index(patch.id) {
 					let previous = self.channels[index].clone();
+					let dm_kind_changed = self.channels[index].guild.is_none()
+						&& !matches!(patch.kind, Patch::Absent);
 					let channel = &mut self.channels[index];
 					if let Some(latest) = channel.last_message {
 						self.read_state.activity.observe_latest(channel.id, latest);
@@ -3464,6 +3478,9 @@ impl State {
 						self.fail(auth::Failure::Capacity);
 						return;
 					}
+					if dm_kind_changed && !self.direct_presences.is_empty() {
+						self.prune_direct_presence();
+					}
 					if self.selected == Some(self.channels[index].id)
 						&& !navigable(&self.channels[index])
 					{
@@ -3509,7 +3526,9 @@ impl State {
 					.filter(|&index| self.channels[index].guild.is_none())
 				{
 					let c = &mut self.channels[index];
+					let prev_len = c.recipients.len();
 					c.recipients.retain(|u| u.id != user);
+					let recipient_removed = c.recipients.len() != prev_len;
 					for (id, participants) in &mut self.voice.dm_participants {
 						if *id == channel {
 							participants.retain(|p| p.user != user);
@@ -3525,6 +3544,9 @@ impl State {
 					{
 						call.participants.retain(|p| p.user != user);
 						call.watching.retain(|watcher| *watcher != user);
+					}
+					if recipient_removed && !self.direct_presences.is_empty() {
+						self.prune_direct_presence();
 					}
 					if self.selected == Some(channel) && self.members.is_some() {
 						let _ = self.request_members();
@@ -3590,17 +3612,21 @@ impl State {
 					}
 				} else {
 					let kept_ranges = self.members.as_ref().map(|m| m.ranges.clone());
+					let mut memberships = std::collections::BTreeMap::new();
 					for slot in list.slots.iter().flatten() {
 						if let MemberSlot::Person(member) = slot {
 							if let Some(guild) = list.guild {
 								self.remember_voice_member(guild, member);
 							}
-							self.timeline.apply_author_membership(
+							memberships.insert(
 								member.user.id,
-								&member.roles,
-								member.nick.as_deref(),
+								(member.roles.as_slice(), member.nick.as_deref()),
 							);
 						}
+					}
+					if !memberships.is_empty() {
+						self.timeline
+							.apply_author_memberships(|id| memberships.get(&id).copied());
 					}
 					let mut list = list;
 					if list.ranges.is_empty()
@@ -3744,10 +3770,7 @@ impl State {
 					|| request != self.request
 					|| !self.history_pending
 					|| !self.can_read_history(channel)
-					|| !self
-						.channels
-						.iter()
-						.any(|loaded| loaded.id == channel && loaded.supports_text())
+					|| !self.channel(channel).is_some_and(Channel::supports_text)
 				{
 					return;
 				}
@@ -3964,13 +3987,13 @@ impl State {
 				self.forget_pending_replies(channel, &[id]);
 				// A card must never keep showing a reply that no longer exists.
 				self.thread_previews.forget(channel, &[id]);
-				if let Some(channel) = self
-					.channels
-					.iter_mut()
-					.find(|c| c.id == channel && c.last_message == Some(id))
+				if let Some(index) = self
+					.channel_index(channel)
+					.filter(|&index| self.channels[index].last_message == Some(id))
 				{
-					self.read_state.activity.observe_latest(channel.id, id);
-					channel.last_message = None;
+					let c = &mut self.channels[index];
+					self.read_state.activity.observe_latest(c.id, id);
+					c.last_message = None;
 				}
 				if self.selected == Some(channel) {
 					self.deleted_navigation_target(channel, id);
@@ -4005,18 +4028,18 @@ impl State {
 				self.parked_replies.forget_targets(channel, &ids);
 				self.thread_previews.forget(channel, &ids);
 				if ids.len() <= 100 {
-					for id in &ids {
-						self.read_state.activity.delete(channel, *id);
-					}
+					self.read_state.activity.delete_batch(channel, &ids);
 					self.forget_pending_replies(channel, &ids);
 				}
-				if let Some(channel) = self
-					.channels
-					.iter_mut()
-					.find(|c| c.id == channel && c.last_message.is_some_and(|id| ids.contains(&id)))
-					&& let Some(id) = channel.last_message.take()
+				if let Some(index) = self.channel_index(channel).filter(|&index| {
+					self.channels[index]
+						.last_message
+						.is_some_and(|id| ids.contains(&id))
+				}) && let Some(id) = self.channels[index].last_message.take()
 				{
-					self.read_state.activity.observe_latest(channel.id, id);
+					self.read_state
+						.activity
+						.observe_latest(self.channels[index].id, id);
 				}
 				if ids.len() > 100 {
 					Err("Bulk deletion exceeds safe capacity")
@@ -4277,9 +4300,6 @@ impl State {
 		{
 			self.clear_archives();
 		}
-		if access_changed {
-			self.prune_direct_presence();
-		}
 		if self
 			.server_settings
 			.guild
@@ -4336,6 +4356,17 @@ impl State {
 		}
 	}
 	fn remove_channels(&mut self, removed: &BTreeSet<Id>) {
+		let dm_removed = !self.direct_presences.is_empty()
+			&& if removed.len() <= 8 {
+				removed.iter().any(|id| {
+					self.channel(*id)
+						.is_some_and(|c| c.guild.is_none() && matches!(c.kind, 1 | 3))
+				})
+			} else {
+				self.channels.iter().any(|c| {
+					removed.contains(&c.id) && c.guild.is_none() && matches!(c.kind, 1 | 3)
+				})
+			};
 		self.invalidate_navigation();
 		self.thread_info.retain(|id, _| !removed.contains(id));
 		for id in removed {
@@ -4354,11 +4385,14 @@ impl State {
 		self.channels.retain(|c| !removed.contains(&c.id));
 		self.parked_replies.forget_channels(removed);
 		self.permissions.forget_channels(removed);
+		self.read_state.forget_batch(removed);
 		for id in removed {
 			self.permissions.channels.remove(id);
 			self.end_voice_channel(*id);
-			self.read_state.forget(*id);
 			self.forget_direct_inbox(*id);
+		}
+		if dm_removed {
+			self.prune_direct_presence();
 		}
 		if self.selected.is_some_and(|id| removed.contains(&id)) {
 			self.clear_search();

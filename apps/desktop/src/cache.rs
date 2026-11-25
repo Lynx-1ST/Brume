@@ -2,7 +2,7 @@ use eframe::egui;
 use local_store::{Appearance, LocalStore, StoreError};
 use model::{Id, Message};
 use std::{
-	collections::{BTreeMap, BTreeSet},
+	collections::{BTreeMap, BTreeSet, VecDeque},
 	sync::{
 		Arc, Condvar, Mutex,
 		atomic::{AtomicBool, AtomicU64, Ordering},
@@ -244,12 +244,14 @@ impl Cache {
 				.as_ref()
 				.map_or(0, |font| font.bytes().len() + font.name.capacity()),
 			Operation::SaveChannel { messages, .. } | Operation::SaveChanges { messages, .. } => {
-				if messages.len() > 500
-					|| messages.iter().map(Message::bytes).sum::<usize>() > WINDOW_BYTES
-				{
+				if messages.len() > 500 {
 					return false;
 				}
-				message_bytes(messages)
+				let bytes = messages.iter().map(Message::bytes).sum::<usize>();
+				if bytes > WINDOW_BYTES {
+					return false;
+				}
+				bytes + messages.capacity().saturating_sub(messages.len()) * size_of::<Message>()
 			}
 			Operation::SaveDraft { content, .. } => {
 				if content.len() > 8192 {
@@ -339,42 +341,50 @@ impl Cache {
 			let mut store = store.map_or_else(LocalStore::open_default, Ok);
 			let mut opened = std::time::Instant::now();
 			let results = Arc::new(Budget::default());
-			while let Ok((generation, account, epoch, operation, reservation)) = commands.recv() {
-				// A store that could not be opened is tried again, at most once a second, so a
-				// momentary refusal does not leave every later read and save failing until restart.
-				if matches!(store, Err(StoreError::Unavailable))
-					&& opened.elapsed() >= std::time::Duration::from_secs(1)
-				{
-					store = LocalStore::open_default();
-					opened = std::time::Instant::now();
+			let mut pending = VecDeque::new();
+			'worker: while let Ok(first) = commands.recv() {
+				pending.push_back(first);
+				while let Ok(next) = commands.try_recv() {
+					pending.push_back(next);
 				}
-				let outcome = execute(&mut store, &worker_history, account, epoch, operation);
-				drop(reservation);
-				let bytes = match &outcome {
-					Outcome::CustomFont(Ok(Some(font))) => {
-						font.bytes().len() + font.name.capacity()
+				for item in coalesce_pending(&mut pending) {
+					// A store that could not be opened is tried again, at most once a second, so a
+					// momentary refusal does not leave every later read and save failing until restart.
+					if matches!(store, Err(StoreError::Unavailable))
+						&& opened.elapsed() >= std::time::Duration::from_secs(1)
+					{
+						store = LocalStore::open_default();
+						opened = std::time::Instant::now();
 					}
-					Outcome::Channel { messages, .. } => message_bytes(messages),
-					Outcome::Drafts(drafts) => drafts.values().map(String::capacity).sum(),
-					Outcome::GifFavorites(favorites) => {
-						favorites.iter().map(model::Gif::bytes).sum::<usize>()
-							+ favorites.capacity() * size_of::<model::Gif>()
+					let outcome = execute(
+						&mut store,
+						&worker_history,
+						item.account,
+						item.epoch,
+						item.operation,
+					);
+					drop(item.reservation);
+					let bytes = outcome_bytes(&outcome);
+					for generation in item.extra_generations {
+						let reservation = results
+							.reserve(bytes + 64 * 1024, true)
+							.expect("bounded storage outcome fits queue");
+						if events
+							.send((generation, duplicate_outcome(&outcome), reservation))
+							.is_err()
+						{
+							break 'worker;
+						}
 					}
-					Outcome::Accounts { roster, pruned } => {
-						roster.as_ref().map_or(0, |accounts| {
-							accounts
-								.iter()
-								.map(model::SavedAccount::heap_bytes)
-								.sum::<usize>() + accounts.capacity() * size_of::<model::SavedAccount>()
-						}) + pruned.capacity() * size_of::<Id>()
+					let reservation = results
+						.reserve(bytes + 64 * 1024, true)
+						.expect("bounded storage outcome fits queue");
+					if events
+						.send((item.generation, outcome, reservation))
+						.is_err()
+					{
+						break 'worker;
 					}
-					_ => 0,
-				};
-				let reservation = results
-					.reserve(bytes + 64 * 1024, true)
-					.expect("bounded storage outcome fits queue");
-				if events.send((generation, outcome, reservation)).is_err() {
-					break;
 				}
 				ctx.request_repaint();
 			}
@@ -388,6 +398,179 @@ impl Cache {
 	}
 }
 
+fn outcome_bytes(outcome: &Outcome) -> usize {
+	match outcome {
+		Outcome::CustomFont(Ok(Some(font))) => font.bytes().len() + font.name.capacity(),
+		Outcome::Channel { messages, .. } => message_bytes(messages),
+		Outcome::Drafts(drafts) => drafts.values().map(String::capacity).sum(),
+		Outcome::GifFavorites(favorites) => {
+			favorites.iter().map(model::Gif::bytes).sum::<usize>()
+				+ favorites.capacity() * size_of::<model::Gif>()
+		}
+		Outcome::Accounts { roster, pruned } => {
+			roster.as_ref().map_or(0, |accounts| {
+				accounts
+					.iter()
+					.map(model::SavedAccount::heap_bytes)
+					.sum::<usize>() + accounts.capacity() * size_of::<model::SavedAccount>()
+			}) + pruned.capacity() * size_of::<Id>()
+		}
+		_ => 0,
+	}
+}
+
+fn duplicate_outcome(outcome: &Outcome) -> Outcome {
+	match outcome {
+		Outcome::Saved => Outcome::Saved,
+		Outcome::AppPreferencesSaved(result) => Outcome::AppPreferencesSaved(*result),
+		Outcome::ReadingPreferencesSaved(result) => Outcome::ReadingPreferencesSaved(*result),
+		Outcome::ChannelPreferencesSaved(result) => Outcome::ChannelPreferencesSaved(*result),
+		Outcome::AccountPresenceSaved(result) => Outcome::AccountPresenceSaved(*result),
+		Outcome::GameActivitySaved(result) => Outcome::GameActivitySaved(*result),
+		Outcome::MinimizeToTraySaved(result) => Outcome::MinimizeToTraySaved(*result),
+		Outcome::Failed {
+			error,
+			message,
+			draft_restore,
+			history_cleanup,
+		} => Outcome::Failed {
+			error: *error,
+			message,
+			draft_restore: *draft_restore,
+			history_cleanup: *history_cleanup,
+		},
+		_ => unreachable!("only coalesced save/delete outcomes are duplicated"),
+	}
+}
+
+struct BatchItem {
+	generation: u64,
+	extra_generations: Vec<u64>,
+	account: Id,
+	epoch: u64,
+	operation: Operation,
+	reservation: Reservation,
+}
+
+#[derive(PartialEq, Eq)]
+enum CoalesceKey {
+	Draft(Id, Id),
+	AppPreferences,
+	Appearance,
+	ThemeVariant,
+	ReadingPreferences,
+	GameActivity,
+	MinimizeToTray,
+	ChannelPreferences(Id),
+	AccountPresence(Id),
+}
+
+fn coalesce_key(account: Id, operation: &Operation) -> Option<CoalesceKey> {
+	match operation {
+		Operation::SaveDraft { channel, .. } => Some(CoalesceKey::Draft(account, *channel)),
+		Operation::SaveAppPreferences(_) => Some(CoalesceKey::AppPreferences),
+		Operation::SaveAppearance(_) => Some(CoalesceKey::Appearance),
+		Operation::SaveThemeVariant(_) => Some(CoalesceKey::ThemeVariant),
+		Operation::SaveReadingPreferences(_) => Some(CoalesceKey::ReadingPreferences),
+		Operation::SaveGameActivity(_) => Some(CoalesceKey::GameActivity),
+		Operation::SaveMinimizeToTray(_) => Some(CoalesceKey::MinimizeToTray),
+		Operation::SaveChannelPreferences(_) => Some(CoalesceKey::ChannelPreferences(account)),
+		Operation::SaveAccountPresence(_) => Some(CoalesceKey::AccountPresence(account)),
+		_ => None,
+	}
+}
+
+fn is_barrier(operation: &Operation) -> bool {
+	matches!(
+		operation,
+		Operation::ClearHistory
+			| Operation::Forget
+			| Operation::LoadChannel { .. }
+			| Operation::LoadDrafts
+			| Operation::LoadAppearance
+			| Operation::LoadReadingPreferences
+			| Operation::LoadGameActivity
+			| Operation::LoadMinimizeToTray
+			| Operation::LoadChannelPreferences
+			| Operation::LoadAccountPresences
+	)
+}
+
+fn coalesce_pending(
+	pending: &mut VecDeque<(u64, Id, u64, Operation, Reservation)>,
+) -> Vec<BatchItem> {
+	let mut batch: Vec<BatchItem> = Vec::with_capacity(pending.len());
+	let mut barrier_index = 0usize;
+	while let Some((generation, account, epoch, operation, reservation)) = pending.pop_front() {
+		if is_barrier(&operation) {
+			batch.push(BatchItem {
+				generation,
+				extra_generations: Vec::new(),
+				account,
+				epoch,
+				operation,
+				reservation,
+			});
+			barrier_index = batch.len();
+			continue;
+		}
+		if let Operation::DeleteMessages { channel, ids } = operation {
+			if batch.len() > barrier_index
+				&& let Some(last) = batch.last_mut()
+				&& last.account == account
+				&& let Operation::DeleteMessages {
+					channel: prev_channel,
+					ids: prev_ids,
+				} = &mut last.operation
+				&& *prev_channel == channel
+			{
+				let added = ids.iter().filter(|id| !prev_ids.contains(id)).count();
+				if prev_ids.len() + added <= 100 {
+					for id in ids {
+						if !prev_ids.contains(&id) {
+							prev_ids.push(id);
+						}
+					}
+					last.extra_generations.push(generation);
+					drop(reservation);
+					continue;
+				}
+			}
+			batch.push(BatchItem {
+				generation,
+				extra_generations: Vec::new(),
+				account,
+				epoch,
+				operation: Operation::DeleteMessages { channel, ids },
+				reservation,
+			});
+			continue;
+		}
+		if let Some(key) = coalesce_key(account, &operation)
+			&& let Some(prev) = batch[barrier_index..]
+				.iter_mut()
+				.rev()
+				.find(|item| coalesce_key(item.account, &item.operation).as_ref() == Some(&key))
+		{
+			prev.extra_generations.push(prev.generation);
+			prev.generation = generation;
+			prev.epoch = epoch;
+			prev.operation = operation;
+			prev.reservation = reservation;
+			continue;
+		}
+		batch.push(BatchItem {
+			generation,
+			extra_generations: Vec::new(),
+			account,
+			epoch,
+			operation,
+			reservation,
+		});
+	}
+	batch
+}
+
 fn execute(
 	store: &mut Result<LocalStore, StoreError>,
 	history: &HistorySafety,
@@ -396,7 +579,7 @@ fn execute(
 	operation: Operation,
 ) -> Outcome {
 	// Settings completions have their own pending/error state, independent of history.
-	match &operation {
+	let operation = match operation {
 		Operation::LoadCustomFont => {
 			return Outcome::CustomFont((|| {
 				let store = store
@@ -417,7 +600,7 @@ fn execute(
 				store
 					.save_custom_font(font.as_ref().map(|font| (font.name.as_str(), font.bytes())))
 					.map_err(|_| "Could not save the font. Try again.")?;
-				Ok(font.clone())
+				Ok(font)
 			})());
 		}
 		Operation::LoadChannelPreferences => {
@@ -428,7 +611,7 @@ fn execute(
 		}
 		Operation::SaveChannelPreferences(value) => {
 			return Outcome::ChannelPreferencesSaved(match store {
-				Ok(store) => store.save_channel_preferences(account, value),
+				Ok(store) => store.save_channel_preferences(account, &value),
 				Err(error) => Err(*error),
 			});
 		}
@@ -440,7 +623,7 @@ fn execute(
 		}
 		Operation::SaveAccountPresence(presence) => {
 			return Outcome::AccountPresenceSaved(match store {
-				Ok(store) => store.save_account_presence(account, presence),
+				Ok(store) => store.save_account_presence(account, &presence),
 				Err(error) => Err(*error),
 			});
 		}
@@ -455,7 +638,7 @@ fn execute(
 		}
 		Operation::SaveAccount(account) => {
 			let (roster, pruned) = match store {
-				Ok(store) => match store.save_account(account) {
+				Ok(store) => match store.save_account(&account) {
 					// Report the committed pruning even when the re-read fails.
 					Ok(pruned) => (store.accounts(), pruned),
 					Err(error) => (Err(error), Vec::new()),
@@ -470,9 +653,7 @@ fn execute(
 		} => {
 			return Outcome::Accounts {
 				roster: match store {
-					Ok(store) => store
-						.set_account_token(*id, *has_token)
-						.and(store.accounts()),
+					Ok(store) => store.set_account_token(id, has_token).and(store.accounts()),
 					Err(error) => Err(*error),
 				},
 				pruned: Vec::new(),
@@ -480,7 +661,7 @@ fn execute(
 		}
 		Operation::SaveAppPreferences(value) => {
 			return Outcome::AppPreferencesSaved(match store {
-				Ok(store) => store.save_app_preferences(value),
+				Ok(store) => store.save_app_preferences(&value),
 				Err(error) => Err(*error),
 			});
 		}
@@ -492,7 +673,7 @@ fn execute(
 		}
 		Operation::SaveMinimizeToTray(value) => {
 			return Outcome::MinimizeToTraySaved(match store {
-				Ok(store) => store.save_minimize_to_tray(*value),
+				Ok(store) => store.save_minimize_to_tray(value),
 				Err(error) => Err(*error),
 			});
 		}
@@ -504,7 +685,7 @@ fn execute(
 		}
 		Operation::SaveGameActivity(value) => {
 			return Outcome::GameActivitySaved(match store {
-				Ok(store) => store.save_game_activity_enabled(*value),
+				Ok(store) => store.save_game_activity_enabled(value),
 				Err(error) => Err(*error),
 			});
 		}
@@ -516,12 +697,12 @@ fn execute(
 		}
 		Operation::SaveReadingPreferences(value) => {
 			return Outcome::ReadingPreferencesSaved(match store {
-				Ok(store) => store.save_reading_preferences(*value),
+				Ok(store) => store.save_reading_preferences(value),
 				Err(error) => Err(*error),
 			});
 		}
-		_ => {}
-	}
+		other => other,
+	};
 	if matches!(
 		operation,
 		Operation::LoadChannel { .. }
@@ -1330,5 +1511,101 @@ mod tests {
 				content: "still usable".into()
 			}
 		));
+	}
+
+	#[test]
+	fn worker_coalescing_deduplicates_writes_and_respects_barriers() {
+		let budget = Arc::new(Budget::default());
+		let mut pending = VecDeque::new();
+		let push = |pending: &mut VecDeque<_>, generation: u64, account: u64, op: Operation| {
+			let res = budget.reserve(8192, false).unwrap();
+			pending.push_back((generation, Id(account), 0, op, res));
+		};
+		push(
+			&mut pending,
+			1,
+			10,
+			Operation::SaveDraft {
+				channel: Id(5),
+				content: "first".into(),
+			},
+		);
+		push(
+			&mut pending,
+			2,
+			10,
+			Operation::SaveAppearance(Appearance::Light),
+		);
+		push(
+			&mut pending,
+			3,
+			10,
+			Operation::SaveDraft {
+				channel: Id(5),
+				content: "second".into(),
+			},
+		);
+		push(
+			&mut pending,
+			4,
+			10,
+			Operation::SaveAppearance(Appearance::Dark),
+		);
+		push(
+			&mut pending,
+			5,
+			10,
+			Operation::DeleteMessages {
+				channel: Id(5),
+				ids: vec![Id(1), Id(2)],
+			},
+		);
+		push(
+			&mut pending,
+			6,
+			10,
+			Operation::DeleteMessages {
+				channel: Id(5),
+				ids: vec![Id(2), Id(3)],
+			},
+		);
+		push(&mut pending, 7, 10, Operation::ClearHistory);
+		push(
+			&mut pending,
+			8,
+			10,
+			Operation::SaveDraft {
+				channel: Id(5),
+				content: "after clear".into(),
+			},
+		);
+
+		let batch = coalesce_pending(&mut pending);
+		assert_eq!(batch.len(), 5);
+		assert!(matches!(
+			&batch[0].operation,
+			Operation::SaveDraft { channel: Id(5), content } if content == "second"
+		));
+		assert_eq!(batch[0].generation, 3);
+		assert_eq!(batch[0].extra_generations, vec![1]);
+		assert!(matches!(
+			&batch[1].operation,
+			Operation::SaveAppearance(Appearance::Dark)
+		));
+		assert_eq!(batch[1].generation, 4);
+		assert_eq!(batch[1].extra_generations, vec![2]);
+		assert!(matches!(
+			&batch[2].operation,
+			Operation::DeleteMessages { channel: Id(5), ids } if ids == &[Id(1), Id(2), Id(3)]
+		));
+		assert_eq!(batch[2].generation, 5);
+		assert_eq!(batch[2].extra_generations, vec![6]);
+		assert!(matches!(&batch[3].operation, Operation::ClearHistory));
+		assert!(matches!(
+			&batch[4].operation,
+			Operation::SaveDraft { channel: Id(5), content } if content == "after clear"
+		));
+		drop(batch);
+		assert_eq!(*budget.used.lock().unwrap(), 0);
 	}
 }

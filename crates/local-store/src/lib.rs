@@ -27,6 +27,9 @@ fn same_cached_user(old: &User, live: &User) -> bool {
 
 /// Compare the fields written to the messages table without allocating or serializing.
 fn same_cached_message(old: &Message, live: &Message) -> bool {
+	if std::ptr::eq(old, live) {
+		return true;
+	}
 	old.id == live.id
 		&& old.channel == live.channel
 		&& same_cached_user(&old.author, &live.author)
@@ -63,7 +66,35 @@ fn same_cached_message(old: &Message, live: &Message) -> bool {
 		&& old.forward_origin == live.forward_origin
 }
 
+fn serialize_json_array<T: serde::Serialize>(
+	items: &[T],
+) -> Result<std::borrow::Cow<'static, str>> {
+	if items.is_empty() {
+		Ok(std::borrow::Cow::Borrowed("[]"))
+	} else {
+		serde_json::to_string(items)
+			.map(std::borrow::Cow::Owned)
+			.map_err(|_| StoreError::Incompatible)
+	}
+}
+
+fn parse_cached_array<T, W: serde::de::DeserializeOwned>(
+	raw: &str,
+	unwrap: impl FnOnce(W) -> Vec<T>,
+) -> Result<Vec<T>> {
+	if raw == "[]" {
+		Ok(Vec::new())
+	} else {
+		serde_json::from_str::<W>(raw)
+			.map(unwrap)
+			.map_err(|_| StoreError::Incompatible)
+	}
+}
+
 fn parse_author_roles(raw: &str) -> std::result::Result<Vec<Id>, StoreError> {
+	if raw == "[]" {
+		return Ok(Vec::new());
+	}
 	let values: Vec<String> = serde_json::from_str(raw).map_err(|_| StoreError::Incompatible)?;
 	if values.len() > model::permissions::MAX_MEMBER_ROLES {
 		return Err(StoreError::Capacity);
@@ -1116,8 +1147,7 @@ impl LocalStore {
 			{
 				continue;
 			}
-			let mentions =
-				serde_json::to_string(&message.mentions).map_err(|_| StoreError::Incompatible)?;
+			let mentions = serialize_json_array(&message.mentions)?;
 			if mentions.len() > 128 * 1024 {
 				return Err(StoreError::Capacity);
 			}
@@ -1132,14 +1162,20 @@ impl LocalStore {
 					return Err(StoreError::Capacity);
 				}
 			}
-			let author_roles = serde_json::to_string(
-				&message
-					.author_roles
-					.iter()
-					.map(|role| role.to_string())
-					.collect::<Vec<_>>(),
-			)
-			.map_err(|_| StoreError::Incompatible)?;
+			let author_roles = if message.author_roles.is_empty() {
+				std::borrow::Cow::Borrowed("[]")
+			} else {
+				std::borrow::Cow::Owned(
+					serde_json::to_string(
+						&message
+							.author_roles
+							.iter()
+							.map(|role| role.to_string())
+							.collect::<Vec<_>>(),
+					)
+					.map_err(|_| StoreError::Incompatible)?,
+				)
+			};
 			if author_roles.len() > 16 * 1024 {
 				return Err(StoreError::Capacity);
 			}
@@ -1150,8 +1186,7 @@ impl LocalStore {
 			{
 				return Err(StoreError::Capacity);
 			}
-			let sticker_items = serde_json::to_string(&message.sticker_items)
-				.map_err(|_| StoreError::Incompatible)?;
+			let sticker_items = serialize_json_array(&message.sticker_items)?;
 			if sticker_items.len() > 32768 {
 				return Err(StoreError::Capacity);
 			}
@@ -1166,22 +1201,18 @@ impl LocalStore {
 			}
 			let reactions = message
 				.reactions
-				.as_ref()
-				.map(serde_json::to_string)
-				.transpose()
-				.map_err(|_| StoreError::Incompatible)?;
+				.as_deref()
+				.map(serialize_json_array)
+				.transpose()?;
 			if reactions.as_ref().is_some_and(|json| json.len() > 16384) {
 				return Err(StoreError::Capacity);
 			}
-			let components =
-				serde_json::to_string(&message.components).map_err(|_| StoreError::Incompatible)?;
+			let components = serialize_json_array(&message.components)?;
 			if components.len() > MAX_MEDIA_JSON {
 				return Err(StoreError::Capacity);
 			}
-			let embeds =
-				serde_json::to_string(&message.embeds).map_err(|_| StoreError::Incompatible)?;
-			let attachments = serde_json::to_string(&message.attachments)
-				.map_err(|_| StoreError::Incompatible)?;
+			let embeds = serialize_json_array(&message.embeds)?;
+			let attachments = serialize_json_array(&message.attachments)?;
 			if embeds.len() > MAX_MEDIA_JSON || attachments.len() > MAX_MEDIA_JSON {
 				return Err(StoreError::Capacity);
 			}
@@ -1209,24 +1240,24 @@ impl LocalStore {
 				message.unsupported,
 				message.author.avatar,
 				message.author.discriminator,
-				embeds,
+				&*embeds,
 				message.embeds_suppressed,
-				attachments,
-				mentions,
+				&*attachments,
+				&*mentions,
 				message.extra_content.bits(),
 				message.kind,
 				message.reply_deleted,
 				message.author.webhook,
 				account_kind as u8,
 				message.forwarded,
-				author_roles,
+				&*author_roles,
 				message.author_nick.as_deref(),
-				components,
+				&*components,
 				message.application_id.map(|id| id.to_string()),
 				message.flags.to_string(),
-				sticker_items,
+				&*sticker_items,
 				interaction,
-				reactions,
+				reactions.as_deref(),
 				verified_bot,
 				forward_origin,
 			])?;
@@ -1379,27 +1410,24 @@ impl LocalStore {
 					return Err(StoreError::Capacity);
 				}
 			}
-			let embeds = serde_json::from_str::<CachedEmbeds>(
+			let embeds = parse_cached_array::<_, CachedEmbeds>(
 				row.get_ref(9)?
 					.as_str()
 					.map_err(|_| StoreError::Incompatible)?,
-			)
-			.map_err(|_| StoreError::Incompatible)?
-			.0;
-			let attachments = serde_json::from_str::<model::AttachmentList>(
+				|cached| cached.0,
+			)?;
+			let attachments = parse_cached_array::<_, model::AttachmentList>(
 				row.get_ref(11)?
 					.as_str()
 					.map_err(|_| StoreError::Incompatible)?,
-			)
-			.map_err(|_| StoreError::Incompatible)?
-			.0;
-			let mentions = serde_json::from_str::<CachedMentions>(
+				|cached| cached.0,
+			)?;
+			let mentions = parse_cached_array::<_, CachedMentions>(
 				row.get_ref(12)?
 					.as_str()
 					.map_err(|_| StoreError::Incompatible)?,
-			)
-			.map_err(|_| StoreError::Incompatible)?
-			.0;
+				|cached| cached.0,
+			)?;
 			if !model::valid_mentions(&mentions)
 				|| !model::valid_embeds(&embeds)
 				|| !model::valid_attachments(&attachments)
@@ -1456,12 +1484,16 @@ impl LocalStore {
 					if text.len() > 16384 {
 						return Err(StoreError::Capacity);
 					}
-					let reactions = serde_json::from_str::<Vec<model::Reaction>>(text)
-						.map_err(|_| StoreError::Incompatible)?;
-					if !model::valid_reactions(&reactions) {
-						return Err(StoreError::Incompatible);
+					if text == "[]" {
+						Some(Vec::new())
+					} else {
+						let reactions = serde_json::from_str::<Vec<model::Reaction>>(text)
+							.map_err(|_| StoreError::Incompatible)?;
+						if !model::valid_reactions(&reactions) {
+							return Err(StoreError::Incompatible);
+						}
+						Some(reactions)
 					}
-					Some(reactions)
 				}
 				_ => return Err(StoreError::Incompatible),
 			};
@@ -1478,25 +1510,24 @@ impl LocalStore {
 			};
 			let message = Message {
 				poll: None,
-				sticker_items: serde_json::from_str::<
+				sticker_items: parse_cached_array::<
+					_,
 					model::StickerList<{ model::MAX_MESSAGE_STICKERS }>,
 				>(
 					row.get_ref(24)?
 						.as_str()
 						.map_err(|_| StoreError::Incompatible)?,
-				)
-				.map_err(|_| StoreError::Incompatible)?
-				.0,
+					|cached| cached.0,
+				)?,
 				flags,
 				ephemeral: false,
 				application_id: row.get::<_, Option<String>>(22)?.map(parse).transpose()?,
-				components: serde_json::from_str::<model::ComponentList>(
+				components: parse_cached_array::<_, model::ComponentList>(
 					row.get_ref(21)?
 						.as_str()
 						.map_err(|_| StoreError::Incompatible)?,
-				)
-				.map_err(|_| StoreError::Incompatible)?
-				.0,
+					|cached| cached.0,
+				)?,
 				reactions,
 				id: parse(row.get(0)?)?,
 				channel,
@@ -1618,16 +1649,14 @@ impl LocalStore {
 		if ids.len() > 100 || account.0 == 0 || channel.0 == 0 || ids.iter().any(|id| id.0 == 0) {
 			return Err(StoreError::Capacity);
 		}
+		let account = account.to_string();
+		let channel = channel.to_string();
 		let transaction = self.0.transaction()?;
 		{
 			let mut statement = transaction
-				.prepare("DELETE FROM messages WHERE account=?1 AND channel=?2 AND id=?3")?;
+				.prepare_cached("DELETE FROM messages WHERE account=?1 AND channel=?2 AND id=?3")?;
 			for id in ids {
-				statement.execute(params![
-					account.to_string(),
-					channel.to_string(),
-					id.to_string()
-				])?;
+				statement.execute(params![account, channel, id.to_string()])?;
 			}
 		}
 		transaction.commit()?;

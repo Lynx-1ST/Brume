@@ -104,9 +104,8 @@ impl State {
 	/// Inspect an eligible dormant window without changing the active conversation.
 	pub(crate) fn resident_timeline(&self, channel: Id) -> Option<&Timeline> {
 		let current = self
-			.channels
-			.iter()
-			.find(|entry| entry.id == channel && entry.supports_text())?;
+			.channel(channel)
+			.filter(|entry| entry.supports_text())?;
 		if self.archived_thread == Some(channel) || !self.can_read_history(channel) {
 			return None;
 		}
@@ -168,7 +167,7 @@ impl State {
 		entries.retain(|entry| {
 			self.archived_thread != Some(entry.identity.id)
 				&& self.can_read_history(entry.identity.id)
-				&& self.channels.iter().any(|channel| {
+				&& self.channel(entry.identity.id).is_some_and(|channel| {
 					channel.supports_text() && Identity::from(channel) == entry.identity
 				})
 		});
@@ -197,9 +196,8 @@ impl State {
 	/// The page is speculative, so anything unexpected drops it rather than failing the session.
 	pub(crate) fn park_preloaded(&mut self, channel: Id, mut messages: Vec<Message>) {
 		let Some(identity) = self
-			.channels
-			.iter()
-			.find(|entry| entry.id == channel && entry.supports_text())
+			.channel(channel)
+			.filter(|entry| entry.supports_text())
 			.map(Identity::from)
 		else {
 			return;
@@ -267,27 +265,22 @@ impl State {
 			.map(|entry| Trusted {
 				older_exhausted: entry.older_exhausted,
 			});
-		let previous = self.selected.and_then(|id| {
-			self.channels
-				.iter()
-				.find(|entry| entry.id == id)
-				.map(Identity::from)
-		});
-		let eligible = previous.is_some_and(|identity| {
-			self.search_target.is_none()
+		let previous = self
+			.selected
+			.and_then(|id| self.channel(id))
+			.map(|entry| (Identity::from(entry), entry.supports_text()));
+		let eligible = previous.is_some_and(|(identity, supports_text)| {
+			supports_text
+				&& self.search_target.is_none()
 				&& !self.history_targeted
 				&& self.archived_thread != Some(identity.id)
 				&& self.freshness == Freshness::Fresh
 				&& self.can_read_history(identity.id)
-				&& self
-					.channels
-					.iter()
-					.any(|entry| entry.id == identity.id && entry.supports_text())
 				&& self.timeline.row_count() != 0
 		});
 		let mut timeline = std::mem::take(&mut self.timeline);
 		timeline.cancel_page();
-		if let Some(identity) = previous.filter(|_| eligible) {
+		if let Some((identity, _)) = previous.filter(|_| eligible) {
 			if identity.id == channel {
 				self.timeline = timeline;
 			} else {

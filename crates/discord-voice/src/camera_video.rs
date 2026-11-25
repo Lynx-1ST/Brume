@@ -121,18 +121,23 @@ impl Sender {
 			if nal.len() <= PAYLOAD {
 				self.push(nal, timestamp, last_nal, encryption)?;
 			} else {
+				let mut payload = [0u8; PAYLOAD];
+				payload[0] = (nal[0] & 0xe0) | 28;
+				let nalu_type = nal[0] & 0x1f;
 				let chunks = nal[1..].chunks(PAYLOAD - 2);
 				let count = chunks.len();
 				for (i, chunk) in chunks.enumerate() {
-					let mut payload = Vec::with_capacity(chunk.len() + 2);
-					payload.push((nal[0] & 0xe0) | 28);
-					payload.push(
-						(nal[0] & 0x1f)
-							| if i == 0 { 0x80 } else { 0 }
-							| if i + 1 == count { 0x40 } else { 0 },
-					);
-					payload.extend_from_slice(chunk);
-					self.push(&payload, timestamp, last_nal && i + 1 == count, encryption)?;
+					payload[1] = nalu_type
+						| if i == 0 { 0x80 } else { 0 }
+						| if i + 1 == count { 0x40 } else { 0 };
+					let len = chunk.len() + 2;
+					payload[2..len].copy_from_slice(chunk);
+					self.push(
+						&payload[..len],
+						timestamp,
+						last_nal && i + 1 == count,
+						encryption,
+					)?;
 				}
 			}
 		}

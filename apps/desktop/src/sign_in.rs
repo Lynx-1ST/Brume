@@ -365,7 +365,10 @@ impl Desktop {
 			.frame(egui::Frame::NONE.fill(ui::design::window_palette(ui).canvas))
 			.show(ui, |ui| {
 				let elapsed = ui::loading_screen::elapsed_seconds(ui.ctx());
-				ui.ctx().request_repaint();
+				let viewport = ui.ctx().input(|i| i.viewport().clone());
+				if !(viewport.minimized == Some(true) || viewport.occluded == Some(true)) {
+					ui.ctx().request_repaint_after(Duration::from_millis(16));
+				}
 				ui::loading_screen::paint_backdrop(ui, ui.max_rect(), elapsed);
 				ui::design::window_drag(ui, ui.max_rect());
 				egui::Frame::NONE

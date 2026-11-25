@@ -443,7 +443,26 @@ impl Connection {
                         if let Event::RecipientAdded {channel,user:added}=&event && let Some(recipients)=gateway_channels.lock().map_err(|_|Failure::Protocol)?.get_mut(channel) && !recipients.contains(&added.id) {
                             if recipients.len()+1<client_core::voice::MAX_PARTICIPANTS {recipients.push(added.id);} else {recipients.clear();}
                         }
-                        let invalidates_recipient = {
+                        let observe_recipient_call = event.ready_navigation().is_some()
+                            || matches!(
+                                &event,
+                                Event::Disconnected
+                                    | Event::Resync
+                                    | Event::ChannelCreated(_)
+                                    | Event::ChannelChanged(_)
+                                    | Event::Unavailable(_)
+                                    | Event::RecipientAdded { .. }
+                                    | Event::RecipientRemoved { .. }
+                                    | Event::Voice(
+                                        client_core::voice::Event::Call { .. }
+                                            | client_core::voice::Event::Deleted { .. }
+                                            | client_core::voice::Event::TakenOver { .. }
+                                            | client_core::voice::Event::Departed { .. }
+                                            | client_core::voice::Event::State { .. }
+                                            | client_core::voice::Event::SessionConfirmed { .. }
+                                    )
+                            );
+                        let invalidates_recipient = observe_recipient_call && {
                             let channels=gateway_channels.lock().map_err(|_|Failure::Protocol)?;
                             let mut calls=gateway_recipient_call.lock().map_err(|_|Failure::Protocol)?;
                             calls.observe(&event,own,&channels)

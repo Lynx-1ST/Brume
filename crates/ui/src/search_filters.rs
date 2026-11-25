@@ -1605,8 +1605,10 @@ mod tests {
 	#[test]
 	fn wire_resolves_legacy_usernames_and_rejects_ambiguous_bare_handles() {
 		let channel = model::Id(20);
-		let mut state = super::State::default();
-		state.selected = Some(channel);
+		let mut state = super::State {
+			selected: Some(channel),
+			..Default::default()
+		};
 		let mut legacy = test_support::message(1001, channel);
 		legacy.author.id = model::Id(2);
 		legacy.author.username = Some("alice".into());

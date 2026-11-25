@@ -269,6 +269,10 @@ SPEAK prepares input under the current encryption and mute/PTT gates; mute/PTT a
 reopen devices. Lost VIEW_CHANNEL drops the stored roster and hides participant rows, including
 when no call is active; late updates cannot repopulate an inaccessible channel.
 
+For both Go Live sending and viewing, UDP discovery retries on the same socket
+while waiting for a reply (alternating audio and video SSRCs every 300 ms within
+the 15-second discovery deadline, tracking send errors via `UdpFailures`).
+
 
 ## Stream lag and viewer timeouts (October 3, 2026)
 
@@ -309,6 +313,11 @@ choosing a converted format solely by enumeration order. Speaker-open errors
 distinguish busy, disconnected, unsupported-format and permission failures when
 the audio backend identifies them. This fast local change still needs a retry on
 an affected Windows device; it does not establish that every reported failure is fixed.
+
+Call UDP discovery resends the request on the same socket once per second while
+waiting for a reply. It stops on the first valid response or at the existing
+eight-second discovery deadline. The optional diagnostic log records when the
+voice transport is ready and the specific error if its unconfirmed negotiation fails.
 
 Call progress distinguishes requesting allocation, connecting to the voice server, checking the
 UDP network path, securing audio, and opening audio devices. Negotiation errors identify the

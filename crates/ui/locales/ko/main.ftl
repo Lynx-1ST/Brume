@@ -1694,8 +1694,6 @@ main-restoring-screen-serein = Brume
 main-restoring-screen-use-a-different-account = 다른 계정 사용
 # Context: restoring_screen
 main-restoring-screen-welcome-back = 다시 만나서 반가워요
-main-restoring-step-credentials = 저장된 로그인
-main-restoring-step-gateway = Discord 게이트웨이
 # Context: sign_in_accounts
 main-sign-in-accounts-saved-accounts = 저장된 계정
 # Context: sign_in_consent

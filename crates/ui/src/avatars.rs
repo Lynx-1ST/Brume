@@ -514,6 +514,8 @@ impl Avatars {
 				false
 			});
 		}
+		self.attempts
+			.retain(|_, (at, failed)| !*failed || now.saturating_duration_since(*at) < RETRY);
 		self.media.release_idle(now);
 	}
 	/// Next idle frame/artwork release or request stall; the host wakes then to trim an idle
@@ -541,16 +543,12 @@ impl Avatars {
 	}
 	fn request(&mut self, key: String) {
 		let now = Instant::now();
-		self.attempts
-			.retain(|_, (at, failed)| !*failed || now.duration_since(*at) < RETRY);
 		if key.len() <= 2054
-			&& self.attempts.len() < ATTEMPTS
 			&& self.requests.len() < REQUESTS
-			&& self
-				.attempts
-				.get(&key)
-				.is_none_or(|(at, failed)| *failed && now.duration_since(*at) >= RETRY)
-		{
+			&& match self.attempts.get(&key) {
+				Some((at, failed)) => *failed && now.duration_since(*at) >= RETRY,
+				None => self.attempts.len() < ATTEMPTS,
+			} {
 			self.attempts.insert(key.clone(), (now, false));
 			self.requests.push(key);
 		}

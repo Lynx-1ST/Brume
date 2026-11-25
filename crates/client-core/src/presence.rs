@@ -200,10 +200,10 @@ impl State {
 			return true;
 		}
 		self.channels.iter().any(|c| {
-			c.guild.is_none()
-				&& matches!(c.kind, 1 | 3)
-				&& self.can_view(c.id)
-				&& c.recipients.iter().any(|recipient| recipient.id == user)
+			if c.guild.is_some() || !matches!(c.kind, 1 | 3) {
+				return false;
+			}
+			c.recipients.iter().any(|recipient| recipient.id == user) && self.can_view(c.id)
 		})
 	}
 	pub fn presence_for(&self, user: Id) -> Option<&MemberPresence> {
@@ -219,6 +219,7 @@ impl State {
 		self.gateway_connected
 			&& !self.direct_presence_lossy
 			&& self.known_presence_user(user)
+			&& self.friend_count() <= MAX_DIRECT_PRESENCES
 			&& self.friend_count()
 				+ self
 					.channels
@@ -456,9 +457,10 @@ impl State {
 		if !self.gateway_connected
 			|| self.selected != Some(channel)
 			|| !self.can_view(channel)
-			|| !self.channels.iter().any(|known| {
-				known.id == channel && known.guild == Some(guild) && known.supports_text()
-			}) || updates.len() > 100
+			|| !self
+				.channel(channel)
+				.is_some_and(|known| known.guild == Some(guild) && known.supports_text())
+			|| updates.len() > 100
 			|| updates.iter().enumerate().any(|(index, update)| {
 				!update.valid()
 					|| updates[..index]

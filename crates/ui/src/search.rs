@@ -480,15 +480,15 @@ impl SearchUi {
 							} else if let Some((start, key, typed)) =
 								filters::active_token(&self.query)
 							{
-								let channels = filters::channels(state);
 								let user_candidates = if matches!(key, "from" | "mentions") {
 									filters::matching_users(state, self.channel, typed)
 								} else {
 									Vec::new()
 								};
-								let typed_norm =
-									crate::mentions::normalize(typed.trim_start_matches('#'));
 								let matching_channels: Vec<&model::Channel> = if key == "in" {
+									let channels = filters::channels(state);
+									let typed_norm =
+										crate::mentions::normalize(typed.trim_start_matches('#'));
 									channels
 										.iter()
 										.filter(|channel| {

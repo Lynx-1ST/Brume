@@ -177,6 +177,9 @@ impl Assembler {
 			.then(|| std::mem::take(&mut self.frame));
 		self.lost |= complete.is_none();
 		self.reset_frame();
+		if let Some(frame) = &complete {
+			self.frame = Vec::with_capacity(frame.len().clamp(4096, 256 * 1024));
+		}
 		self.started = false;
 		complete
 	}
@@ -566,7 +569,7 @@ impl Receivers {
 		sequence: u16,
 		timestamp: u32,
 		marker: bool,
-		payload: &[u8],
+		payload: Vec<u8>,
 	) -> Option<(u64, Vec<u8>)> {
 		self.push_timed(ssrc, sequence, timestamp, marker, payload)
 			.map(|frame| (frame.user, frame.data))
@@ -577,7 +580,7 @@ impl Receivers {
 		sequence: u16,
 		timestamp: u32,
 		marker: bool,
-		payload: &[u8],
+		payload: Vec<u8>,
 	) -> Option<Received> {
 		let Some((_, _, source)) = self.sources.iter_mut().find(|(s, _, _)| *s == ssrc) else {
 			self.stats.unknown_ssrc += 1;
@@ -1956,15 +1959,15 @@ mod tests {
 		for missing_marker in [false, true] {
 			let mut receivers = Receivers::default();
 			receivers.announce(7, 700).unwrap();
-			assert!(receivers.push(700, 1, 900, true, &[0x65, 1]).is_some());
+			assert!(receivers.push(700, 1, 900, true, vec![0x65, 1]).is_some());
 			assert!(receivers.accept(7, true));
 			assert!(receivers.keyframe_requests().next().is_none());
 			if missing_marker {
-				assert!(receivers.push(700, 2, 1800, false, &[0x41, 1]).is_none());
+				assert!(receivers.push(700, 2, 1800, false, vec![0x41, 1]).is_none());
 				// A new timestamp exposes an unfinished prior picture even without a sequence gap.
-				assert!(receivers.push(700, 3, 2700, true, &[0x41, 2]).is_some());
+				assert!(receivers.push(700, 3, 2700, true, vec![0x41, 2]).is_some());
 			} else {
-				assert!(receivers.push(700, 3, 1800, true, &[0x41, 1]).is_none());
+				assert!(receivers.push(700, 3, 1800, true, vec![0x41, 1]).is_none());
 				// Give RTX a bounded chance before breaking the reference chain.
 				assert!(!receivers.awaiting());
 				assert!(
@@ -1975,9 +1978,9 @@ mod tests {
 			}
 			assert_eq!(receivers.keyframe_requests().collect::<Vec<_>>(), vec![700]);
 			assert!(!receivers.accept(7, false));
-			assert!(receivers.push(700, 4, 3600, true, &[0x41, 3]).is_some());
+			assert!(receivers.push(700, 4, 3600, true, vec![0x41, 3]).is_some());
 			assert!(!receivers.accept(7, false));
-			assert!(receivers.push(700, 5, 4500, true, &[0x65, 4]).is_some());
+			assert!(receivers.push(700, 5, 4500, true, vec![0x65, 4]).is_some());
 			assert!(receivers.accept(7, true));
 			assert!(receivers.keyframe_requests().next().is_none());
 			assert!(receivers.accept(7, false));
@@ -1986,9 +1989,9 @@ mod tests {
 		{
 			let mut receivers = Receivers::default();
 			receivers.announce(7, 700).unwrap();
-			assert!(receivers.push(999, 1, 900, true, &[0x65, 1]).is_none());
-			assert!(receivers.push(700, 1, 900, true, &[0x65, 1]).is_some());
-			assert!(receivers.push(700, 3, 1800, true, &[0x41, 1]).is_none());
+			assert!(receivers.push(999, 1, 900, true, vec![0x65, 1]).is_none());
+			assert!(receivers.push(700, 1, 900, true, vec![0x65, 1]).is_some());
+			assert!(receivers.push(700, 3, 1800, true, vec![0x41, 1]).is_none());
 			assert!(
 				receivers
 					.pop_at(Instant::now() + Duration::from_millis(121))
@@ -2012,14 +2015,14 @@ mod tests {
 		let mut receivers = Receivers::default();
 		receivers.announce(7, 700).unwrap();
 		receivers.announce_rtx(700, 701).unwrap();
-		assert!(receivers.push(700, 1, 900, true, &[0x65, 1]).is_some());
+		assert!(receivers.push(700, 1, 900, true, vec![0x65, 1]).is_some());
 		assert!(receivers.accept(7, true));
 		assert!(
 			receivers
-				.push(700, 2, 1800, false, &[0x7c, 0x81, 2])
+				.push(700, 2, 1800, false, vec![0x7c, 0x81, 2])
 				.is_none()
 		);
-		assert!(receivers.push(700, 4, 2700, true, &[0x41, 4]).is_none());
+		assert!(receivers.push(700, 4, 2700, true, vec![0x41, 4]).is_none());
 		assert!(!receivers.awaiting());
 		let requests = receivers.nacks(99, Instant::now() + Duration::from_millis(20));
 		assert_eq!(requests.len(), 1);
@@ -2027,7 +2030,7 @@ mod tests {
 		let mut rtx = vec![0, 3, 0x7c, 0x41, 3];
 		let (ssrc, sequence) = receivers.restore_rtx(701, &mut rtx).unwrap();
 		assert_eq!(
-			receivers.push(ssrc, sequence, 1800, true, &rtx),
+			receivers.push(ssrc, sequence, 1800, true, rtx),
 			Some((7, vec![0, 0, 0, 1, 0x61, 2, 3]))
 		);
 		assert!(receivers.accept(7, false));
@@ -2045,7 +2048,7 @@ mod tests {
 			(3, 0, 1)
 		);
 		// Source retirement must cancel feedback and discard withheld media.
-		assert!(receivers.push(700, 6, 3600, true, &[0x41, 6]).is_none());
+		assert!(receivers.push(700, 6, 3600, true, vec![0x41, 6]).is_none());
 		receivers.remove(7);
 		assert!(receivers.pop().is_none());
 		assert!(
@@ -2060,12 +2063,16 @@ mod tests {
 		receivers.announce(7, 700).unwrap();
 		assert!(
 			receivers
-				.push_timed(700, 1, u32::MAX - 2999, false, &[0x7c, 0x85, 1])
+				.push_timed(700, 1, u32::MAX - 2999, false, vec![0x7c, 0x85, 1])
 				.is_none()
 		);
-		assert!(receivers.push_timed(700, 3, 0, true, &[0x41, 3]).is_none());
+		assert!(
+			receivers
+				.push_timed(700, 3, 0, true, vec![0x41, 3])
+				.is_none()
+		);
 		let repaired = receivers
-			.push_timed(700, 2, u32::MAX - 2999, true, &[0x7c, 0x45, 2])
+			.push_timed(700, 2, u32::MAX - 2999, true, vec![0x7c, 0x45, 2])
 			.unwrap();
 		assert_eq!(
 			(repaired.user, repaired.source, repaired.timestamp),
@@ -2081,18 +2088,18 @@ mod tests {
 		receivers.announce(7, 700).unwrap();
 		assert!(
 			receivers
-				.push(700, 1, 900, false, &[0x7c, 0x85, 1])
+				.push(700, 1, 900, false, vec![0x7c, 0x85, 1])
 				.is_none()
 		);
 		// Padding timestamps/markers must not close or replace the unfinished picture.
-		assert!(receivers.push(700, 2, 0, true, &[]).is_none());
+		assert!(receivers.push(700, 2, 0, true, Vec::new()).is_none());
 		assert_eq!(
-			receivers.push(700, 3, 900, true, &[0x7c, 0x45, 2]),
+			receivers.push(700, 3, 900, true, vec![0x7c, 0x45, 2]),
 			Some((7, vec![0, 0, 0, 1, 0x65, 1, 2]))
 		);
 		receivers.accept(7, true);
-		assert!(receivers.push(700, 4, 0, false, &[]).is_none());
-		assert!(receivers.push(700, 5, 1800, true, &[0x41, 3]).is_some());
+		assert!(receivers.push(700, 4, 0, false, Vec::new()).is_none());
+		assert!(receivers.push(700, 5, 1800, true, vec![0x41, 3]).is_some());
 		assert!(receivers.accept(7, false));
 		let stats = receivers.take_stats();
 		assert_eq!(
@@ -2104,17 +2111,21 @@ mod tests {
 	fn reordered_padding_repairs_a_sequence_hole_but_real_missing_media_still_needs_recovery() {
 		let mut receivers = Receivers::default();
 		receivers.announce(7, 700).unwrap();
-		assert!(receivers.push(700, 65534, 900, true, &[0x65, 1]).is_some());
+		assert!(
+			receivers
+				.push(700, 65534, 900, true, vec![0x65, 1])
+				.is_some()
+		);
 		receivers.accept(7, true);
-		assert!(receivers.push(700, 0, 1800, true, &[0x41, 2]).is_none());
-		assert!(receivers.push(700, 65535, 0, true, &[]).is_some());
+		assert!(receivers.push(700, 0, 1800, true, vec![0x41, 2]).is_none());
+		assert!(receivers.push(700, 65535, 0, true, Vec::new()).is_some());
 		assert!(receivers.accept(7, false));
 		let stats = receivers.take_stats();
 		assert_eq!(
 			(stats.incomplete, stats.repaired, stats.padding_packets),
 			(0, 1, 1)
 		);
-		assert!(receivers.push(700, 2, 2700, true, &[0x41, 3]).is_none());
+		assert!(receivers.push(700, 2, 2700, true, vec![0x41, 3]).is_none());
 		assert!(
 			receivers
 				.pop_at(Instant::now() + Duration::from_millis(121))
@@ -2128,13 +2139,21 @@ mod tests {
 		let mut receivers = Receivers::default();
 		receivers.announce(7, 700).unwrap();
 		receivers.announce(7, 710).unwrap();
-		assert!(receivers.push(700, 1, 900, true, &[0x65, 1]).is_some());
-		assert!(receivers.push(710, 1, 900, true, &[0x65, 2]).is_some());
+		assert!(receivers.push(700, 1, 900, true, vec![0x65, 1]).is_some());
+		assert!(receivers.push(710, 1, 900, true, vec![0x65, 2]).is_some());
 		for sequence in 2..=32770 {
-			assert!(receivers.push(700, sequence, 0, false, &[]).is_none());
+			assert!(
+				receivers
+					.push(700, sequence, 0, false, Vec::new())
+					.is_none()
+			);
 		}
 		assert_eq!(receivers.keyframe_requests().collect::<Vec<_>>(), [710]);
-		assert!(receivers.push(700, 32771, 1800, true, &[0x65, 3]).is_some());
+		assert!(
+			receivers
+				.push(700, 32771, 1800, true, vec![0x65, 3])
+				.is_some()
+		);
 		assert_eq!(receivers.keyframe_requests().collect::<Vec<_>>(), [700]);
 		assert_eq!(receivers.take_stats().incomplete, 0);
 	}
@@ -2187,10 +2206,10 @@ mod tests {
 		receivers.announce(7, 700).unwrap();
 		receivers.announce(7, 710).unwrap();
 		assert_eq!(receivers.keyframe_requests().collect::<Vec<_>>(), [700]);
-		assert!(receivers.push(700, 1, 900, true, &[0x65, 1]).is_some());
+		assert!(receivers.push(700, 1, 900, true, vec![0x65, 1]).is_some());
 		receivers.accept(7, true);
-		assert!(receivers.push(710, 5, 900, true, &[0x65, 2]).is_some());
-		assert!(receivers.push(700, 1, 900, true, &[0x65, 1]).is_none()); // Old duplicate.
+		assert!(receivers.push(710, 5, 900, true, vec![0x65, 2]).is_some());
+		assert!(receivers.push(700, 1, 900, true, vec![0x65, 1]).is_none()); // Old duplicate.
 		let lost: Lost = Arc::new(Mutex::new(vec![7]));
 		receivers.absorb(&lost);
 		assert!(lost.lock().unwrap().is_empty());
@@ -2209,12 +2228,12 @@ mod tests {
 		receivers.announce(5, 100).unwrap();
 		receivers.announce(5, 101).unwrap();
 		assert_eq!(
-			receivers.push(100, 1, 1, true, &[0x41, 1]).unwrap(),
+			receivers.push(100, 1, 1, true, vec![0x41, 1]).unwrap(),
 			(5, vec![0, 0, 0, 1, 0x41, 1])
 		);
-		assert!(receivers.push(999, 1, 1, true, &[0x41, 1]).is_none());
+		assert!(receivers.push(999, 1, 1, true, vec![0x41, 1]).is_none());
 		receivers.announce(5, 0).unwrap();
-		assert!(receivers.push(100, 2, 2, true, &[0x41, 1]).is_none());
+		assert!(receivers.push(100, 2, 2, true, vec![0x41, 1]).is_none());
 		for ssrc in 1..=MAX_SOURCES as u32 {
 			receivers.announce(u64::from(ssrc), ssrc).unwrap();
 		}

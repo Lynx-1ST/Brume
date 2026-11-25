@@ -911,7 +911,7 @@ async fn run_inner(
 					let Some(decoder)=&decoder else{continue;};
 					if dave_enabled && !dave.ready {metrics.video(Video::NotReady,1);continue;}
 					if receivers.has_source(rtp.ssrc) {receive_reports.receive(rtp.ssrc,rtp.sequence,rtp.timestamp,Instant::now().into_std());}
-					let first=receivers.push(rtp.ssrc,rtp.sequence,rtp.timestamp,rtp.marker,&rtp.payload);
+					let first=receivers.push(rtp.ssrc,rtp.sequence,rtp.timestamp,rtp.marker,rtp.payload);
 					receive_video(&mut receivers,decoder,&mut dave,&mut metrics,first)?;
 					continue;
 				}
@@ -2094,7 +2094,7 @@ async fn run_stream_inner(
 				let Some((rtp,changed))=stream_video_packet(&mut receivers,&mut metrics,hevc,av1,rtp) else{continue;};
 				if let Some(user)=changed {playout.remove(user);if let Some(decoder)=decoder.as_ref(){remove_decoder(decoder,user);}}
 				if video.is_none() && receivers.has_source(rtp.ssrc) {receive_reports.receive(rtp.ssrc,rtp.sequence,rtp.timestamp,Instant::now().into_std());}
-				let first=receivers.push_timed(rtp.ssrc,rtp.sequence,rtp.timestamp,rtp.marker,&rtp.payload);
+				let first=receivers.push_timed(rtp.ssrc,rtp.sequence,rtp.timestamp,rtp.marker,rtp.payload);
 				receive_stream_video(&mut receivers,&mut playout,&mut sync,&mut dave,&mut metrics,first);
 			},
 			event=ws.next()=>{
@@ -2505,7 +2505,7 @@ mod tests {
 					rtp.sequence,
 					rtp.timestamp,
 					rtp.marker,
-					&rtp.payload,
+					rtp.payload,
 				);
 				(changed, frame)
 			})
@@ -2738,7 +2738,7 @@ mod tests {
 						rtp.sequence,
 						rtp.timestamp,
 						rtp.marker,
-						&rtp.payload
+						rtp.payload
 					)
 					.is_none()
 			);
@@ -2757,7 +2757,7 @@ mod tests {
 		assert_eq!(changed, None);
 		let (ssrc, seq) = (rtp.ssrc, rtp.sequence);
 		let received = receivers
-			.push_timed(ssrc, seq, rtp.timestamp, false, &rtp.payload)
+			.push_timed(ssrc, seq, rtp.timestamp, false, rtp.payload)
 			.unwrap();
 		assert_eq!(received.codec, Codec::H265);
 		assert_eq!(received.data, encrypted);
@@ -2791,7 +2791,7 @@ mod tests {
 		// Switching codecs discards a partially buffered picture and gates predictions.
 		assert!(
 			receivers
-				.push(700, packets.len() as u16, 1800, false, &[98, 1, 0x81, 7])
+				.push(700, packets.len() as u16, 1800, false, vec![98, 1, 0x81, 7])
 				.is_none()
 		);
 		assert_eq!(
@@ -2800,7 +2800,7 @@ mod tests {
 		);
 		assert!(receivers.pop().is_none());
 		assert!(!receivers.accept(1, false));
-		assert!(receivers.push(700, 50, 2700, true, &[0x65, 7]).is_some());
+		assert!(receivers.push(700, 50, 2700, true, vec![0x65, 7]).is_some());
 		// AV1 has OBU framing, not Annex B. The final size-less OBU must survive
 		// aggregation/fragmentation and RTX byte-for-byte for DAVE authentication.
 		let mut original = vec![0x2a, 3, 7, 7, 7, 0x30, 0x10];
@@ -2831,7 +2831,7 @@ mod tests {
 						rtp.sequence,
 						rtp.timestamp,
 						rtp.marker,
-						&rtp.payload
+						rtp.payload
 					)
 					.is_none()
 			);
@@ -2853,7 +2853,7 @@ mod tests {
 				rtp.sequence,
 				rtp.timestamp,
 				rtp.marker,
-				&rtp.payload,
+				rtp.payload,
 			)
 			.unwrap();
 		assert_eq!(received.codec, Codec::Av1);
@@ -2896,10 +2896,10 @@ mod tests {
 		receivers.accept(7, true);
 		let start = std::time::Instant::now();
 		assert!(receivers.take_keyframe_requests(start).is_empty());
-		assert!(receivers.push(710, 1, 900, true, &[0x65, 1]).is_some());
+		assert!(receivers.push(710, 1, 900, true, vec![0x65, 1]).is_some());
 		// A later broken picture exposes a non-repairable stream loss without a sequence gap.
-		assert!(receivers.push(710, 2, 1800, false, &[0x41, 2]).is_none());
-		assert!(receivers.push(710, 3, 2700, true, &[0x41, 3]).is_some());
+		assert!(receivers.push(710, 2, 1800, false, vec![0x41, 2]).is_none());
+		assert!(receivers.push(710, 3, 2700, true, vec![0x41, 3]).is_some());
 		assert!(!receivers.accept(7, false));
 		let detected = start + Duration::from_millis(20);
 		assert_eq!(receivers.take_keyframe_requests(detected), [710]);
@@ -2920,7 +2920,7 @@ mod tests {
 				.take_keyframe_requests(detected + Duration::from_millis(499))
 				.is_empty()
 		);
-		assert!(receivers.push(710, 4, 3600, true, &[0x65, 4]).is_some());
+		assert!(receivers.push(710, 4, 3600, true, vec![0x65, 4]).is_some());
 		assert!(receivers.accept(7, true));
 		assert!(
 			receivers
@@ -2948,10 +2948,10 @@ mod tests {
 		receivers.announce_rtx(700, 701).unwrap();
 		assert!(
 			receivers
-				.push(700, 1, 900, false, &[0x7c, 0x85, 1])
+				.push(700, 1, 900, false, vec![0x7c, 0x85, 1])
 				.is_none()
 		);
-		assert!(receivers.push(700, 3, 1800, true, &[0x41, 3]).is_none());
+		assert!(receivers.push(700, 3, 1800, true, vec![0x41, 3]).is_none());
 		let now = std::time::Instant::now() + Duration::from_millis(20);
 		let requests = receivers.nacks(99, now);
 		assert_eq!(requests.len(), 1);
@@ -2986,7 +2986,7 @@ mod tests {
 		let mut rtp = cipher.open(&packet[..length]).unwrap();
 		let (ssrc, sequence) = receivers.restore_rtx(rtp.ssrc, &mut rtp.payload).unwrap();
 		assert_eq!(
-			receivers.push(ssrc, sequence, rtp.timestamp, rtp.marker, &rtp.payload),
+			receivers.push(ssrc, sequence, rtp.timestamp, rtp.marker, rtp.payload),
 			Some((7, vec![0, 0, 0, 1, 0x65, 1, 2]))
 		);
 		assert!(receivers.accept(7, true));
@@ -3036,7 +3036,7 @@ mod tests {
 		announce_video(&mut receivers, &decoder, 7, &streams).unwrap();
 		assert!(receivers.has_sources());
 		assert_eq!(
-			receivers.push(700, 1, 90, true, &[0x65, 1]),
+			receivers.push(700, 1, 90, true, vec![0x65, 1]),
 			Some((7, vec![0, 0, 0, 1, 0x65, 1]))
 		);
 		// An absent list is a partial update, so other sources stay bound.
@@ -3047,7 +3047,7 @@ mod tests {
 			&json!({"video_ssrc": 710, "rtx_ssrc": 711}),
 		)
 		.unwrap();
-		assert!(receivers.push(700, 2, 180, true, &[0x65, 3]).is_some());
+		assert!(receivers.push(700, 2, 180, true, vec![0x65, 3]).is_some());
 		assert_eq!(
 			receivers.restore_rtx(711, &mut vec![0, 4, 0x65]),
 			Some((710, 4))
@@ -3058,7 +3058,7 @@ mod tests {
 		);
 		assert!(
 			receivers
-				.push(710, 1, 90, false, &[0x7c, 0x85, 1])
+				.push(710, 1, 90, false, vec![0x7c, 0x85, 1])
 				.is_none()
 		);
 		announce_video(
@@ -3068,10 +3068,10 @@ mod tests {
 			&json!({"video_ssrc": 710, "streams": [{"ssrc": 710, "rtx_ssrc": 711}]}),
 		)
 		.unwrap();
-		assert!(receivers.push(700, 3, 270, true, &[0x65, 4]).is_none());
+		assert!(receivers.push(700, 3, 270, true, vec![0x65, 4]).is_none());
 		assert!(receivers.restore_rtx(701, &mut vec![0, 4, 0x65]).is_none());
 		assert_eq!(
-			receivers.push(710, 2, 90, true, &[0x7c, 0x45, 2]),
+			receivers.push(710, 2, 90, true, vec![0x7c, 0x45, 2]),
 			Some((7, vec![0, 0, 0, 1, 0x65, 1, 2]))
 		);
 		assert_eq!(receivers.keyframe_requests().collect::<Vec<_>>(), vec![710]);
@@ -3082,7 +3082,7 @@ mod tests {
 			&json!({"video_ssrc": 720, "streams": []}),
 		)
 		.unwrap();
-		assert!(receivers.push(710, 3, 180, true, &[0x65, 4]).is_none());
+		assert!(receivers.push(710, 3, 180, true, vec![0x65, 4]).is_none());
 		assert_eq!(receivers.keyframe_requests().collect::<Vec<_>>(), vec![720]);
 		announce_video(
 			&mut receivers,
@@ -3092,7 +3092,7 @@ mod tests {
 		)
 		.unwrap();
 		assert!(!receivers.has_sources());
-		assert!(receivers.push(710, 5, 270, true, &[0x65, 4]).is_none());
+		assert!(receivers.push(710, 5, 270, true, vec![0x65, 4]).is_none());
 	}
 
 	#[test]
@@ -3115,7 +3115,7 @@ mod tests {
 		receivers.announce(8, 800).unwrap();
 		// A delivered keyframe from each sender clears what announce owed.
 		for ssrc in [700, 800] {
-			assert!(receivers.push(ssrc, 1, 900, true, &[0x65, 1]).is_some());
+			assert!(receivers.push(ssrc, 1, 900, true, vec![0x65, 1]).is_some());
 		}
 		assert!(receivers.accept(7, true) && receivers.accept(8, true));
 		assert!(!receivers.awaiting());

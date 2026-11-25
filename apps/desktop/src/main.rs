@@ -6522,14 +6522,23 @@ impl eframe::App for Desktop {
 		let held =
 			talking && (self.messaging.push_to_talk_down(ctx) || self.hotkeys.push_to_talk_down());
 		let now = std::time::Instant::now();
-		let chords: Vec<_> = self
-			.messaging
-			.keybinds
-			.chords(model::KeybindAction::PushToTalk)
-			.cloned()
-			.collect();
 		let global = self.messaging.keybinds.global_enabled;
-		let rebound = std::mem::replace(&mut self.ptt_chords, (global, chords)) != self.ptt_chords;
+		let rebound = self.ptt_chords.0 != global
+			|| !self
+				.messaging
+				.keybinds
+				.chords(model::KeybindAction::PushToTalk)
+				.eq(self.ptt_chords.1.iter());
+		if rebound {
+			self.ptt_chords.0 = global;
+			self.ptt_chords.1.clear();
+			self.ptt_chords.1.extend(
+				self.messaging
+					.keybinds
+					.chords(model::KeybindAction::PushToTalk)
+					.cloned(),
+			);
+		}
 		// Rebinding, or typing in the composer over a keyboard hold, cancels it; only a real
 		// release lingers. A mouse hold is not typing.
 		let mouse_hold = self

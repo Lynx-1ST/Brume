@@ -155,9 +155,12 @@ impl Permissions {
 			+ self.channels.values().map(p::Channel::bytes).sum::<usize>()
 			+ (self.guilds.len() + self.channels.len()) * 64
 	}
-	fn valid(&self) -> bool {
-		self.guilds.len() + self.channels.len() <= crate::MAX_NAV
-			&& self.bytes() + MIN_DECISIONS * DECISION_BYTES <= MAX_BYTES
+	fn valid_bytes(&self) -> Option<usize> {
+		if self.guilds.len() + self.channels.len() > crate::MAX_NAV {
+			return None;
+		}
+		let bytes = self.bytes();
+		if bytes + MIN_DECISIONS * DECISION_BYTES <= MAX_BYTES
 			&& self
 				.guilds
 				.values()
@@ -187,7 +190,11 @@ impl Permissions {
 				&& c.overwrites
 					.as_ref()
 					.is_none_or(|overwrites| overwrites.len() <= 1000)
-		})
+		}) {
+			Some(bytes)
+		} else {
+			None
+		}
 	}
 	pub fn replace(&mut self, snapshot: p::Snapshot) -> Result<(), &'static str> {
 		let mut next = Self::default();
@@ -391,11 +398,11 @@ impl Permissions {
 				next.channels.retain(|_, channel| channel.guild != guild);
 			}
 		}
-		if !next.valid() {
+		let Some(bytes) = next.valid_bytes() else {
 			return Err("Permission metadata exceeds safe capacity");
-		}
-		next.decision_limit = (MAX_BYTES.saturating_sub(next.bytes()) / DECISION_BYTES)
-			.clamp(MIN_DECISIONS, MAX_DECISIONS);
+		};
+		next.decision_limit =
+			(MAX_BYTES.saturating_sub(bytes) / DECISION_BYTES).clamp(MIN_DECISIONS, MAX_DECISIONS);
 		Ok(())
 	}
 	fn update_member(&mut self, guild: Id, roles: Patch<Vec<Id>>, timeout_until: Patch<i64>) {

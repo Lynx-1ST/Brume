@@ -1,6 +1,6 @@
 use chacha20poly1305::{
 	KeyInit, XChaCha20Poly1305, XNonce,
-	aead::{Aead, Payload},
+	aead::{Aead, AeadInPlace, Payload},
 };
 use davey::{DaveSession, ProposalsOperationType, SigningKeyPair};
 use openmls::prelude::{
@@ -130,31 +130,37 @@ impl Encryption {
 		extended[..12].copy_from_slice(header);
 		extended[0] |= 0x10;
 		extended[12..].copy_from_slice(&[0xbe, 0xde, 0, 1]);
-		let mut payload = Vec::with_capacity(4 + frame.len());
-		payload.extend([0x90, 0x04, 0, 0]);
-		payload.extend_from_slice(frame);
-		self.seal_packet(&extended, &payload)
+		self.seal_parts(&extended, &[0x90, 0x04, 0, 0], frame)
 	}
 	fn seal_packet(&mut self, header: &[u8], frame: &[u8]) -> Result<Vec<u8>, &'static str> {
+		self.seal_parts(header, &[], frame)
+	}
+	fn seal_parts(
+		&mut self,
+		header: &[u8],
+		prefix: &[u8],
+		frame: &[u8],
+	) -> Result<Vec<u8>, &'static str> {
 		self.counter = self
 			.counter
 			.checked_add(1)
 			.ok_or("Voice transport nonce exhausted; rejoin the call")?;
 		let mut nonce = [0; 24];
 		nonce[..4].copy_from_slice(&self.counter.to_be_bytes());
-		let data = self
+		let mut packet = Vec::with_capacity(header.len() + prefix.len() + frame.len() + 16 + 4);
+		packet.extend_from_slice(header);
+		let body_start = packet.len();
+		packet.extend_from_slice(prefix);
+		packet.extend_from_slice(frame);
+		let tag = self
 			.cipher
-			.encrypt(
+			.encrypt_in_place_detached(
 				XNonce::from_slice(&nonce),
-				Payload {
-					msg: frame,
-					aad: header,
-				},
+				header,
+				&mut packet[body_start..],
 			)
 			.map_err(|_| "Voice transport encryption failed")?;
-		let mut packet = Vec::with_capacity(header.len() + data.len() + 4);
-		packet.extend_from_slice(header);
-		packet.extend_from_slice(&data);
+		packet.extend_from_slice(&tag);
 		packet.extend_from_slice(&nonce[..4]);
 		Ok(packet)
 	}
@@ -834,7 +840,7 @@ mod tests {
 		let mut cipher = Encryption::new(&[7; 32]);
 		let mut receivers = crate::video_receive::Receivers::default();
 		receivers.announce(7, 700).unwrap();
-		assert!(receivers.push(700, 1, 900, true, &[0x65, 1]).is_some());
+		assert!(receivers.push(700, 1, 900, true, vec![0x65, 1]).is_some());
 		receivers.accept(7, true);
 		let mut header = [0xa0, 101, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0];
 		header[8..12].copy_from_slice(&700u32.to_be_bytes());
@@ -848,11 +854,11 @@ mod tests {
 					rtp.sequence,
 					rtp.timestamp,
 					rtp.marker,
-					&rtp.payload
+					rtp.payload
 				)
 				.is_none()
 		);
-		assert!(receivers.push(700, 3, 1800, true, &[0x41, 2]).is_some());
+		assert!(receivers.push(700, 3, 1800, true, vec![0x41, 2]).is_some());
 		assert!(receivers.accept(7, false));
 		assert_eq!(receivers.take_stats().incomplete, 0);
 	}

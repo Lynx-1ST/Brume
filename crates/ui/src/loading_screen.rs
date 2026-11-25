@@ -113,9 +113,10 @@ pub fn brand_lockup(ui: &mut Ui, brand: &str, elapsed: f32) {
 	let intro = ease_out_cubic((elapsed / 0.45).clamp(0.0, 1.0));
 	let lift = (1.0 - intro) * 8.0;
 	let font_id = FontId::new(28.0, semibold_family(ui.ctx()));
+	let upper = brand.to_uppercase();
 	let measure = ui
 		.painter()
-		.layout_no_wrap(brand.to_uppercase(), font_id.clone(), p.text_strong);
+		.layout_no_wrap(upper.clone(), font_id.clone(), p.text_strong);
 	let word_w = measure.size().x;
 
 	let mark_size = 64.0;
@@ -188,9 +189,7 @@ pub fn brand_lockup(ui: &mut Ui, brand: &str, elapsed: f32) {
 			pos2(mark.right() + gap + word_w * expand, row.bottom()),
 		);
 		let text_color = p.text_strong.gamma_multiply(expand * intro);
-		let galley = ui
-			.painter()
-			.layout_no_wrap(brand.to_uppercase(), font_id, text_color);
+		let galley = ui.painter().layout_no_wrap(upper, font_id, text_color);
 		let pos = pos2(mark.right() + gap, row.center().y - galley.size().y * 0.5);
 		ui.painter()
 			.with_clip_rect(clip)

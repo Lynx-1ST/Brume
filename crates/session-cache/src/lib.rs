@@ -1,6 +1,6 @@
 //! Explicitly bounded RAM timeline. Patches live for a page; tombstones live for this window.
 use model::{Id, Message, MessagePatch, Patch};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, btree_map::Entry};
 
 pub const MAX_MESSAGES: usize = 500;
 pub const MAX_BYTES: usize = 4 * 1024 * 1024;
@@ -22,6 +22,7 @@ pub struct Timeline {
 	// None preserves only the position of a message deleted while it was loaded.
 	messages: BTreeMap<Id, Option<Message>>,
 	payload_count: usize,
+	live_count: usize,
 	bytes: usize,
 	changed: BTreeSet<Id>,
 	patches: BTreeMap<Id, MessagePatch>,
@@ -50,15 +51,42 @@ impl Timeline {
 	pub fn get_display(&self, id: Id) -> Option<&Message> {
 		self.messages.get(&id).and_then(Option::as_ref)
 	}
+	fn evict_excess(&mut self, older: bool) {
+		while self.row_count() > MAX_MESSAGES || self.row_bytes() > MAX_BYTES {
+			let item = if older || self.retain_older {
+				self.messages.pop_last()
+			} else {
+				self.older_evicted = true;
+				self.messages.pop_first()
+			};
+			if let Some((id, Some(old))) = item {
+				self.bytes -= old.bytes();
+				self.payload_count -= 1;
+				if !self.deleted.contains(&id) {
+					self.live_count -= 1;
+				}
+			}
+		}
+	}
 	pub fn apply_author_membership(&mut self, user: Id, roles: &[Id], nick: Option<&str>) -> bool {
 		if user.0 == 0 {
 			return false;
 		}
+		self.apply_author_memberships(|author| (author == user).then_some((roles, nick)))
+	}
+	/// Apply member roles and nicknames across all loaded messages in one O(N) scan.
+	pub fn apply_author_memberships<'a>(
+		&mut self,
+		lookup: impl Fn(Id) -> Option<(&'a [Id], Option<&'a str>)>,
+	) -> bool {
 		let mut any = false;
 		for message in self.messages.values_mut().flatten() {
-			if message.author.id != user || message.author.webhook {
+			if message.author.id.0 == 0 || message.author.webhook {
 				continue;
 			}
+			let Some((roles, nick)) = lookup(message.author.id) else {
+				continue;
+			};
 			let next_roles =
 				(!roles.is_empty() && message.author_roles != roles).then(|| roles.to_vec());
 			let next_nick = nick.filter(|n| !n.is_empty()).and_then(|n| {
@@ -82,18 +110,7 @@ impl Timeline {
 			any = true;
 		}
 		if any {
-			while self.row_count() > MAX_MESSAGES || self.row_bytes() > MAX_BYTES {
-				let item = if self.retain_older {
-					self.messages.pop_last()
-				} else {
-					self.older_evicted = true;
-					self.messages.pop_first()
-				};
-				if let Some((_, Some(old))) = item {
-					self.bytes -= old.bytes();
-					self.payload_count -= 1;
-				}
-			}
+			self.evict_excess(false);
 		}
 		any
 	}
@@ -121,6 +138,7 @@ impl Timeline {
 			}
 			keep
 		});
+		self.live_count = 0;
 	}
 	pub fn is_deleted(&self, id: Id) -> bool {
 		self.deleted.contains(&id)
@@ -139,10 +157,10 @@ impl Timeline {
 		true
 	}
 	pub fn len(&self) -> usize {
-		self.iter().count()
+		self.live_count
 	}
 	pub fn is_empty(&self) -> bool {
-		self.iter().next().is_none()
+		self.live_count == 0
 	}
 	/// Reading positions, including ID-only placeholders for previously loaded messages.
 	pub fn row_ids(&self) -> impl DoubleEndedIterator<Item = Id> {
@@ -272,20 +290,12 @@ impl Timeline {
 		self.bytes += message.bytes();
 		match self.messages.insert(message.id, Some(message)) {
 			Some(Some(old)) => self.bytes -= old.bytes(),
-			_ => self.payload_count += 1,
-		}
-		while self.row_count() > MAX_MESSAGES || self.row_bytes() > MAX_BYTES {
-			let item = if older || self.retain_older {
-				self.messages.pop_last()
-			} else {
-				self.older_evicted = true;
-				self.messages.pop_first()
-			};
-			if let Some((_, Some(old))) = item {
-				self.bytes -= old.bytes();
-				self.payload_count -= 1;
+			_ => {
+				self.payload_count += 1;
+				self.live_count += 1;
 			}
 		}
+		self.evict_excess(older);
 		Ok(())
 	}
 	/// Shared admission check for an atomic history page and a single message.
@@ -367,6 +377,9 @@ impl Timeline {
 				if !keep && let Some(message) = message {
 					self.bytes -= message.bytes();
 					self.payload_count -= 1;
+					if !self.deleted.contains(id) {
+						self.live_count -= 1;
+					}
 				}
 				keep
 			});
@@ -397,70 +410,45 @@ impl Timeline {
 			return Err("Message patch exceeds capacity");
 		}
 		self.remember(patch.id)?;
-		if let Some(Some(mut message)) = self.messages.remove(&patch.id) {
-			self.bytes -= message.bytes();
-			self.payload_count -= 1;
+		if let Some(Some(message)) = self.messages.get_mut(&patch.id) {
 			// Once hydrated, changed protects this record from the in-flight history page.
 			if let Some(old) = self.patches.remove(&patch.id) {
 				self.patch_bytes -= patch_bytes(&old);
 			}
-			apply_patch(&mut message, &patch);
-			self.insert(message, true, false)?;
+			let before = message.bytes();
+			apply_patch_owned(message, patch);
+			self.bytes = self
+				.bytes
+				.saturating_sub(before)
+				.saturating_add(message.bytes());
+			self.evict_excess(false);
 		} else if self.loading {
-			if self.patches.get(&patch.id).is_some_and(|previous| {
-                matches!((&previous.edited, &patch.edited), (Patch::Value(old), Patch::Value(new)) if new < old)
-            }) {
-                return Ok(());
-            }
-			let bytes = self.patch_bytes;
-			let mut merged = self
-				.patches
-				.get(&patch.id)
-				.cloned()
-				.unwrap_or_else(|| patch.clone());
-			if !matches!(patch.poll, Patch::Absent) {
-				merged.poll = patch.poll;
+			match self.patches.entry(patch.id) {
+				Entry::Vacant(entry) => {
+					let added = patch_bytes(&patch);
+					if self.patch_bytes + added > 1024 * 1024 {
+						return Err("Pending patch byte budget exceeded; reload required");
+					}
+					self.patch_bytes += added;
+					entry.insert(patch);
+				}
+				Entry::Occupied(mut entry) => {
+					let previous = entry.get();
+					if matches!(
+						(&previous.edited, &patch.edited),
+						(Patch::Value(old), Patch::Value(new)) if new < old
+					) {
+						return Ok(());
+					}
+					let old_bytes = patch_bytes(previous);
+					let new_bytes = merged_patch_bytes(previous, &patch);
+					if self.patch_bytes - old_bytes + new_bytes > 1024 * 1024 {
+						return Err("Pending patch byte budget exceeded; reload required");
+					}
+					self.patch_bytes = self.patch_bytes - old_bytes + new_bytes;
+					merge_patch(entry.get_mut(), patch);
+				}
 			}
-			if !matches!(patch.flags, Patch::Absent) {
-				merged.flags = patch.flags;
-			}
-			if !matches!(patch.sticker_items, Patch::Absent) {
-				merged.sticker_items = patch.sticker_items;
-			}
-			if !matches!(patch.components, Patch::Absent) {
-				merged.components = patch.components;
-			}
-			if !matches!(patch.application_id, Patch::Absent) {
-				merged.application_id = patch.application_id;
-			}
-			if !matches!(patch.content, Patch::Absent) {
-				merged.content = patch.content;
-			}
-			if !matches!(patch.reactions, Patch::Absent) {
-				merged.reactions = patch.reactions;
-			}
-			if !matches!(patch.mentions, Patch::Absent) {
-				merged.mentions = patch.mentions;
-			}
-			if !matches!(patch.edited, Patch::Absent) {
-				merged.edited = patch.edited;
-			}
-			if !matches!(patch.embeds, Patch::Absent) {
-				merged.embeds = patch.embeds;
-			}
-			if !matches!(patch.attachments, Patch::Absent) {
-				merged.attachments = patch.attachments;
-			}
-			if !matches!(patch.embeds_suppressed, Patch::Absent) {
-				merged.embeds_suppressed = patch.embeds_suppressed;
-			}
-			merged.extra_content.merge(&patch.extra_content);
-			let replaced = self.patches.get(&patch.id).map_or(0, patch_bytes);
-			if bytes - replaced + patch_bytes(&merged) > 1024 * 1024 {
-				return Err("Pending patch byte budget exceeded; reload required");
-			}
-			self.patch_bytes = bytes - replaced + patch_bytes(&merged);
-			self.patches.insert(merged.id, merged);
 		}
 		Ok(())
 	}
@@ -469,7 +457,9 @@ impl Timeline {
 			return Err("Deletion reconciliation capacity exceeded; reload required");
 		}
 		self.remember(id)?;
-		self.deleted.insert(id);
+		if self.deleted.insert(id) && self.messages.get(&id).is_some_and(Option::is_some) {
+			self.live_count -= 1;
+		}
 		if !self.preserve_deleted_messages {
 			self.discard_preserved(id);
 		}
@@ -536,44 +526,116 @@ fn tree_bytes<T>(len: usize) -> usize {
 		(len + 11) * 3 * (size_of::<T>() + 2 * size_of::<usize>())
 	}
 }
-fn patch_bytes(patch: &MessagePatch) -> usize {
-	let content = match &patch.content {
-		Patch::Value(value) => value.capacity(),
-		_ => 0,
-	};
-	size_of::<MessagePatch>()
-		+ match &patch.poll {
+fn patch_field_bytes(patch: &MessagePatch) -> [usize; 8] {
+	[
+		match &patch.poll {
 			Patch::Value(Some(poll)) => poll.bytes(),
 			_ => 0,
-		} + content
-		+ match &patch.sticker_items {
+		},
+		match &patch.content {
+			Patch::Value(value) => value.capacity(),
+			_ => 0,
+		},
+		match &patch.sticker_items {
 			Patch::Value(s) => model::sticker_bytes(s),
 			_ => 0,
-		} + match &patch.components {
-		Patch::Value(c) => model::component_bytes(c),
-		_ => 0,
-	} + match &patch.reactions {
-		Patch::Value(r) => {
-			model::reaction_bytes(r)
-				+ r.capacity().saturating_sub(r.len()) * size_of::<model::Reaction>()
-		}
-		_ => 0,
-	} + match &patch.mentions {
-		Patch::Value(users) => model::mention_bytes(users),
-		_ => 0,
-	} + match &patch.embeds {
-		Patch::Value(value) => {
-			model::embed_bytes(value)
-				+ value.capacity().saturating_sub(value.len()) * size_of::<model::Embed>()
-		}
-		_ => 0,
-	} + match &patch.attachments {
-		Patch::Value(value) => {
-			model::attachment_bytes(value)
-				+ value.capacity().saturating_sub(value.len()) * size_of::<model::Attachment>()
-		}
-		_ => 0,
+		},
+		match &patch.components {
+			Patch::Value(c) => model::component_bytes(c),
+			_ => 0,
+		},
+		match &patch.reactions {
+			Patch::Value(r) => {
+				model::reaction_bytes(r)
+					+ r.capacity().saturating_sub(r.len()) * size_of::<model::Reaction>()
+			}
+			_ => 0,
+		},
+		match &patch.mentions {
+			Patch::Value(users) => model::mention_bytes(users),
+			_ => 0,
+		},
+		match &patch.embeds {
+			Patch::Value(value) => {
+				model::embed_bytes(value)
+					+ value.capacity().saturating_sub(value.len()) * size_of::<model::Embed>()
+			}
+			_ => 0,
+		},
+		match &patch.attachments {
+			Patch::Value(value) => {
+				model::attachment_bytes(value)
+					+ value.capacity().saturating_sub(value.len()) * size_of::<model::Attachment>()
+			}
+			_ => 0,
+		},
+	]
+}
+
+fn patch_bytes(patch: &MessagePatch) -> usize {
+	size_of::<MessagePatch>() + patch_field_bytes(patch).into_iter().sum::<usize>()
+}
+
+fn merged_patch_bytes(previous: &MessagePatch, patch: &MessagePatch) -> usize {
+	let prev = patch_field_bytes(previous);
+	let next = patch_field_bytes(patch);
+	let absent = [
+		matches!(patch.poll, Patch::Absent),
+		matches!(patch.content, Patch::Absent),
+		matches!(patch.sticker_items, Patch::Absent),
+		matches!(patch.components, Patch::Absent),
+		matches!(patch.reactions, Patch::Absent),
+		matches!(patch.mentions, Patch::Absent),
+		matches!(patch.embeds, Patch::Absent),
+		matches!(patch.attachments, Patch::Absent),
+	];
+	size_of::<MessagePatch>()
+		+ prev
+			.into_iter()
+			.zip(next)
+			.zip(absent)
+			.map(|((p, n), keep)| if keep { p } else { n })
+			.sum::<usize>()
+}
+
+fn merge_patch(merged: &mut MessagePatch, patch: MessagePatch) {
+	if !matches!(patch.poll, Patch::Absent) {
+		merged.poll = patch.poll;
 	}
+	if !matches!(patch.flags, Patch::Absent) {
+		merged.flags = patch.flags;
+	}
+	if !matches!(patch.sticker_items, Patch::Absent) {
+		merged.sticker_items = patch.sticker_items;
+	}
+	if !matches!(patch.components, Patch::Absent) {
+		merged.components = patch.components;
+	}
+	if !matches!(patch.application_id, Patch::Absent) {
+		merged.application_id = patch.application_id;
+	}
+	if !matches!(patch.content, Patch::Absent) {
+		merged.content = patch.content;
+	}
+	if !matches!(patch.reactions, Patch::Absent) {
+		merged.reactions = patch.reactions;
+	}
+	if !matches!(patch.mentions, Patch::Absent) {
+		merged.mentions = patch.mentions;
+	}
+	if !matches!(patch.edited, Patch::Absent) {
+		merged.edited = patch.edited;
+	}
+	if !matches!(patch.embeds, Patch::Absent) {
+		merged.embeds = patch.embeds;
+	}
+	if !matches!(patch.attachments, Patch::Absent) {
+		merged.attachments = patch.attachments;
+	}
+	if !matches!(patch.embeds_suppressed, Patch::Absent) {
+		merged.embeds_suppressed = patch.embeds_suppressed;
+	}
+	merged.extra_content.merge(&patch.extra_content);
 }
 // Reuse ordinary edit allocations, but do not retain a large field after it shrinks.
 // The fourfold / 1 KiB hysteresis avoids reallocating on small or oscillating edits.
@@ -675,6 +737,96 @@ pub fn apply_patch(message: &mut Message, patch: &MessagePatch) {
 	}
 	match &patch.attachments {
 		Patch::Value(attachments) => clone_compact_vec(&mut message.attachments, attachments),
+		Patch::Null => message.attachments = Vec::new(),
+		Patch::Absent => {}
+	}
+	match patch.embeds_suppressed {
+		Patch::Value(suppressed) => message.embeds_suppressed = suppressed,
+		Patch::Null => message.embeds_suppressed = false,
+		Patch::Absent => {}
+	}
+	patch.extra_content.apply(&mut message.extra_content);
+	message.revision += 1;
+}
+
+fn apply_patch_owned(message: &mut Message, patch: MessagePatch) {
+	if matches!(patch.edited, Patch::Value(new) if message.edited_at.is_some_and(|old| new < old)) {
+		return;
+	}
+	match patch.mentions {
+		Patch::Value(users) => message.mentions = users,
+		Patch::Null => message.mentions = Vec::new(),
+		Patch::Absent => {}
+	}
+	match patch.reactions {
+		Patch::Absent => {}
+		Patch::Null => message.reactions = Some(vec![]),
+		Patch::Value(r) => message.reactions = Some(r),
+	}
+	match patch.flags {
+		Patch::Value(flags) => {
+			message.flags = flags;
+			message.ephemeral = flags & 64 != 0;
+		}
+		Patch::Null => {
+			message.flags = 0;
+			message.ephemeral = false;
+		}
+		Patch::Absent => {}
+	}
+	// Gateway updates describe the outer message, never edits to its frozen snapshot.
+	if message.forwarded {
+		message.revision += 1;
+		return;
+	}
+	match patch.poll {
+		Patch::Absent => {}
+		Patch::Null => message.poll = None,
+		Patch::Value(mut value) => {
+			if let (Some(next), Some(previous)) = (&mut value, &message.poll) {
+				next.retain_results(previous);
+			}
+			message.poll = value;
+		}
+	}
+	match patch.sticker_items {
+		Patch::Value(s) => message.sticker_items = s,
+		Patch::Null => message.sticker_items = Vec::new(),
+		Patch::Absent => {}
+	}
+	match patch.components {
+		Patch::Value(c) => message.components = c,
+		Patch::Null => message.components = Vec::new(),
+		Patch::Absent => {}
+	}
+	match patch.application_id {
+		Patch::Value(id) => message.application_id = Some(id),
+		Patch::Null => message.application_id = None,
+		Patch::Absent => {}
+	}
+	match patch.content {
+		Patch::Value(s) => message.content = s,
+		Patch::Null => message.content = String::new(),
+		Patch::Absent => {}
+	}
+	match patch.edited {
+		Patch::Value(at) => {
+			message.edited = true;
+			message.edited_at = Some(at);
+		}
+		Patch::Null => {
+			message.edited = false;
+			message.edited_at = None;
+		}
+		Patch::Absent => {}
+	}
+	match patch.embeds {
+		Patch::Value(embeds) => message.embeds = embeds,
+		Patch::Null => message.embeds = Vec::new(),
+		Patch::Absent => {}
+	}
+	match patch.attachments {
+		Patch::Value(attachments) => message.attachments = attachments,
 		Patch::Null => message.attachments = Vec::new(),
 		Patch::Absent => {}
 	}
@@ -1717,5 +1869,55 @@ mod tests {
 		t.seed_cache(vec![message(1), message(2)]).unwrap();
 		t.finish_page(vec![message(2)], false).unwrap();
 		assert!(t.get(Id(1)).is_none());
+	}
+
+	#[test]
+	fn batch_author_memberships_and_live_count_stay_consistent() {
+		let mut timeline = Timeline::default();
+		timeline.set_preserve_deleted_messages(true);
+		let mut m1 = message(1);
+		m1.author.id = Id(10);
+		let mut m2 = message(2);
+		m2.author.id = Id(20);
+		let mut m3 = message(3);
+		m3.author.id = Id(10);
+		m3.author.webhook = true;
+		let mut m4 = message(4);
+		m4.author.id = Id(30);
+		for m in [m1, m2, m3, m4] {
+			timeline.insert(m, true, false).unwrap();
+		}
+		assert_eq!(timeline.len(), 4);
+		assert_eq!(timeline.len(), timeline.iter().count());
+
+		let roles_10 = [Id(100), Id(101)];
+		let roles_20 = [Id(200)];
+		let changed = timeline.apply_author_memberships(|author| match author {
+			Id(10) => Some((&roles_10, Some("Alice"))),
+			Id(20) => Some((&roles_20, None)),
+			_ => None,
+		});
+		assert!(changed);
+		assert_eq!(timeline.get(Id(1)).unwrap().author_roles, roles_10);
+		assert_eq!(
+			timeline.get(Id(1)).unwrap().author_nick.as_deref(),
+			Some("Alice")
+		);
+		assert_eq!(timeline.get(Id(2)).unwrap().author_roles, roles_20);
+		assert!(timeline.get(Id(3)).unwrap().author_roles.is_empty());
+		assert_eq!(
+			timeline.bytes(),
+			timeline.display_iter().map(Message::bytes).sum::<usize>()
+		);
+
+		timeline.delete(Id(2)).unwrap();
+		assert_eq!(timeline.len(), 3);
+		assert_eq!(timeline.len(), timeline.iter().count());
+		assert!(timeline.get_display(Id(2)).is_some());
+
+		timeline.drop_live_history();
+		assert_eq!(timeline.len(), 0);
+		assert!(timeline.is_empty());
+		assert_eq!(timeline.len(), timeline.iter().count());
 	}
 }

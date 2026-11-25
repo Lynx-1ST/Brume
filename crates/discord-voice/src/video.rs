@@ -201,30 +201,49 @@ impl Sent {
 	fn bytes(&self) -> usize {
 		std::mem::size_of::<Self>() + self.packet.payload.capacity()
 	}
+	fn seq(&self) -> u16 {
+		u16::from_be_bytes([self.packet.header[2], self.packet.header[3]])
+	}
 }
 
 /// DAVE ciphertext only, cleared across every encryption transition.
 #[derive(Default)]
 pub(crate) struct History {
-	packets: VecDeque<Sent>,
+	slots: Box<[Option<Sent>]>,
+	order: VecDeque<u16>,
+	count: usize,
 	bytes: usize,
 	pending: VecDeque<u16>,
 }
 impl History {
 	pub fn clear(&mut self) {
-		self.packets.clear();
+		for slot in &mut self.slots {
+			*slot = None;
+		}
+		self.order.clear();
 		self.pending.clear();
+		self.count = 0;
 		self.bytes = 0;
 	}
 	pub fn expire(&mut self, now: Instant) {
-		while self
-			.packets
-			.front()
-			.is_some_and(|sent| now.duration_since(sent.at) >= HISTORY_AGE)
-		{
-			self.bytes -= self.packets.pop_front().unwrap().bytes();
+		while let Some(&seq) = self.order.front() {
+			let slot = usize::from(seq) % HISTORY_PACKETS;
+			match self.slots.get(slot).and_then(|entry| entry.as_ref()) {
+				Some(sent) if sent.seq() == seq => {
+					if now.duration_since(sent.at) < HISTORY_AGE {
+						break;
+					}
+					let old = self.slots[slot].take().expect("expired packet exists");
+					self.bytes -= old.bytes();
+					self.count -= 1;
+					self.order.pop_front();
+				}
+				_ => {
+					self.order.pop_front();
+				}
+			}
 		}
-		if self.packets.is_empty() {
+		if self.count == 0 {
 			self.pending.clear();
 		}
 	}
@@ -240,21 +259,45 @@ impl History {
 		if bytes > HISTORY_BYTES {
 			return;
 		}
-		while self.packets.len() >= HISTORY_PACKETS || self.bytes + bytes > HISTORY_BYTES {
-			self.bytes -= self.packets.pop_front().unwrap().bytes();
+		if self.slots.is_empty() {
+			self.slots = (0..HISTORY_PACKETS).map(|_| None).collect();
+		}
+		while self.count >= HISTORY_PACKETS || self.bytes + bytes > HISTORY_BYTES {
+			let Some(seq) = self.order.pop_front() else {
+				break;
+			};
+			let slot = usize::from(seq) % HISTORY_PACKETS;
+			if self.slots[slot]
+				.as_ref()
+				.is_some_and(|entry| entry.seq() == seq)
+			{
+				let old = self.slots[slot].take().expect("evicted packet exists");
+				self.bytes -= old.bytes();
+				self.count -= 1;
+			}
+		}
+		let seq = sent.seq();
+		let slot = usize::from(seq) % HISTORY_PACKETS;
+		if let Some(prev) = self.slots[slot].take() {
+			self.bytes -= prev.bytes();
+			self.count -= 1;
 		}
 		self.bytes += bytes;
-		self.packets.push_back(sent);
+		self.count += 1;
+		self.slots[slot] = Some(sent);
+		self.order.push_back(seq);
 	}
 	/// A cache miss needs an IDR instead of resending media outside the repair window.
 	pub fn request(&mut self, sequences: &[u16], now: Instant) -> bool {
 		self.expire(now);
 		let mut missing = false;
 		for &seq in sequences.iter().take(128) {
+			let slot = usize::from(seq) % HISTORY_PACKETS;
 			let Some(sent) = self
-				.packets
-				.iter()
-				.find(|sent| sent.packet.header[2..4] == seq.to_be_bytes())
+				.slots
+				.get(slot)
+				.and_then(|entry| entry.as_ref())
+				.filter(|sent| sent.seq() == seq)
 			else {
 				missing = true;
 				continue;
@@ -285,10 +328,12 @@ impl History {
 		// Drain stale requests in this bounded pass, rather than charging an MTU
 		// of repair budget for each one and blocking newer useful retransmissions.
 		while let Some(seq) = self.pending.pop_front() {
+			let slot = usize::from(seq) % HISTORY_PACKETS;
 			let Some(sent) = self
-				.packets
-				.iter_mut()
-				.find(|sent| sent.packet.header[2..4] == seq.to_be_bytes())
+				.slots
+				.get_mut(slot)
+				.and_then(|entry| entry.as_mut())
+				.filter(|sent| sent.seq() == seq)
 			else {
 				continue;
 			};

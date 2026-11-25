@@ -138,7 +138,7 @@ fn main() {
 					rtp.sequence,
 					rtp.timestamp,
 					rtp.marker,
-					&rtp.payload,
+					rtp.payload,
 				) {
 					restored = Some(frame);
 				}
@@ -173,7 +173,7 @@ fn main() {
 			rtp.sequence,
 			rtp.timestamp,
 			rtp.marker,
-			&rtp.payload,
+			rtp.payload,
 		) {
 			received = Some(
 				bob.session

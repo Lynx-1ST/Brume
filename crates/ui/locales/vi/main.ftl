@@ -2217,6 +2217,7 @@ profiles-more-menu-unblock = Bỏ chặn
 profiles-more-menu-unmute = Bật lại thông báo
 # Context: role_chips
 profiles-role-chips-show-remaining-roles = Hiển thị các vai trò còn lại
+profiles-role-chips-add-role = Thêm vai trò
 # Context: server_tag
 profiles-server-tag-server = Máy chủ
 # Context: server_tag

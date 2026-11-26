@@ -842,7 +842,12 @@ impl MessagingUi {
 		entry: &RosterEntry,
 	) {
 		let colors = design::palette(ui);
-		let (user, name) = resolve_member(state, entry);
+		let member = roster_member(state, entry);
+		let (user, name) = resolve_member_with(state, member, entry);
+		// Like the member list, the name takes the member's highest colored role.
+		let role_colors = member
+			.and_then(|member| state.member_roles(entry.guild, member).1)
+			.map(|role| role.colors());
 		ui.push_id(
 			("voice-participant", entry.channel, entry.participant.user),
 			|ui| {
@@ -961,6 +966,11 @@ impl MessagingUi {
 								} else {
 									0.0
 								};
+							let row_background = if hovered {
+								colors.hover
+							} else {
+								colors.sidebar
+							};
 							if let Some(user) = user {
 								// Keep voice participants' name colours visible between hovers.
 								crate::name_styles::in_row(true, || {
@@ -969,15 +979,24 @@ impl MessagingUi {
 										user,
 										name,
 										14.0,
-										(name_color, None, colors.sidebar),
+										(name_color, role_colors, row_background),
 										egui::Sense::hover(),
 										trailing,
 									)
 								})
 								.on_hover_text(name);
 							} else {
+								let text = crate::role_names::galley(
+									ui,
+									name,
+									egui::TextStyle::Body.resolve(ui.style()),
+									role_colors,
+									row_background,
+									name_color,
+									(ui.available_width() - trailing).max(0.0),
+								);
 								ui.add(
-									egui::Label::new(RichText::new(name).color(name_color))
+									egui::Label::new(text)
 										.truncate()
 										.show_tooltip_when_elided(false)
 										.selectable(false),
@@ -5589,12 +5608,16 @@ pub(crate) fn resolve_member<'a>(
 	state: &'a State,
 	entry: &'a RosterEntry,
 ) -> (Option<&'a model::User>, &'a str) {
+	resolve_member_with(state, roster_member(state, entry), entry)
+}
+
+/// The participant's guild member, from the roster entry or retained guild members.
+fn roster_member<'a>(state: &'a State, entry: &'a RosterEntry) -> Option<&'a model::Member> {
 	// Voice identities are refreshed by member updates and survive channel/guild navigation.
-	let member = entry
+	entry
 		.member
 		.as_deref()
-		.or_else(|| state.known_member(entry.channel, entry.participant.user));
-	resolve_member_with(state, member, entry)
+		.or_else(|| state.known_member(entry.channel, entry.participant.user))
 }
 
 /// [`resolve_member`] with the member already resolved, so a roster walker can share one
